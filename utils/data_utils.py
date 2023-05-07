@@ -39,7 +39,7 @@ class DataLoader():
             data = data.map(aug_utils.tf_augmentation, num_parallel_calls=-1)
         
         data = data.map(self.tf_preprocessing, num_parallel_calls=-1)
-        data = data.padded_batch(self.batch_size, padded_shapes=get_padded_shapes(), padding_values=get_padding_values(), drop_remainder=True)
+        data = data.padded_batch(self.batch_size, padded_shapes=get_padded_shapes(), padding_values=get_padding_values(), drop_remainder=False)
         
         data = data.map(lambda x, y: self.py_labels_to_grids(x, y, use_label), num_parallel_calls=-1).prefetch(1)
         return data
@@ -65,9 +65,10 @@ class DataLoader():
         return image, *grids
         
     def labels_to_grids(self, labels):
-        grids = [tf.zeros((self.batch_size, self.image_size//stride, self.image_size//stride , self.num_anchors, 5+self.num_classes)) for stride in self.strides]
-        ious = [tf.zeros((self.batch_size, self.image_size//stride, self.image_size//stride , self.num_anchors, 100), dtype=tf.float32) for stride in self.strides]
-        best_ious = tf.zeros((self.batch_size, self.max_bboxes))
+        batch_size = labels.shape[0]
+        grids = [tf.zeros((batch_size, self.image_size//stride, self.image_size//stride , self.num_anchors, 5+self.num_classes)) for stride in self.strides]
+        ious = [tf.zeros((batch_size, self.image_size//stride, self.image_size//stride , self.num_anchors, 100), dtype=tf.float32) for stride in self.strides]
+        best_ious = tf.zeros((batch_size, self.max_bboxes))
     
         no_obj = (tf.reduce_sum(labels[..., 2:4], -1) == 0)[..., None]
         conf = tf.cast(tf.where(no_obj, tf.zeros_like(no_obj), tf.ones_like(no_obj)), tf.float32)

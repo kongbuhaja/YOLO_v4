@@ -1,5 +1,5 @@
 # data config
-DTYPE = 'coco'
+DTYPE = 'voc'
 IMAGE_SIZE = 416
 BATCH_SIZE = 16
 MAX_BBOXES = 100
@@ -8,16 +8,23 @@ CREATE_ANCHORS = False
 # train config
 EPOCHS = 400
 LR = 1e-2
-LR_SCHEDULER = 'poly'
+LR_SCHEDULER = 'cosine_annealing'
 IOU_THRESHOLD = 0.5
 EPS = 1e-7
 INF = 1e+30
 EVAL_PER_EPOCHS = 5
 WARMUP_EPOCHS = 5
 
+if LR_SCHEDULER == 'poly':
+    POWER = 0.9
+elif LR_SCHEDULER == 'cosine_annealing':
+    T_STEP = 10
+    T_MULT = 2
+    MIN_LR = 1e-7
+
 # model config
 MODEL_TYPE = 'YOLOv4'
-BASED_DTYPE = 'coco'
+BASED_DTYPE = 'voc'
 LOAD_CHECKPOINTS = False
 CHECKPOINTS_DIR = 'checkpoints/' + BASED_DTYPE + '/'
 TRAIN_CHECKPOINTS_DIR = CHECKPOINTS_DIR + MODEL_TYPE + '/train_loss/'

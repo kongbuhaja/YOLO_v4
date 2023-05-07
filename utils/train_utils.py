@@ -103,6 +103,7 @@ def get_model():
     
     if LOAD_CHECKPOINTS:
         return load_model(YOLO(), CHECKPOINTS)
+    print('make new model')
     return YOLO(), 1, -1., INF
 
 def save_model(model, epoch, mAP, loss, dir_path):
@@ -110,4 +111,5 @@ def save_model(model, epoch, mAP, loss, dir_path):
 
     model.save_weights(checkpoints)
     io_utils.write_model_info(checkpoints, epoch, mAP, loss)
-    print(f'{dir_path} epoch:{epoch}, mAP50:{mAP} best_model is saved')
+    if 'train' not in dir_path:
+        print(f'{dir_path} epoch:{epoch}, mAP50:{mAP} best_model is saved')

@@ -8,9 +8,9 @@ from utils.preset import preset
 def main():
     dataloader = data_utils.DataLoader()
     train_dataset = dataloader('train')
-    train_dataset_length = dataloader.length('train')//BATCH_SIZE
+    train_dataset_length = int(tf.math.ceil(dataloader.length('train')/BATCH_SIZE))
     valid_dataset = dataloader('val', use_label=True)
-    valid_dataset_length = dataloader.length('val')//BATCH_SIZE
+    valid_dataset_length = int(tf.math.ceil(dataloader.length('val')/BATCH_SIZE))
     
     model, start_epoch, max_mAP, max_loss = train_utils.get_model()
     train_max_loss = valid_max_loss = max_loss
@@ -40,9 +40,7 @@ def main():
 
             batch_images = batch_data[0]
             batch_grids = batch_data[1:]
-
-            optimizer.lr.assign(train_utils.lr_scheduler(global_step, max_step, train_dataset_length, warmup_step, warmup_max_step))
-            
+                        
             with tf.GradientTape() as train_tape:
                 preds = model(batch_images, True)
                 train_loss = model.loss(batch_grids, preds)
@@ -53,6 +51,10 @@ def main():
             train_conf_loss += train_loss[1]
             train_prob_loss += train_loss[2]
             train_total_loss += train_loss[3]
+
+            global_step += 1
+            train_iter += 1
+            warmup_step += 1
             
             train_loss_ = [train_loc_loss/train_iter, train_conf_loss/train_iter,
                            train_prob_loss/train_iter, train_total_loss/train_iter]
@@ -114,8 +116,6 @@ def main():
             if mAP > max_mAP:
                 max_mAP = mAP
                 train_utils.save_model(model, epoch, mAP, valid_loss_, MAP_CHECKPOINTS_DIR)
-            
-
         
 
 if __name__ == '__main__':
