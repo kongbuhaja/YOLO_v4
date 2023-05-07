@@ -1,0 +1,19 @@
+# file
+*.ipynb
+
+# log
+/logs
+*.out
+*.err
+
+
+# dir
+/data
+/logs
+/.vscode
+/**/__pycache__
+/checkpoints
+
+# yet touch
+/outputs
+/dockerfile
