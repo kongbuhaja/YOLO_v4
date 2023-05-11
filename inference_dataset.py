@@ -25,10 +25,10 @@ def main():
         batch_images = batch_data[0]
         batch_labels = batch_data[-1]
         
-        all_images.append(batch_images.numpy()[...,::-1]*255.)
-        all_grids.append(model(batch_images))
-        all_labels.append(batch_labels)        
-        break
+        all_images.append((batch_images.numpy()[...,::-1]*255.).astype(np.uint8))
+        all_grids.append([grid.numpy() for grid in model(batch_images)])
+        all_labels.append(batch_labels.numpy())        
+        # break
         
     inference_tqdm = tqdm.tqdm(range(len(all_images)), desc=f'draw and calculate')
     for i in inference_tqdm:
@@ -36,9 +36,9 @@ def main():
         batch_grids = all_grids[i]
         batch_labels = all_labels[i]
         batch_processed_preds = post_processing.prediction_to_bbox(batch_grids, anchors)
-        for image, processed_preds, labels in zip(batch_images.astype(np.uint8), batch_processed_preds, batch_labels):
-            NMS_preds = post_processing.NMS(processed_preds)
-            labels = bbox_utils.extract_real_labels(labels)
+        for image, processed_preds, labels in zip(batch_images, batch_processed_preds, batch_labels):
+            NMS_preds = post_processing.NMS(processed_preds).numpy()
+            labels = bbox_utils.extract_real_labels(labels).numpy()
             if DRAW:
                 pred = draw_utils.draw_labels(image.copy(), NMS_preds)
                 origin = draw_utils.draw_labels(image.copy(), labels)

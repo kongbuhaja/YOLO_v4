@@ -21,7 +21,7 @@ def main():
     filepath += str(len(glob.glob(filepath+'*.mp4')))
     writer = cv2.VideoWriter(filepath + 'avi', cv2.VideoWriter_fourcc(*'DIVX'), fps, (width, height))
     
-    model, _, _ = train_utils.get_model()
+    model, _, _, _ = train_utils.get_model()
     anchors = list(map(lambda x: tf.reshape(x,[-1,4]), anchor_utils.get_anchors_xywh(ANCHORS, STRIDES, IMAGE_SIZE)))
 
     
@@ -39,11 +39,12 @@ def main():
             grids = model(tf.cast(resized_frame[None], tf.float32)/255.)
             
             processed_preds = post_processing.prediction_to_bbox(grids, anchors)
+            print(type(processed_preds), processed_preds.shape, processed_preds.dtype)
             NMS_preds = post_processing.NMS(processed_preds)
 
             NMS_bboxes = (NMS_preds[..., :4] - pad[..., :4])/ratio
             
-            NMS_preds = tf.concat([NMS_bboxes, NMS_preds[4:]])
+            NMS_preds = tf.concat([NMS_bboxes, NMS_preds[4:]]).numpy()
             pred = draw_utils.draw_labels(origin_frame, NMS_preds)
                         
             sec = cur_time - prev_time

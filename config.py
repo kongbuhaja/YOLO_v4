@@ -1,7 +1,7 @@
 # data config
 DTYPE = 'voc'
 IMAGE_SIZE = 416
-BATCH_SIZE = 8
+BATCH_SIZE = 16
 MAX_BBOXES = 100
 CREATE_ANCHORS = False
 
@@ -12,7 +12,7 @@ LR_SCHEDULER = 'cosine_annealing'
 IOU_THRESHOLD = 0.5
 EPS = 1e-7
 INF = 1e+30
-EVAL_PER_EPOCHS = 5
+EVAL_PER_EPOCHS = 1
 WARMUP_EPOCHS = 5
 
 if LR_SCHEDULER == 'poly':
@@ -98,4 +98,4 @@ NUM_CLASSES = len(LABELS)
 NUM_ANCHORS = len(ANCHORS)
 
 # draw config
-DRAW = True
+DRAW = False

@@ -71,7 +71,7 @@ def main():
             train_utils.save_model(model, epoch, 0., train_loss_, TRAIN_CHECKPOINTS_DIR)
             
         # valid
-        if epoch % EVAL_PER_EPOCHS == 0 or epoch == EPOCHS:
+        if epoch % EVAL_PER_EPOCHS == 0:
             valid_iter, valid_loc_loss, valid_conf_loss, valid_prob_loss, valid_total_loss = 0, 0, 0, 0, 0
             valid_tqdm = tqdm.tqdm(valid_dataset, total=valid_dataset_length, desc=f'valid epoch {epoch}/{EPOCHS}', ascii=' =', colour='blue')
             for batch_data in valid_tqdm:
@@ -84,8 +84,8 @@ def main():
                 
                 batch_processed_preds = post_processing.prediction_to_bbox(preds, anchors)           
                 for processed_preds, labels in zip(batch_processed_preds, batch_labels):
-                    NMS_preds = post_processing.NMS(processed_preds)
-                    labels = bbox_utils.extract_real_labels(labels)
+                    NMS_preds = post_processing.NMS(processed_preds).numpy()
+                    labels = bbox_utils.extract_real_labels(labels).numpy()
                     stats.update_stats(NMS_preds, labels)
                 
                 mAP = stats.calculate_mAP()

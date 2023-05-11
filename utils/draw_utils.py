@@ -3,9 +3,9 @@ import numpy as np
 from config import *
 
 def draw_labels(image, preds):
-    bboxes = preds[..., :4].numpy().astype(np.int32)
-    scores = preds[..., 4].numpy()
-    classes = preds[..., 5].numpy().astype(np.int32)
+    bboxes = preds[..., :4].astype(np.int32)
+    scores = preds[..., 4]
+    classes = preds[..., 5].astype(np.int32)
     for bbox, score, cls in zip(bboxes, scores, classes):
         if np.sum(bbox)==0:
             break;

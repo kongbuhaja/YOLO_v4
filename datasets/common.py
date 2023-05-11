@@ -81,7 +81,7 @@ class Base_Dataset():
                 if os.path.exists(out_dir + '/' + self.dtype):
                     shutil.rmtree(out_dir + '/' + self.dtype)
                 for file in os.listdir(out_dir + '/downloads/'):
-                    if file.endswith('.tar') or file.endswith('.INFO'):
+                    if file.endswith('.tar') or file.endswith('zip') or file.endswith('.INFO'):
                         os.remove(out_dir + '/downloads/' + file)
         
         elif self.dtype == 'custom':
