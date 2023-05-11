@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 from utils import bbox_utils
 from config import *
-#### add ious, ids
+
 class stats:
     def __init__(self, labels=LABELS, iou_threshold=IOU_THRESHOLD):
         self.stats = {}
@@ -28,21 +28,25 @@ class stats:
         gt_classes = gt_labels[..., 5]
                 
         ious = bbox_utils.bbox_iou(pred_bboxes[:,None], gt_bboxes[None], xywh=False, iou_type='iou')
-        pred_ious = tf.reduce_max(ious, -1)
-        pred_ids = tf.argmax(ious, -1, output_type=tf.int32)
-        sorted_pred_ids = tf.argsort(pred_ious, direction="DESCENDING")
+        max_iou = tf.reduce_max(ious, -1)
+        max_iou_idx = tf.argmax(ious, -1, output_type=tf.int32)
+        sorted_max_iou_idx = tf.argsort(max_iou, direction="DESCENDING")
         u_classes, u_idx, u_count = tf.unique_with_counts(tf.reshape(gt_classes, (-1)))
         for i, u_class, in enumerate(u_classes):
             self.stats[int(u_class)]["total"] += u_count[i]
 
         past_ids = []
-        for sorted_pred_id in sorted_pred_ids:             
-            pred_class = int(pred_classes[sorted_pred_id])
-            iou = pred_ious[sorted_pred_id]
-            pred_id = pred_ids[sorted_pred_id]
-            score = pred_scores[sorted_pred_id]
+        for pred_idx, sorted_iou_idx in enumerate(sorted_max_iou_idx):
+            if pred_bboxes[pred_idx][2] <= pred_bboxes[pred_idx][0] or pred_bboxes[pred_idx][3] <= pred_bboxes[pred_idx][1]:
+                continue
             
-            gt_class = int(gt_classes[pred_id])
+            pred_class = int(pred_classes[pred_idx])
+            iou = max_iou[pred_idx]
+            pred_id = max_iou_idx[pred_idx]
+            score = pred_scores[pred_idx]
+            
+            gt_idx = max_iou_idx[sorted_iou_idx]
+            gt_class = int(gt_classes[gt_idx])
             
             self.stats[pred_class]['scores'].append(score)
             

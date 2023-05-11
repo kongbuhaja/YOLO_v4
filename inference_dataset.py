@@ -28,6 +28,7 @@ def main():
         all_images.append(batch_images.numpy()[...,::-1]*255.)
         all_grids.append(model(batch_images))
         all_labels.append(batch_labels)        
+        break
         
     inference_tqdm = tqdm.tqdm(range(len(all_images)), desc=f'draw and calculate')
     for i in inference_tqdm:

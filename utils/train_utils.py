@@ -112,4 +112,4 @@ def save_model(model, epoch, mAP, loss, dir_path):
     model.save_weights(checkpoints)
     io_utils.write_model_info(checkpoints, epoch, mAP, loss)
     if 'train' not in dir_path:
-        print(f'{dir_path} epoch:{epoch}, mAP50:{mAP} best_model is saved')
+        print(f'{dir_path} epoch:{epoch}, mAP50:{mAP:.4f} best_model is saved')

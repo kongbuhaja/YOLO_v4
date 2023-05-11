@@ -40,7 +40,7 @@ def main():
 
             batch_images = batch_data[0]
             batch_grids = batch_data[1:]
-                        
+
             with tf.GradientTape() as train_tape:
                 preds = model(batch_images, True)
                 train_loss = model.loss(batch_grids, preds)
@@ -60,7 +60,7 @@ def main():
                            train_prob_loss/train_iter, train_total_loss/train_iter]
             
             io_utils.write_summary(train_writer, global_step, optimizer.lr.numpy(), train_loss_)
-            tqdm_text = 'lr={:.5f}, total_loss={:.5f}, loc_loss={:.5f}, conf_loss={:.5f}, prob_loss={:.5f}'\
+            tqdm_text = 'lr={:.7f}, total_loss={:.5f}, loc_loss={:.5f}, conf_loss={:.5f}, prob_loss={:.5f}'\
                         .format(optimizer.lr.numpy(),
                                 train_loss_[3].numpy(), train_loss_[0].numpy(), 
                                 train_loss_[1].numpy(), train_loss_[2].numpy())
