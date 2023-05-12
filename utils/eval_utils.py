@@ -91,7 +91,7 @@ class stats:
 
         self.mAP = np.mean(aps)
         self.mAP50 = np.mean(ap50s)
-        return self.mAP
+        return self.mAP50, self.mAP
         
     def calculate_AP(self, recalls, precisions):
         aps = []

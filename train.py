@@ -88,7 +88,7 @@ def main():
                     labels = bbox_utils.extract_real_labels(labels).numpy()
                     stats.update_stats(NMS_preds, labels)
                 
-                mAP = stats.calculate_mAP()
+                mAP50, mAP = stats.calculate_mAP()
                 
                 valid_loc_loss += valid_loss[0]
                 valid_conf_loss += valid_loss[1]
@@ -100,7 +100,7 @@ def main():
                 valid_loss_ = [valid_loc_loss / valid_iter, valid_conf_loss / valid_iter, 
                                 valid_prob_loss / valid_iter, valid_total_loss / valid_iter]
                 
-                tqdm_text = f'mAP{int(IOU_THRESHOLD * 100)}={mAP:.3f}, '
+                tqdm_text = f'mAP50={mAP50:.3f}, mAP={mAP:.3f}'
                 tqdm_text += f'total_loss={valid_loss_[3].numpy():.5f}, '
                 tqdm_text += f'loc_loss={valid_loss_[0].numpy():.5f}, '
                 tqdm_text += f'conf_loss={valid_loss_[1].numpy():.5f}, '
