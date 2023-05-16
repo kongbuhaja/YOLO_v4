@@ -4,13 +4,13 @@ from config import EPS, INF
 
 def bbox_iou(bbox1, bbox2, xywh=True, iou_type='iou', eps=EPS, inf=INF):
     if xywh:
-        area1 = tf.reduce_prod(bbox1[..., 2:4], -1)
-        area2 = tf.reduce_prod(bbox2[..., 2:4], -1)
+        area1 = tf.reduce_prod(bbox1[..., 2:], -1)
+        area2 = tf.reduce_prod(bbox2[..., 2:], -1)
         bbox1 = tf.concat([bbox1[..., :2] - bbox1[..., 2:] * 0.5, bbox1[..., :2] + bbox1[..., 2:] * 0.5], -1)
         bbox2 = tf.concat([bbox2[..., :2] - bbox2[..., 2:] * 0.5, bbox2[..., :2] + bbox2[..., 2:] * 0.5], -1)
     else:
-        area1 = tf.reduce_prod(bbox1[..., 2:4] - bbox1[..., :2], -1)
-        area2 = tf.reduce_prod(bbox2[..., 2:4] - bbox2[..., :2], -1)
+        area1 = tf.reduce_prod(bbox1[..., 2:] - bbox1[..., :2], -1)
+        area2 = tf.reduce_prod(bbox2[..., 2:] - bbox2[..., :2], -1)
     
     Left_Top = tf.maximum(bbox1[..., :2], bbox2[..., :2])
     Right_Bottom = tf.minimum(bbox1[..., 2:], bbox2[..., 2:])

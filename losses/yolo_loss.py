@@ -7,7 +7,7 @@ from losses.prob_loss import *
 @tf.function
 def v4_loss(labels, preds, anchors, iou_threshold, scales, inf, eps):
     loc_loss, conf_loss, prob_loss = 0., 0., 0.
-    
+    # conf에 전체 gt하고 비교해보기 (not grid)
     for pred, label, anchor, scale in zip(preds, labels, anchors, scales):
         pred_xy = tf.sigmoid(pred[..., :2]) + anchor[..., :2]
         pred_wh = tf.exp(pred[..., 2:4]) * anchor[..., 2:]
