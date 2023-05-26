@@ -1,5 +1,5 @@
 # hardware config
-GPUS = 4
+GPUS = 1
 
 # data config
 DTYPE = 'voc'
@@ -30,7 +30,7 @@ elif LR_SCHEDULER == 'cosine_annealing':
 # model config
 MODEL_TYPE = 'YOLOv4'
 BASED_DTYPE = 'voc'
-LOAD_CHECKPOINTS = True
+LOAD_CHECKPOINTS = False
 CHECKPOINTS_DIR = 'checkpoints/' + BASED_DTYPE + '/'
 TRAIN_CHECKPOINTS_DIR = CHECKPOINTS_DIR + MODEL_TYPE + '/train_loss/'
 LOSS_CHECKPOINTS_DIR = CHECKPOINTS_DIR + MODEL_TYPE + '/val_loss/'
