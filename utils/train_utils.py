@@ -3,12 +3,11 @@ from utils import io_utils
 import math
 
 class warmup_lr_scheduler():
-    def __init__(self, init_lr, warmup_max_step):
-        self.init_lr = init_lr
+    def __init__(self, warmup_max_step):
         self.warmup_max_step = warmup_max_step
 
-    def __call__(self, warmup_step):
-        lr = self.init_lr / self.warmup_max_step * (warmup_step + 1)
+    def __call__(self, warmup_step, init_lr):
+        lr = init_lr / self.warmup_max_step * (warmup_step + 1)
         return lr
 
 class step_lr_scheduler():
@@ -51,10 +50,11 @@ class cosine_annealing_lr_scheduler():
 
     def __call__(self, step):
         T_cur = step - self.csum
-        if T_cur >= self.T_max:
+        while(T_cur >= self.T_max):
+            T_cur -= self.T_max
             self.csum += self.T_max
             self.T_max *= self.T_mult
-            T_cur = 0 
+            
         lr = self.min_lr + 0.5 * (self.init_lr - self.min_lr) * (1 + math.cos(T_cur / self.T_max * math.pi))
         return lr
     
@@ -65,23 +65,19 @@ class LR_scheduler():
         self.warmup_max_step = warmup_max_step
         self.lr_type = lr_type
         self.init_lr = init_lr
-        self.warmup_lr_scheduler = warmup_lr_scheduler(self.init_lr, self.warmup_max_step)
+        self.warmup_lr_scheduler = warmup_lr_scheduler(self.warmup_max_step)
         if self.lr_type == 'cosine_annealing':
             self.lr_scheduler = cosine_annealing_lr_scheduler(self.init_lr, T_STEP, T_MULT, MIN_LR)
         else:
-            self.warmup_lr_scheduler = warmup_lr_scheduler(self.init_lr, self.warmup_max_step)
             if self.lr_type == 'step':
                 self.lr_scheduler = step_lr_scheduler(self.init_lr, self.step_per_epoch)
             elif self.lr_type == 'poly':
                 self.lr_scheduler = poly_lr_scheduler(self.init_lr, self.max_step, POWER)
 
     def __call__(self, step, warmup_step):
-        # if self.lr_type =='cosine_annealing':
-        #     return self.lr_scheduler(step)
+        lr = self.lr_scheduler(step - self.warmup_max_step)
         if warmup_step < self.warmup_max_step:
-            lr = self.warmup_lr_scheduler(warmup_step)
-        else:
-            lr = self.lr_scheduler(step - self.warmup_max_step)
+            lr = self.warmup_lr_scheduler(warmup_step, lr)
         return lr
 
 def load_model(model, checkpoints):

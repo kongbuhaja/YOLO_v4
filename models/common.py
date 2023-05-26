@@ -4,18 +4,6 @@ from tensorflow.keras.initializers import GlorotUniform as glorot
 from tensorflow.keras.initializers import HeUniform as he
 from tensorflow.keras.regularizers import l2
 
-# class DarknetBatchN(BatchNormalization):
-#     def call(self, x, training=False):
-#         training = tf.logical_and(training, self.trainable)
-#         return super().call(x, training)
-    
-class DarknetBatchN(BatchNormalization):
-    def call(self, x, training=False):
-        if not training:
-            training = tf.constant(False)
-        training = tf.logical_and(training, self.trainable)
-        return super().call(x, training)
-
 class DarknetUpsample(Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -45,7 +33,7 @@ class DarknetConv(Layer):
                            use_bias=not self.bn, kernel_regularizer=l2(0.0005),
                            kernel_initializer=self.kernel_initializer)
         if self.bn:
-            self.batchN = DarknetBatchN()
+            self.batchN = BatchNormalization()
         
         if self.activate == 'Mish':
             self.activateF = Mish()

@@ -1,5 +1,5 @@
 # hardware config
-GPUS = 1
+GPUS = 4
 
 # data config
 DTYPE = 'voc'

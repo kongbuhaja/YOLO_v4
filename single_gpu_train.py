@@ -43,7 +43,7 @@ def main():
 
             with tf.GradientTape() as train_tape:
                 preds = model(batch_images, True)
-                train_loss = model.loss(batch_grids, preds)
+                train_loss = model.loss(batch_grids, preds, BATCH_SIZE)
                 gradients = train_tape.gradient(train_loss[3], model.trainable_variables)
                 optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
