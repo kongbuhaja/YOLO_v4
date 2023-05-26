@@ -35,7 +35,7 @@ class DataLoader():
         data = data.cache()
         
         if split == 'train':
-            data = data.shuffle(buffer_size = min(self.length(split) * 3, 200000)) # ram memory limit
+            data = data.shuffle(buffer_size = min(self.length(split) * 3, 50000)) # ram memory limit
             data = data.map(aug_utils.tf_augmentation, num_parallel_calls=-1)
         
         data = data.map(self.tf_preprocessing, num_parallel_calls=-1)

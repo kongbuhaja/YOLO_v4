@@ -4,22 +4,6 @@ from config import *
 from utils import data_utils, train_utils, io_utils, eval_utils, post_processing, anchor_utils, bbox_utils
 from utils.preset import preset
 
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-os.environ['CUDA_VISIBLE_DEVICES'] = ''.join([str(i)+', ' for i in range(GPUS)])
-os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
-
-gpus = tf.config.experimental.list_physical_devices('GPU')
-print(f'GPUs {gpus}')
-if len(gpus) > 0:
-    try:
-        for i in range(len(gpus)):
-            tf.config.experimental.set_memory_growth(gpus[i], True)
-    except RuntimeError as error:
-        print(error)
-
-strategy = tf.distribute.MirroredStrategy()
-
 def main():
     strategy = tf.distribute.MirroredStrategy()
 
