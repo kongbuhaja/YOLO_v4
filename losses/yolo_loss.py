@@ -7,13 +7,8 @@ from losses.prob_loss import *
 @tf.function
 def v4_loss(labels, preds, batch_size, anchors, strides, scales, iou_threshold, inf, eps):
     loc_loss, conf_loss, prob_loss = 0., 0., 0.
-<<<<<<< Updated upstream
-    # conf에 전체 gt하고 비교해보기 (not grid)
-    for pred, label, anchor, scale in zip(preds, labels, anchors, scales):
-=======
-    
     for pred, label, anchor, stride, scale in zip(preds, labels, anchors, strides, scales):
->>>>>>> Stashed changes
+
         pred_xy = tf.sigmoid(pred[..., :2]) + anchor[..., :2]
         pred_wh = tf.exp(pred[..., 2:4]) * anchor[..., 2:]
         pred_xywh = tf.concat([pred_xy, pred_wh], -1) * stride
