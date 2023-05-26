@@ -22,7 +22,7 @@ def main():
     writer = cv2.VideoWriter(filepath + 'avi', cv2.VideoWriter_fourcc(*'DIVX'), fps, (width, height))
     
     model, _, _, _ = train_utils.get_model()
-    anchors = list(map(lambda x: tf.reshape(x,[-1,4]), anchor_utils.get_anchors_xywh(ANCHORS, STRIDES, IMAGE_SIZE)))
+    anchors = list(map(lambda x: tf.reshape(x, [-1,4]), anchor_utils.get_anchors_xywh(ANCHORS, STRIDES, IMAGE_SIZE)))
 
     
     total_frames = 0 

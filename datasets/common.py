@@ -127,7 +127,7 @@ def parse_tfrecord_fn(example):
     }
     example = tf.io.parse_single_example(example, feature_description)
     example['image'] = tf.io.decode_jpeg(example['image'], channels=3)
-    example['labels'] = tf.reshape(tf.sparse.to_dense(example['labels']), (-1, 5))
+    example['labels'] = tf.reshape(tf.sparse.to_dense(example['labels']), [-1, 5])
 
     return example['image'], example['labels'], example['width'], example['height']
         
@@ -135,9 +135,9 @@ def _image_feature(value):
     return _bytes_feature(tf.io.encode_jpeg(value).numpy())
 def _array_feature(value):
     if 'float' in value.dtype.name:
-        return _float_feature(np.reshape(value, (-1)))
+        return _float_feature(np.reshape(value, [-1]))
     elif 'int' in value.dtype.name:
-        return _int64_feature(np.reshape(value, (-1)))
+        return _int64_feature(np.reshape(value, [-1]))
     raise Exception(f'Wrong array dtype: {value.dtype}')
 def _string_feature(value):
     return _bytes_feature(value.encode('utf-8'))

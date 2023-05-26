@@ -3,12 +3,12 @@ from config import *
 
 def write_model_info(checkpoints, epoch, mAP, loss):
     with open(checkpoints + '.info', 'w') as f:
-        text = f'epoch:{epoch}\n'
-        text += f'mAP:{mAP}\n'
-        text += f'total_loss:{loss[3]}\n'
-        text += f'loc_loss:{loss[0]}\n'
-        text += f'conf_loss:{loss[1]}\n'
-        text += f'prob_loss:{loss[2]}\n'
+        text = f'epoch:{epoch}\n' +\
+               f'mAP:{mAP}\n' +\
+               f'total_loss:{loss[3]}\n' +\
+               f'loc_loss:{loss[0]}\n' +\
+               f'conf_loss:{loss[1]}\n' +\
+               f'prob_loss:{loss[2]}\n'
         f.write(text)
         
 def read_model_info():

@@ -16,10 +16,10 @@ class YOLO(Model):
         super().__init__(**kwargs)
         self.num_classes = num_classes
         self.num_anchors = num_anchors
-        self.strides = np.array(strides, np.int32)
+        self.strides = strides
         self.anchors = anchor_utils.get_anchors_xywh(anchors, self.strides, image_size)
         self.image_size = image_size
-        self.scales = (self.image_size // self.strides).tolist()
+        self.scales = (self.image_size // np.array(self.strides)).tolist()
         self.iou_threshold = iou_threshold
         self.kernel_initializer = kernel_initializer
         self.eps = eps
@@ -60,6 +60,8 @@ class YOLO(Model):
         return s_grid, m_grid, l_grid
     
     @tf.function
-    def loss(self, labels, preds):
-        return yolo_loss.v4_loss(labels, preds, self.anchors, self.iou_threshold, 
-                                 self.scales, self.inf, self.eps)
+    def loss(self, labels, preds, batch_size):
+        return yolo_loss.v4_loss(labels, preds, batch_size, self.anchors, self.strides, self.scales,
+                                 self.iou_threshold, self.inf, self.eps)
+        # return yolo_loss.v4_loss(labels, preds, batch_size, self.anchors, [1.,1.,1.], self.scales,
+        #                          self.iou_threshold, self.inf, self.eps)

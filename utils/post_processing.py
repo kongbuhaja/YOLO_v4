@@ -2,8 +2,7 @@ import tensorflow as tf
 from config import *
 from utils import bbox_utils
 
-def prediction_to_bbox(grids, anchors, strides=STRIDES, num_classes=NUM_CLASSES, image_size=IMAGE_SIZE):
-    batch_size = grids[0].shape[0]
+def prediction_to_bbox(grids, anchors, batch_size=BATCH_SIZE, strides=STRIDES, num_classes=NUM_CLASSES, image_size=IMAGE_SIZE):
     bboxes = tf.zeros((batch_size,0,4))
     scores = tf.zeros((batch_size, 0))
     classes = tf.zeros((batch_size, 0))
@@ -22,7 +21,7 @@ def prediction_to_bbox(grids, anchors, strides=STRIDES, num_classes=NUM_CLASSES,
         classes = tf.concat([classes, max_prob_id], 1)
 
     bboxes = bbox_utils.xywh_to_xyxy(bboxes)
-    bboxes = tf.minimum(tf.maximum(0, bboxes), image_size)
+    bboxes = tf.minimum(tf.maximum(0.0, bboxes), image_size)
 
     return tf.concat([bboxes, scores[..., None], classes[..., None]], -1)
 
@@ -31,7 +30,7 @@ def NMS(preds, score_threshold=SCORE_THRESHOLD, iou_threshold=IOU_THRESHOLD, sig
     unique_classes = list(set(preds[..., 5].numpy()))
 
     for unique_class in unique_classes:
-        class_idx = tf.reshape(tf.where(tf.logical_and(preds[..., 5] == unique_class, preds[..., 4] >= score_threshold)), (-1))
+        class_idx = tf.reshape(tf.where(tf.logical_and(preds[..., 5] == unique_class, preds[..., 4] >= score_threshold)), [-1])
         targets = tf.gather(preds, class_idx)
         while(targets.shape[0]):
             max_index = tf.argmax(targets[..., 4])
@@ -48,7 +47,7 @@ def NMS(preds, score_threshold=SCORE_THRESHOLD, iou_threshold=IOU_THRESHOLD, sig
             elif method == 'soft_gaussian':
                 target_scores = tf.exp(-(ious)**2/sigma) * targets[..., 4]
                 
-            filter = tf.reshape(tf.where(target_scores >= score_threshold), (-1))
+            filter = tf.reshape(tf.where(target_scores >= score_threshold), [-1])
             targets = tf.gather(targets, filter)
             target_scores = tf.gather(target_scores, filter)
             targets = tf.concat([targets[..., :4], target_scores[..., None], targets[..., 5:]], -1)

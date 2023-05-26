@@ -1,16 +1,21 @@
+# hardware config
+GPUS = 4
+
 # data config
 DTYPE = 'voc'
 IMAGE_SIZE = 416
-BATCH_SIZE = 16
 MAX_BBOXES = 100
 CREATE_ANCHORS = False
+POSITIVE_IOU_THRESHOLD = 0.6
 
 # train config
-EPOCHS = 200
-LR = 1e-2
+EPOCHS = 400
+BATCH_SIZE = 16
+GLOBAL_BATCH_SIZE = BATCH_SIZE * GPUS
+LR = 1e-3
 LR_SCHEDULER = 'cosine_annealing'
 IOU_THRESHOLD = 0.5
-EPS = 1e-7
+EPS = 1e-5
 INF = 1e+30
 EVAL_PER_EPOCHS = 1
 WARMUP_EPOCHS = 5
@@ -98,4 +103,4 @@ NUM_CLASSES = len(LABELS)
 NUM_ANCHORS = len(ANCHORS)
 
 # draw config
-DRAW = False
+DRAW = True

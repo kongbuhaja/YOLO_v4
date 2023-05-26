@@ -2,8 +2,13 @@ import tensorflow as tf
 from utils.bbox_utils import bbox_iou
 
 @tf.function
+<<<<<<< Updated upstream
 def yolov4_loc_loss(pred_xywh, label_xywh, resp_mask, scale, inf, eps):
     coord_scale = 2.0 - 1.0 * tf.reduce_prod(label_xywh[..., 2:4]/scale, -1)[..., None]
+=======
+def yolov4_loc_loss(pred_xywh, label_xywh, resp_mask, scale, inf, eps, stride):
+    coord_scale = 2.0 - 1.0 * tf.reduce_prod(label_xywh[..., 2:4]/scale /stride, -1)[..., None]
+>>>>>>> Stashed changes
     ciou = bbox_iou(pred_xywh, label_xywh, iou_type='ciou')[..., None]
 
     loc_loss = resp_mask * coord_scale * (1.0 - ciou)

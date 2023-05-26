@@ -62,7 +62,7 @@ def tf_resize_padding(image, labels, width, height, image_size):
                                   labels[..., 3:4] * scale + pad_top,
                                   labels[..., 4:5]],-1))
     image_resized = tf.image.resize(image, [new_height,new_width])
-    padding = tf.cast(tf.reshape(tf.stack([pad_top, pad_bottom, pad_left, pad_right, 0,0]),(3,2)), tf.int32)
+    padding = tf.cast(tf.reshape(tf.stack([pad_top, pad_bottom, pad_left, pad_right, 0,0]), [3,2]), tf.int32)
     image_pad = tf.pad(image_resized, padding)
     return image_pad, labels_
 

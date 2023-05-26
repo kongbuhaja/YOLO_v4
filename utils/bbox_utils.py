@@ -90,4 +90,4 @@ def extract_real_labels(labels, xywh=False):
         w = labels[..., 2] - labels[..., 0]
         h = labels[..., 3] - labels[..., 1]
 
-    return tf.gather(labels, tf.reshape(tf.where(tf.logical_and(w>0, h>0)), -1))
+    return tf.gather(labels, tf.reshape(tf.where(tf.logical_and(w>0, h>0)), [-1]))

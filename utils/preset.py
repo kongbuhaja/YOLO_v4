@@ -4,7 +4,11 @@ from config import *
 
 def os_preset():
     # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    # if GPUS==1:
+    #     os.environ['CUDA_VISIBLE_DEVICES'] = str(GPUS)
+    #     # os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+    # else:
+    os.environ['CUDA_VISIBLE_DEVICES'] = ''.join([str(i)+', ' for i in range(GPUS)])
     os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 def tf_preset():
@@ -12,7 +16,8 @@ def tf_preset():
     print(f'GPUs {gpus}')
     if len(gpus) > 0:
         try:
-            tf.config.experimental.set_memory_growth(gpus[0],True)
+            for i in range(len(gpus)):
+                tf.config.experimental.set_memory_growth(gpus[i], True)
         except RuntimeError as error:
             print(error)
 

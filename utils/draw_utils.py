@@ -14,7 +14,7 @@ def draw_labels(image, preds):
         cv2.putText(image, f'{LABELS[cls]}:{score:.3f}', (bbox[0], bbox[1]-5), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, color, 1)
     return image
 
-def show_and_save_image(image):
+def show_and_save_image(image, just_save=False):
     if image.shape[1] != IMAGE_SIZE:
         title = 'truth_and_pred'
     else:
@@ -23,12 +23,16 @@ def show_and_save_image(image):
     filename = OUTPUT_DIR + 'image/' + title
     filename += '_' + str(len(glob.glob(filename + '*.jpg')))
     
-    cv2.imshow(title, image)
-    key = cv2.waitKey()
-    if key == 27:
-        cv2.destroyAllWindows()
-        sys.exit()
-    elif key == ord('s'):
+    if just_save:
         cv2.imwrite(filename + '.jpg', image)
-    cv2.destroyWindow(title)
+    else:
+        cv2.imshow(title, image)
+        key = cv2.waitKey()
+        if key == 27:
+            cv2.destroyAllWindows()
+            sys.exit()
+        elif key == ord('s'):
+            cv2.imwrite(filename + '.jpg', image)
+        cv2.destroyWindow(title)
+    
     

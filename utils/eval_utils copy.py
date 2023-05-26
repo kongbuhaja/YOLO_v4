@@ -31,7 +31,7 @@ class stats:
         max_iou = tf.reduce_max(ious, -1)
         max_iou_idx = tf.argmax(ious, -1, output_type=tf.int32)
         sorted_max_iou_idx = tf.argsort(max_iou, direction="DESCENDING")
-        u_classes, u_idx, u_count = tf.unique_with_counts(tf.reshape(gt_classes, (-1)))
+        u_classes, u_idx, u_count = tf.unique_with_counts(tf.reshape(gt_classes, [-1]))
         for i, u_class, in enumerate(u_classes):
             self.stats[int(u_class)]["total"] += u_count[i]
 

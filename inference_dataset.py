@@ -7,12 +7,12 @@ import numpy as np
 
 
 def main():
-    anchors = list(map(lambda x: tf.reshape(x,[-1,4]), anchor_utils.get_anchors_xywh(ANCHORS, STRIDES, IMAGE_SIZE)))
+    anchors = list(map(lambda x: tf.reshape(x, [-1,4]), anchor_utils.get_anchors_xywh(ANCHORS, STRIDES, IMAGE_SIZE)))
     dataloader = data_utils.DataLoader()
     test_dataset = dataloader('val', use_label='test')
-    test_dataset_legnth = dataloader.length('val')//BATCH_SIZE
+    test_dataset_legnth = int(tf.math.ceil(dataloader.length('val')/BATCH_SIZE))
     
-    model, _, _, _ = train_utils.get_model()
+    model, _, _, _ = train_utils.get_model(load_checkpoints=True)
     
     stats = eval_utils.stats()
     
@@ -43,7 +43,7 @@ def main():
                 pred = draw_utils.draw_labels(image.copy(), NMS_preds)
                 origin = draw_utils.draw_labels(image.copy(), labels)
                 output = np.concatenate([origin, pred], 1)
-                draw_utils.show_and_save_image(output)
+                draw_utils.show_and_save_image(output, just_save=True)
 
             stats.update_stats(NMS_preds, labels)
     stats.calculate_mAP()

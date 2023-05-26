@@ -93,7 +93,7 @@ def load_model(model, checkpoints):
         print('checkpoints is not exist. \nmake new model')
         return model, 1, -1., INF
 
-def get_model():
+def get_model(load_checkpoints=LOAD_CHECKPOINTS):
     if MODEL_TYPE == 'YOLOv4':
         from models.yolov4 import YOLO
     elif MODEL_TYPE == 'YOLOv3':
@@ -101,7 +101,7 @@ def get_model():
     elif MODEL_TYPE == 'YOLOv3_tiny':
         from models.yolov3_tiny import YOLO
     
-    if LOAD_CHECKPOINTS:
+    if load_checkpoints:
         return load_model(YOLO(), CHECKPOINTS)
     print('make new model')
     return YOLO(), 1, -1., INF
@@ -112,4 +112,4 @@ def save_model(model, epoch, mAP, loss, dir_path):
     model.save_weights(checkpoints)
     io_utils.write_model_info(checkpoints, epoch, mAP, loss)
     if 'train' not in dir_path:
-        print(f'{dir_path} epoch:{epoch}, mAP50:{mAP:.4f} best_model is saved')
+        print(f'{dir_path} epoch:{epoch}, mAP:{mAP:.4f} best_model is saved')

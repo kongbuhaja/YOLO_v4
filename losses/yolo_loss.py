@@ -5,25 +5,34 @@ from losses.conf_loss import *
 from losses.prob_loss import *
 
 @tf.function
-def v4_loss(labels, preds, anchors, iou_threshold, scales, inf, eps):
+def v4_loss(labels, preds, batch_size, anchors, strides, scales, iou_threshold, inf, eps):
     loc_loss, conf_loss, prob_loss = 0., 0., 0.
+<<<<<<< Updated upstream
     # conf에 전체 gt하고 비교해보기 (not grid)
     for pred, label, anchor, scale in zip(preds, labels, anchors, scales):
+=======
+    
+    for pred, label, anchor, stride, scale in zip(preds, labels, anchors, strides, scales):
+>>>>>>> Stashed changes
         pred_xy = tf.sigmoid(pred[..., :2]) + anchor[..., :2]
         pred_wh = tf.exp(pred[..., 2:4]) * anchor[..., 2:]
-        pred_xywh = tf.concat([pred_xy, pred_wh], -1)
+        pred_xywh = tf.concat([pred_xy, pred_wh], -1) * stride
         pred_conf = tf.sigmoid(pred[..., 4:5])
         pred_prob = tf.sigmoid(pred[..., 5:])
-        loc_loss += yolov4_loc_loss(pred_xywh, label[..., :4], label[..., 4:5], scale, inf, eps)
+        loc_loss += yolov4_loc_loss(pred_xywh, label[..., :4], label[..., 4:5], scale, inf, eps, stride)
         conf_loss += yolov4_conf_loss(pred_xywh, pred_conf, label[..., :4], label[..., 4:5], iou_threshold, inf, eps)
         prob_loss += yolov4_prob_loss(pred_prob, label[..., 5:], label[..., 4:5], inf, eps)
 
-    loc_loss = tf.reduce_mean(loc_loss)
-    conf_loss = tf.reduce_mean(conf_loss)
-    prob_loss = tf.reduce_mean(prob_loss)
+    # loc_loss = tf.reduce_sum(loc_loss, loc_loss.shape[1:]) / batch_size
+    # conf_loss = tf.reduce_sum(conf_loss, conf_loss.shape[1:]) / batch_size
+    # prob_loss = tf.reduce_sum(prob_loss, prob_loss.shape[1:]) / batch_size
+    loc_loss = tf.reduce_sum(loc_loss) / batch_size
+    conf_loss = tf.reduce_sum(conf_loss) / batch_size
+    prob_loss = tf.reduce_sum(prob_loss) / batch_size
+
     total_loss = loc_loss + conf_loss + prob_loss
 
-    return loc_loss, conf_loss, prob_loss, total_loss
+    return [loc_loss, conf_loss, prob_loss, total_loss]
 
 @tf.function
 def v3_loss(labels, preds, anchors, iou_threshold, inf, eps, coord=5, noobj=0.5):
