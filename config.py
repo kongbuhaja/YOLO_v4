@@ -1,16 +1,16 @@
 # hardware config
-GPUS = 1
+GPUS = 4
 
 # data config
 DTYPE = 'coco'
 IMAGE_SIZE = 416
 MAX_BBOXES = 100
 CREATE_ANCHORS = False
-POSITIVE_IOU_THRESHOLD = 0.6
+POSITIVE_IOU_THRESHOLD = 0.7
 
 # train config
 EPOCHS = 400
-BATCH_SIZE = 2
+BATCH_SIZE = 16
 GLOBAL_BATCH_SIZE = BATCH_SIZE * GPUS
 LR = 1e-3
 LR_SCHEDULER = 'cosine_annealing'

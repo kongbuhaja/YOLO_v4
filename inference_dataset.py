@@ -8,7 +8,7 @@ import numpy as np
 
 def main():
     anchors = list(map(lambda x: tf.reshape(x, [-1,4]), anchor_utils.get_anchors_xywh(ANCHORS, STRIDES, IMAGE_SIZE)))
-    dataloader = data_utils.DataLoader()
+    dataloader = data_utils.DataLoader(batch_size=BATCH_SIZE)
     test_dataset = dataloader('val', use_label='test')
     test_dataset_legnth = int(tf.math.ceil(dataloader.length('val')/BATCH_SIZE))
     

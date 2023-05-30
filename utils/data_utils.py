@@ -5,7 +5,7 @@ from utils import aug_utils, bbox_utils, anchor_utils
 
 class DataLoader():
     def __init__(self, dtype=DTYPE, batch_size=GLOBAL_BATCH_SIZE, anchors=ANCHORS, num_anchors=NUM_ANCHORS, num_classes=NUM_CLASSES,
-                 image_size=IMAGE_SIZE, strides=STRIDES, iou_threshold=POSITIVE_IOU_THRESHOLD, max_bboxes=MAX_BBOXES):
+                 image_size=IMAGE_SIZE, strides=STRIDES, positive_iou_threshold=POSITIVE_IOU_THRESHOLD, max_bboxes=MAX_BBOXES):
                  
         self.batch_size = batch_size
         self.num_anchors = num_anchors
@@ -15,7 +15,7 @@ class DataLoader():
         self.strides = np.array(strides)
         self.scales = image_size//self.strides
         self.anchors = anchor_utils.get_anchors_xywh(anchors, self.strides, self.image_size)
-        self.iou_threshold = iou_threshold
+        self.positive_iou_threshold = positive_iou_threshold
         self.max_bboxes = max_bboxes
         self.dtype = dtype
         self._length = {}
@@ -33,11 +33,12 @@ class DataLoader():
 
         data = dataset.load(use_tfrecord)
         self._length[split] = dataset.length
-        data = data.cache()
+        # data = data.cache()
         
         if split == 'train':
-            data = data.shuffle(buffer_size = min(self.length(split) * 3, 50000)) # ram memory limit
-            data = data.map(aug_utils.tf_augmentation, num_parallel_calls=-1)
+            pass
+            # data = data.shuffle(buffer_size = min(self.length(split) * 3, 50000)) # ram memory limit
+            # data = data.map(aug_utils.tf_augmentation, num_parallel_calls=-1)
         
         data = data.map(self.tf_preprocessing, num_parallel_calls=-1)
         data = data.padded_batch(self.batch_size, padded_shapes=get_padded_shapes(), padding_values=get_padding_values(), drop_remainder=True)
@@ -86,7 +87,7 @@ class DataLoader():
         # assign similar label
         best_label_iou = tf.reduce_max(ious, -1)
         best_label_idx = tf.argmax(ious, -1)
-        positive_label_mask = tf.where(tf.greater_equal(best_label_iou, 0.7), 1., 0.)
+        positive_label_mask = tf.where(tf.greater_equal(best_label_iou, self.positive_iou_threshold), 1., 0.)
 
         maximum_bboxes = tf.concat([tf.tile(anchors[None, :, :2], [self.batch_size, 1, 1]),
                                    tf.gather(labels[..., 2:4], best_label_idx, batch_dims=1)], -1) * positive_label_mask[..., None]
