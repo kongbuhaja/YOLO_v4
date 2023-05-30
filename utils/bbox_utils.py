@@ -82,7 +82,7 @@ def bbox_iou_wh_np(wh1, wh2):
     union_area = np.maximum(wh1[..., 0] * wh1[..., 1] + wh2[..., 0] * wh2[..., 1] - inter_area, 1e-6)
     return inter_area / union_area
 
-def extract_real_labels(labels, xywh=False):
+def extract_real_labels(labels, xywh=True):
     if xywh:
         w = labels[..., 2]
         h = labels[..., 3]

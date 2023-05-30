@@ -1,5 +1,5 @@
 # hardware config
-GPUS = 4
+GPUS = 1
 
 # data config
 DTYPE = 'coco'
@@ -10,7 +10,7 @@ POSITIVE_IOU_THRESHOLD = 0.6
 
 # train config
 EPOCHS = 400
-BATCH_SIZE = 16
+BATCH_SIZE = 2
 GLOBAL_BATCH_SIZE = BATCH_SIZE * GPUS
 LR = 1e-3
 LR_SCHEDULER = 'cosine_annealing'
