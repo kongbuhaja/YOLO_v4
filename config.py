@@ -2,7 +2,7 @@
 GPUS = 4
 
 # data config
-DTYPE = 'coco'
+DTYPE = 'voc'
 IMAGE_SIZE = 416
 MAX_BBOXES = 100
 CREATE_ANCHORS = False
@@ -29,7 +29,7 @@ elif LR_SCHEDULER == 'cosine_annealing':
 
 # model config
 MODEL_TYPE = 'YOLOv4'
-BASED_DTYPE = 'coco'
+BASED_DTYPE = 'voc'
 LOAD_CHECKPOINTS = False
 CHECKPOINTS_DIR = 'checkpoints/' + BASED_DTYPE + '/'
 TRAIN_CHECKPOINTS_DIR = CHECKPOINTS_DIR + MODEL_TYPE + '/train_loss/'

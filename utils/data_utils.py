@@ -33,12 +33,11 @@ class DataLoader():
 
         data = dataset.load(use_tfrecord)
         self._length[split] = dataset.length
-        # data = data.cache()
+        data = data.cache()
         
         if split == 'train':
-            pass
-            # data = data.shuffle(buffer_size = min(self.length(split) * 3, 50000)) # ram memory limit
-            # data = data.map(aug_utils.tf_augmentation, num_parallel_calls=-1)
+            data = data.shuffle(buffer_size = min(self.length(split) * 3, 200000)) # ram memory limit
+            data = data.map(aug_utils.tf_augmentation, num_parallel_calls=-1)
         
         data = data.map(self.tf_preprocessing, num_parallel_calls=-1)
         data = data.padded_batch(self.batch_size, padded_shapes=get_padded_shapes(), padding_values=get_padding_values(), drop_remainder=True)
@@ -53,7 +52,6 @@ class DataLoader():
     def py_labels_to_grids(self, image, labels, use_label=False):
         grids = tf.py_function(self.labels_to_grids, [labels], [tf.float32]*self.len_anchors)
         if use_label:
-            labels = tf.concat([labels[..., :4], tf.ones_like(labels[..., 4:5]), labels[..., 4:5]], -1)
             return image, *grids, labels
         return image, *grids
     
@@ -73,8 +71,9 @@ class DataLoader():
         
     @tf.function
     def labels_to_grids(self, labels):
+        # return tf.zeros((self.batch_size, 52, 52, 3, 85)), tf.zeros((self.batch_size, 26, 26, 3, 85)), tf.zeros((self.batch_size, 13, 13, 3, 85))
         conf = labels[..., 4:5]
-        onehot = tf.where(tf.cast(conf, tf.bool), 0., tf.one_hot(tf.cast(labels[..., 4], dtype=tf.int32), NUM_CLASSES))
+        onehot = tf.where(tf.cast(conf, tf.bool), tf.one_hot(tf.cast(labels[..., 5], dtype=tf.int32), NUM_CLASSES), 0.)
         conf_onehot = tf.concat([conf, onehot], -1)
 
         grids = []
