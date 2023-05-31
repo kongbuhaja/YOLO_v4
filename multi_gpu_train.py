@@ -44,7 +44,6 @@ def main():
                 return train_loss
             
             def test_step(batch_images, batch_grids):
-                # with tf.GradientTape() as test_tape:
                 preds = model(batch_images)
                 valid_loss = model.loss(batch_grids, preds, GLOBAL_BATCH_SIZE)
 
