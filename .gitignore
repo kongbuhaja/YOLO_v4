@@ -5,6 +5,7 @@
 /logs
 *.out
 *.err
+*.log
 
 
 # dir
