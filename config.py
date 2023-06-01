@@ -1,5 +1,5 @@
 # hardware config
-GPUS = 4
+GPUS = 1
 
 # data config
 DTYPE = 'voc'
@@ -9,7 +9,7 @@ CREATE_ANCHORS = False
 POSITIVE_IOU_THRESHOLD = 0.7
 
 # train config
-EPOCHS = 400
+EPOCHS = 200
 BATCH_SIZE = 16
 GLOBAL_BATCH_SIZE = BATCH_SIZE * GPUS
 LR = 1e-3

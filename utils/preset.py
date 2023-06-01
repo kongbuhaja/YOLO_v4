@@ -10,6 +10,7 @@ def os_preset():
     # else:
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     os.environ['CUDA_VISIBLE_DEVICES'] = ''.join([str(i)+', ' for i in range(GPUS)])
+    # os.environ['CUDA_VISIBLE_DEVICES'] = '3'
     os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 def tf_preset():
