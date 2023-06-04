@@ -3,7 +3,7 @@ from config import *
 from utils import bbox_utils
 
 def prediction_to_bbox(grids, anchors, batch_size=BATCH_SIZE, strides=STRIDES, num_classes=NUM_CLASSES, image_size=IMAGE_SIZE):
-    bboxes = tf.zeros((batch_size,0,4))
+    bboxes = tf.zeros((batch_size, 0, 4))
     scores = tf.zeros((batch_size, 0))
     classes = tf.zeros((batch_size, 0))
     for grid, anchor, stride in zip(grids, anchors, strides):
@@ -11,17 +11,18 @@ def prediction_to_bbox(grids, anchors, batch_size=BATCH_SIZE, strides=STRIDES, n
 
         xy = tf.sigmoid(grid[..., :2]) + anchor[..., :2]
         wh = tf.exp(grid[..., 2:4]) * anchor[..., 2:4]
-        probs = tf.sigmoid(grid[..., 5:])
         score = tf.sigmoid(grid[..., 4])
+        probs = tf.sigmoid(grid[..., 5:])
+
         max_prob_id = tf.cast(tf.argmax(probs, -1), tf.float32)
         max_prob = tf.reduce_max(probs, -1)
 
-        bboxes = tf.concat([bboxes, tf.concat([xy, wh],-1)*stride], 1)
+        bboxes = tf.concat([bboxes, tf.concat([xy, wh], -1) * stride], 1)
         scores = tf.concat([scores, score * max_prob], 1)
         classes = tf.concat([classes, max_prob_id], 1)
 
     bboxes = bbox_utils.xywh_to_xyxy(bboxes)
-    bboxes = tf.minimum(tf.maximum(0.0, bboxes), image_size)
+    bboxes = tf.minimum(tf.maximum(0., bboxes), image_size)
 
     return tf.concat([bboxes, scores[..., None], classes[..., None]], -1)
 

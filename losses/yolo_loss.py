@@ -9,12 +9,12 @@ def v4_loss(labels, preds, batch_size, anchors, strides, image_size, iou_thresho
     loc_loss, conf_loss, prob_loss = 0., 0., 0.
     for pred, label, anchor, stride in zip(preds, labels, anchors, strides):
         pred_xy = tf.sigmoid(pred[..., :2]) + anchor[..., :2]
-        pred_wh = tf.exp(pred[..., 2:4]) * anchor[..., 2:]
+        pred_wh = tf.exp(pred[..., 2:4]) * anchor[..., 2:4]
         pred_xywh = tf.concat([pred_xy, pred_wh], -1) * stride
         pred_conf = tf.sigmoid(pred[..., 4:5])
         pred_prob = tf.sigmoid(pred[..., 5:])
         
-        loc_loss += v4_loc_loss(pred_xywh, label[..., :4], label[..., 4:5], image_size, inf, eps)
+        loc_loss += v4_loc_loss(pred_xywh, label[..., :4], label[..., 4:5], image_size, inf)
         conf_loss += v4_conf_loss(pred_xywh, pred_conf, label[..., :4], label[..., 4:5], iou_threshold, inf, eps)
         prob_loss += v4_prob_loss(pred_prob, label[..., 5:], label[..., 4:5], inf, eps)
 
@@ -26,7 +26,7 @@ def v4_loss(labels, preds, batch_size, anchors, strides, image_size, iou_thresho
     return [loc_loss, conf_loss, prob_loss, total_loss]
 
 @tf.function
-def v3_loss(labels, preds, batch_size, anchors, strides, image_size, iou_threshold, inf, eps, coord=5, noobj=0.5):
+def v3_loss(labels, preds, batch_size, anchors, strides, iou_threshold, inf, eps, coord=5, noobj=0.5):
     loc_loss, conf_loss, prob_loss = 0., 0., 0.
 
     for label, pred, anchor, stride in zip(labels, preds, anchors, strides):

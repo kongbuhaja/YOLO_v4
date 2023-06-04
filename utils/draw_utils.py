@@ -2,10 +2,14 @@ import cv2, glob, sys
 import numpy as np
 from config import *
 
-def draw_labels(image, preds):
+def draw_labels(image, preds, xywh=True):
     bboxes = preds[..., :4].astype(np.int32)
     scores = preds[..., 4]
     classes = preds[..., 5].astype(np.int32)
+    if xywh:
+        xy1 = bboxes[..., :2] - 0.5 * bboxes[..., 2:4]
+        xy2 = bboxes[..., :2] + 0.5 * bboxes[..., 2:4]
+        bboxes = np.concatenate([xy1, xy2], -1).astype(np.int32)
     for bbox, score, cls in zip(bboxes, scores, classes):
         if np.sum(bbox)==0:
             break;

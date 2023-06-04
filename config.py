@@ -2,11 +2,11 @@
 GPUS = 1
 
 # data config
-DTYPE = 'voc'
+DTYPE = 'custom'
 IMAGE_SIZE = 416
 MAX_BBOXES = 100
 CREATE_ANCHORS = False
-POSITIVE_IOU_THRESHOLD = 0.7
+POSITIVE_IOU_THRESHOLD = 0.6
 
 # train config
 EPOCHS = 200
@@ -29,7 +29,7 @@ elif LR_SCHEDULER == 'cosine_annealing':
 
 # model config
 MODEL_TYPE = 'YOLOv4'
-BASED_DTYPE = 'voc'
+BASED_DTYPE = 'custom'
 LOAD_CHECKPOINTS = False
 CHECKPOINTS_DIR = 'checkpoints/' + BASED_DTYPE + '/'
 TRAIN_CHECKPOINTS_DIR = CHECKPOINTS_DIR + MODEL_TYPE + '/train_loss/'
