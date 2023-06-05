@@ -83,7 +83,7 @@ def main():
                 batch_labels = batch_data[-1]
                 
                 preds = model(batch_images)
-                valid_loss = model.loss(batch_grids, preds)
+                valid_loss = model.loss(batch_grids, preds, BATCH_SIZE)
                 
                 batch_processed_preds = post_processing.prediction_to_bbox(preds, anchors)           
                 for processed_preds, labels in zip(batch_processed_preds, batch_labels):
