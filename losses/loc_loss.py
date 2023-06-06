@@ -6,7 +6,8 @@ def v4_loc_loss(pred_xywh, label_xywh, resp_mask, image_size, inf):
     coord_scale = 2.0 - 1.0 * tf.reduce_prod(label_xywh[..., 2:4]/image_size, -1, keepdims=True)
     ciou = bbox_iou(pred_xywh, label_xywh, iou_type='ciou')[..., None]
 
-    loc_loss = resp_mask * coord_scale * (1.0 - ciou)
+    # loc_loss = resp_mask * coord_scale * (1.0 - ciou)
+    loc_loss = resp_mask * (1.0 - ciou)
     loc_loss = tf.reduce_sum(tf.minimum(loc_loss, inf), [1,2,3,4])
     
     return loc_loss

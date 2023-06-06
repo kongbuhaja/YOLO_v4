@@ -151,7 +151,7 @@ def main():
                 max_mAP = mAP
                 train_utils.save_model(model, epoch, mAP, valid_loss_, MAP_CHECKPOINTS_DIR)
 
-       
+       strategy.
 if __name__ == '__main__':
     preset()
     main()

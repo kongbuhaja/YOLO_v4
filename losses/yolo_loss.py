@@ -9,7 +9,7 @@ def v4_loss(labels, preds, batch_size, anchors, strides, image_size, iou_thresho
     loc_loss, conf_loss, prob_loss = 0., 0., 0.
     for pred, label, anchor, stride in zip(preds, labels, anchors, strides):
         pred_xy = tf.sigmoid(pred[..., :2]) + anchor[..., :2]
-        pred_wh = tf.exp(pred[..., 2:4]) * anchor[..., 2:4]
+        pred_wh = tf.maximum(tf.exp(pred[..., 2:4]), inf) * anchor[..., 2:4]
         pred_xywh = tf.concat([pred_xy, pred_wh], -1) * stride
         pred_conf = tf.sigmoid(pred[..., 4:5])
         pred_prob = tf.sigmoid(pred[..., 5:])

@@ -8,17 +8,14 @@ def bbox_iou(bbox1, bbox2, xywh=True, iou_type='iou', eps=EPS, inf=INF, image_si
         area2 = tf.reduce_prod(bbox2[..., 2:], -1)
         bbox1 = tf.concat([bbox1[..., :2] - bbox1[..., 2:] * 0.5, bbox1[..., :2] + bbox1[..., 2:] * 0.5], -1)
         bbox2 = tf.concat([bbox2[..., :2] - bbox2[..., 2:] * 0.5, bbox2[..., :2] + bbox2[..., 2:] * 0.5], -1)
-        bbox1 = tf.minimum(tf.maximum(bbox1, 0.), tf.cast(image_size, tf.float32))
-        bbox2 = tf.minimum(tf.maximum(bbox2, 0.), tf.cast(image_size, tf.float32))
     else:
         area1 = tf.reduce_prod(bbox1[..., 2:] - bbox1[..., :2], -1)
         area2 = tf.reduce_prod(bbox2[..., 2:] - bbox2[..., :2], -1)
-    
+
     Left_Top = tf.maximum(bbox1[..., :2], bbox2[..., :2])
     Right_Bottom = tf.minimum(bbox1[..., 2:], bbox2[..., 2:])
 
-    inter_section = tf.maximum(Right_Bottom - Left_Top, 0.0)
-    inter_area = tf.reduce_prod(inter_section, -1)
+    inter_area = tf.reduce_prod(tf.maximum(Right_Bottom - Left_Top, 0.0), -1)
     union_area = tf.maximum(area1 + area2 - inter_area, eps)
 
     iou = inter_area / union_area
@@ -36,6 +33,7 @@ def bbox_iou(bbox1, bbox2, xywh=True, iou_type='iou', eps=EPS, inf=INF, image_si
             center_xy2 = (bbox2[..., :2] + bbox2[..., 2:]) * 0.5
             p_square = tf.reduce_sum(tf.minimum(tf.square(center_xy1 - center_xy2), inf), -1)
             c_square = tf.reduce_sum(tf.minimum(tf.maximum(tf.square(c_Right_Bottom - c_Left_Top), eps), inf), -1)
+
             if iou_type == 'diou':
                 diou = iou - p_square/c_square
                 return diou
@@ -45,7 +43,7 @@ def bbox_iou(bbox1, bbox2, xywh=True, iou_type='iou', eps=EPS, inf=INF, image_si
             w2 = bbox2[..., 2] - bbox2[..., 0]
             h2 = tf.maximum(bbox2[..., 3] - bbox2[..., 1], eps)
 
-            v = 4/tf.square(np.pi) * tf.square(tf.minimum(tf.maximum(tf.math.atan(w1/h1) - tf.math.atan(w2/h2), eps), inf))
+            v = 4/tf.square(np.pi) * tf.square(tf.math.atan(w1/h1) - tf.math.atan(w2/h2))
             alpha = v/tf.maximum((1.0 - iou + v), eps)
             ciou = iou - p_square/c_square - alpha*v
             return ciou
