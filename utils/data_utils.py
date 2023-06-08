@@ -64,10 +64,9 @@ class DataLoader():
     
     @tf.function
     def tf_labels_to_grids(self, image, labels, use_label):
-        grids, i = self.labels_to_grids(labels)
+        grids = self.labels_to_grids(labels)
         if use_label:
-            # return image, *grids, labels
-            return image, *grids, labels, i
+            return image, *grids, labels
         return image, *grids
         
     @tf.function
@@ -126,7 +125,8 @@ class DataLoader():
         anchor_wh = [tf.reshape(anchor[..., 2:], [-1,2]) for anchor in self.anchors]
 
         center_anchors = tf.concat([tf.concat([anchor_xy[i] + 0.5, anchor_wh[i]], -1) * self.strides[i] for i in range(self.len_anchors)], 0)
-        base_anchor_xy = tf.concat([tf.concat([anchor_xy[i], anchor_wh[i]], -1) * self.strides[i] for i in range(self.len_anchors)], 0)
+        # base_anchor_xy = tf.concat([tf.concat([anchor_xy[i], anchor_wh[i]], -1) * self.strides[i] for i in range(self.len_anchors)], 0)
+        base_anchor_xy = tf.concat([tf.concat([anchor_xy[i]], -1) * self.strides[i] for i in range(self.len_anchors)], 0)
         ious = bbox_utils.bbox_iou(center_anchors[:, None], labels[:, None, ..., :4])
 
         # assign maximum label
@@ -140,15 +140,16 @@ class DataLoader():
         joined_ious = tf.where(tf.cast(minimum_positive_ious, tf.bool), minimum_positive_ious, maximum_positive_ious)
         joined_positive_mask = tf.cast(tf.reduce_any(tf.cast(joined_ious, tf.bool), -1, keepdims=True), tf.float32)
 
-        assigned_labels = tf.concat([tf.tile(base_anchor_xy[None], [self.batch_size, 1,1]), tf.gather(tf.concat([ conf, onehot], -1), tf.argmax(joined_ious, -1), batch_dims=1) * joined_positive_mask], -1)
-        
+        # assigned_labels = tf.concat([tf.tile(base_anchor_xy[None], [self.batch_size, 1,1]), tf.gather(tf.concat([ conf, onehot], -1), tf.argmax(joined_ious, -1), batch_dims=1) * joined_positive_mask], -1)
+        assigned_labels = tf.concat([tf.tile(base_anchor_xy[None], [self.batch_size, 1,1]), tf.gather(tf.concat([wh, conf, onehot], -1), tf.argmax(joined_ious, -1), batch_dims=1) * joined_positive_mask], -1)
+
         for i in range(self.len_anchors):
             scale = self.scales[i]
             start = 0 if i==0 else tf.reduce_sum((self.image_size//self.strides[:i])**2 * self.len_anchors)
             end = start + (scale)**2 * self.len_anchors
             grids += [tf.reshape(assigned_labels[:, start:end], [self.batch_size, scale, scale, self.len_anchors, -1])]
 
-        return grids, joined_ious
+        return grids
     
 def get_padded_shapes():
     return [None, None, None], [MAX_BBOXES, None]

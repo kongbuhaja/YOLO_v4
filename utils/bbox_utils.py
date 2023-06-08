@@ -3,11 +3,11 @@ import numpy as np
 from config import EPS, INF, IMAGE_SIZE
 
 def bbox_iou(bbox1, bbox2, xywh=True, iou_type='iou', eps=EPS, inf=INF, image_size=IMAGE_SIZE):
-    if xywh:
-        area1 = tf.reduce_prod(bbox1[..., 2:], -1)
-        area2 = tf.reduce_prod(bbox2[..., 2:], -1)
-        bbox1 = tf.concat([bbox1[..., :2] - bbox1[..., 2:] * 0.5, bbox1[..., :2] + bbox1[..., 2:] * 0.5], -1)
-        bbox2 = tf.concat([bbox2[..., :2] - bbox2[..., 2:] * 0.5, bbox2[..., :2] + bbox2[..., 2:] * 0.5], -1)
+    # if xywh:
+    #     area1 = tf.reduce_prod(bbox1[..., 2:], -1)
+    #     area2 = tf.reduce_prod(bbox2[..., 2:], -1)
+    #     bbox1 = tf.concat([bbox1[..., :2] - bbox1[..., 2:] * 0.5, bbox1[..., :2] + bbox1[..., 2:] * 0.5], -1)
+    #     bbox2 = tf.concat([bbox2[..., :2] - bbox2[..., 2:] * 0.5, bbox2[..., :2] + bbox2[..., 2:] * 0.5], -1)
     # else:
     #     area1 = tf.reduce_prod(bbox1[..., 2:] - bbox1[..., :2], -1)
     #     area2 = tf.reduce_prod(bbox2[..., 2:] - bbox2[..., :2], -1)
