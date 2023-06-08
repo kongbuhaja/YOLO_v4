@@ -125,5 +125,5 @@ def main():
 
        
 if __name__ == '__main__':
-    preset()
+    preset(1)
     main()

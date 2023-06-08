@@ -4,18 +4,18 @@ from utils import bbox_utils
 
 def prediction_to_bbox(grids, anchors, batch_size=BATCH_SIZE, strides=STRIDES, num_classes=NUM_CLASSES, image_size=IMAGE_SIZE):
     bboxes = tf.zeros((batch_size, 0, 4))
-    scores = tf.zeros((batch_size, 0))
-    classes = tf.zeros((batch_size, 0))
+    scores = tf.zeros((batch_size, 0, 1))
+    classes = tf.zeros((batch_size, 0, 1))
     for grid, anchor, stride in zip(grids, anchors, strides):
         grid = tf.reshape(grid, [batch_size, -1, 5+num_classes])
 
         xy = tf.sigmoid(grid[..., :2]) + anchor[..., :2]
         wh = tf.exp(grid[..., 2:4]) * anchor[..., 2:4]
-        score = tf.sigmoid(grid[..., 4])
+        score = tf.sigmoid(grid[..., 4:5])
         probs = tf.sigmoid(grid[..., 5:])
 
-        max_prob_id = tf.cast(tf.argmax(probs, -1), tf.float32)
-        max_prob = tf.reduce_max(probs, -1)
+        max_prob_id = tf.cast(tf.argmax(probs, -1)[..., None], tf.float32)
+        max_prob = tf.reduce_max(probs, -1)[..., None]
 
         bboxes = tf.concat([bboxes, tf.concat([xy, wh], -1) * stride], 1)
         scores = tf.concat([scores, score * max_prob], 1)
@@ -24,7 +24,7 @@ def prediction_to_bbox(grids, anchors, batch_size=BATCH_SIZE, strides=STRIDES, n
     bboxes = bbox_utils.xywh_to_xyxy(bboxes)
     bboxes = tf.minimum(tf.maximum(0., bboxes), image_size)
 
-    return tf.concat([bboxes, scores[..., None], classes[..., None]], -1)
+    return tf.concat([bboxes, scores, classes], -1)
 
 def NMS(preds, score_threshold=SCORE_THRESHOLD, iou_threshold=IOU_THRESHOLD, sigma=SIGMA, method=NMS_TYPE):
     NMS_preds = tf.zeros((0, 6))
@@ -40,7 +40,7 @@ def NMS(preds, score_threshold=SCORE_THRESHOLD, iou_threshold=IOU_THRESHOLD, sig
 
             targets = tf.concat([targets[:max_index], targets[max_index+1:]], 0)
             
-            ious = bbox_utils.bbox_iou(max_target[..., :4], targets[..., :4], xywh=False, iou_type='diou')
+            ious = bbox_utils.bbox_iou(max_target[..., :4], targets[..., :4], xywh=False, iou_type='iou')
             if method == 'normal':
                 target_scores = tf.where(ious > iou_threshold, 0, targets[..., 4])
             elif method == 'soft_normal':

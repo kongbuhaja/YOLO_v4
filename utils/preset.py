@@ -2,15 +2,14 @@ import os
 import tensorflow as tf
 from config import *
 
-def os_preset():
+def os_preset(gpus):
     # os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     # if GPUS==1:
     #     os.environ['CUDA_VISIBLE_DEVICES'] = str(GPUS)
     #     # os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
     # else:
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-    os.environ['CUDA_VISIBLE_DEVICES'] = ''.join([str(i)+', ' for i in range(GPUS)])
-    # os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+    os.environ['CUDA_VISIBLE_DEVICES'] = ''.join([str(i)+', ' for i in range(gpus)])
     os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 def tf_preset():
@@ -43,8 +42,8 @@ def output_preset():
     if not os.path.exists(OUTPUT_DIR + 'video/'):
         os.makedirs(OUTPUT_DIR + 'video/')
 
-def preset():
-    os_preset()
+def preset(gpus=GPUS):
+    os_preset(gpus)
     tf_preset()
     checkpoint_preset()
     log_preset()

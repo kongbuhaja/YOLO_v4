@@ -9,8 +9,8 @@ import numpy as np
 def main():
     anchors = list(map(lambda x: tf.reshape(x, [-1,4]), anchor_utils.get_anchors_xywh(ANCHORS, STRIDES, IMAGE_SIZE)))
     dataloader = data_utils.DataLoader(batch_size=BATCH_SIZE)
-    test_dataset = dataloader('train', use_label=True)
-    test_dataset_legnth = int(dataloader.length('train')//BATCH_SIZE)
+    test_dataset = dataloader('val', use_label=True)
+    test_dataset_legnth = int(dataloader.length('val')//BATCH_SIZE)
     
     model, _, _, _ = train_utils.get_model(load_checkpoints=True)
     
