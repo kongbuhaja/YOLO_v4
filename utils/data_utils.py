@@ -114,11 +114,19 @@ class DataLoader():
         return grids
     
     @tf.function
+    def onehot_label(self, prob, smooth=True, alpha=0.1):
+        onehot = tf.one_hot(tf.cast(prob, dtype=tf.int32), self.num_classes)
+        if smooth:
+            return onehot * (1. - alpha) + alpha/self.num_classes
+        return onehot
+
+    @tf.function
     def labels_to_grids(self, labels):
         # return tf.zeros((self.batch_size, 52, 52, 3, 85)), tf.zeros((self.batch_size, 26, 26, 3, 85)), tf.zeros((self.batch_size, 13, 13, 3, 85))
         wh = labels[..., 2:4]
         conf = labels[..., 4:5]
-        onehot = tf.where(tf.cast(conf, tf.bool), tf.one_hot(tf.cast(labels[..., 5], dtype=tf.int32), NUM_CLASSES), 0.)
+
+        onehot = conf * self.onehot_label(labels[..., 5], smooth=True)
 
         grids = []
         anchor_xy = [tf.reshape(anchor[..., :2], [-1,2]) for anchor in self.anchors]

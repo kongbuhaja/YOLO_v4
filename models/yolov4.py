@@ -63,5 +63,5 @@ class YOLO(Model):
     def loss(self, labels, preds, batch_size):
         return yolo_loss.v4_loss(labels, preds, batch_size, self.anchors, self.strides, self.image_size,
                                  self.iou_threshold, self.inf, self.eps)
-        # return yolo_loss.v4_loss(labels, preds, batch_size, self.anchors, [1.,1.,1.], self.scales,
-        #                          self.iou_threshold, self.inf, self.eps)
+        # return yolo_loss.v3_loss(labels, preds, batch_size, self.anchors, self.strides, self.iou_threshold,
+        #                          self.inf, self.eps)

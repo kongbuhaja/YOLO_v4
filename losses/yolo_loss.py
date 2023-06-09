@@ -38,13 +38,14 @@ def v3_loss(labels, preds, batch_size, anchors, strides, iou_threshold, inf, eps
         pred_conf = tf.sigmoid(pred[..., 4:5])
         pred_prob = tf.sigmoid(pred[..., 5:])
 
-        label_xy = label[..., :2] - anchor[..., :2]
-        label_wh = tf.math.log(tf.maximum(label[..., 2:4] / anchor[..., 2:], eps))
+        label_xy = label[..., :2] - anchor[..., :2] * stride
+        label_wh = tf.math.log(tf.maximum(label[..., 2:4] / anchor[..., 2:] / stride, eps))
         label_xywh = tf.concat([label_xy, label_wh], -1)
 
-        loc_loss += v3_loc_loss(pred_xywh, label_xywh, label[..., 4:5], inf, eps, coord)
-        conf_loss += v3_conf_loss(pred_xywh, pred_conf, label_xywh, labels[..., 4:5], iou_threshold, inf, eps, noobj)
-        prob_loss += v3_prob_loss(pred_prob, label[..., 5:], inf, eps)
+        loc_loss += v3_loc_loss(pred_xywh, label_xywh, label[..., 4:5], inf, coord)
+        a = v3_conf_loss(pred_xywh, pred_conf, label_xywh, label[..., 4:5], iou_threshold, inf, eps, noobj)
+        conf_loss += v3_conf_loss(pred_xywh, pred_conf, label_xywh, label[..., 4:5], iou_threshold, inf, eps, noobj)
+        prob_loss += v3_prob_loss(pred_prob, label[..., 5:], label[..., 4:5], inf, eps)
             
     loc_loss = tf.reduce_sum(loc_loss) / batch_size
     conf_loss = tf.reduce_sum(conf_loss) / batch_size
