@@ -1,11 +1,13 @@
 from config import *
 from utils import io_utils
 import math
+import tensorflow as tf
 
 class warmup_lr_scheduler():
     def __init__(self, warmup_max_step):
         self.warmup_max_step = warmup_max_step
 
+    @tf.function
     def __call__(self, warmup_step, init_lr):
         lr = init_lr / self.warmup_max_step * (warmup_step + 1)
         return lr
@@ -15,6 +17,7 @@ class step_lr_scheduler():
         self.init_lr = init_lr
         self.step_per_epoch = step_per_epoch
     
+    @tf.function
     def __call__(self, step):
         epoch = (step + 1) / self.step_per_epoch
         if epoch < 200:
@@ -35,6 +38,7 @@ class poly_lr_scheduler():
         self.max_step = max_step
         self.power = power
     
+    @tf.function
     def __call__(self, step):
         lr = self.init_lr * (1 - (step/(self.max_step)))**self.power
         return lr
@@ -48,6 +52,7 @@ class cosine_annealing_lr_scheduler():
         self.csum = 0
         self.min_lr = min_lr
 
+    @tf.function
     def __call__(self, step):
         T_cur = step - self.csum
         while(T_cur >= self.T_max):
@@ -74,6 +79,7 @@ class LR_scheduler():
             elif self.lr_type == 'poly':
                 self.lr_scheduler = poly_lr_scheduler(self.init_lr, self.max_step, POWER)
 
+    @tf.function
     def __call__(self, step, warmup_step):
         lr = self.lr_scheduler(step - self.warmup_max_step)
         if warmup_step < self.warmup_max_step:

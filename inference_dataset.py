@@ -40,8 +40,8 @@ def main():
             NMS_preds = post_processing.NMS(processed_preds).numpy()
             labels = bbox_utils.extract_real_labels(labels).numpy()
             if DRAW:
-                pred = draw_utils.draw_labels(image.copy(), NMS_preds)
-                origin = draw_utils.draw_labels(image.copy(), labels)
+                pred = draw_utils.draw_labels(image.copy(), NMS_preds, xywh=False)
+                origin = draw_utils.draw_labels(image.copy(), labels, xywh=False)
                 output = np.concatenate([origin, pred], 1)
                 draw_utils.show_and_save_image(output, just_save=True)
 

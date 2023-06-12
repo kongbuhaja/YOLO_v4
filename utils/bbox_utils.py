@@ -15,8 +15,8 @@ def bbox_iou(bbox1, bbox2, xywh=True, iou_type='iou', eps=EPS, inf=INF, image_si
     if xywh:
         bbox1 = tf.concat([bbox1[..., :2] - bbox1[..., 2:] * 0.5, bbox1[..., :2] + bbox1[..., 2:] * 0.5], -1)
         bbox2 = tf.concat([bbox2[..., :2] - bbox2[..., 2:] * 0.5, bbox2[..., :2] + bbox2[..., 2:] * 0.5], -1)
-    bbox1 = tf.minimum(tf.maximum(bbox1, 0.0), image_size)
-    bbox2 = tf.minimum(tf.maximum(bbox2, 0.0), image_size)
+    # bbox1 = tf.minimum(tf.maximum(bbox1, 0.0), image_size)
+    # bbox2 = tf.minimum(tf.maximum(bbox2, 0.0), image_size)
     area1 = tf.reduce_prod(bbox1[..., 2:] - bbox1[..., :2], -1)
     area2 = tf.reduce_prod(bbox2[..., 2:] - bbox2[..., :2], -1)
 
@@ -60,13 +60,13 @@ def bbox_iou(bbox1, bbox2, xywh=True, iou_type='iou', eps=EPS, inf=INF, image_si
 def xyxy_to_xywh(boxes, with_label=False):
     labels = tf.concat([(boxes[..., 0:2] + boxes[..., 2:4])*0.5, boxes[..., 2:4] - boxes[..., 0:2]],-1)
     if with_label:
-        labels = tf.concat([labels, boxes[..., 4:5]], -1)
+        labels = tf.concat([labels, boxes[..., 4:]], -1)
     return labels
 
 def xywh_to_xyxy(boxes, with_label=False):
     labels = tf.concat([boxes[..., :2] - boxes[..., 2:4] * 0.5 , boxes[..., :2] + boxes[..., 2:4] * 0.5], -1)
     if with_label:
-        labels = tf.concat([labels, boxes[..., 4:5]], -1)
+        labels = tf.concat([labels, boxes[..., 4:]], -1)
     return labels
 
 def coco_to_xyxy(boxes):
