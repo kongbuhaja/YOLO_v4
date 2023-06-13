@@ -79,5 +79,5 @@ class YOLO(Model):
         return s_grid, m_grid, l_grid
     @tf.function
     def loss(self, labels, preds, batch_size):
-        return yolo_loss.v3_loss(labels, preds, batch_size, self.anchors, self.strides, self.iou_threshold,
-                                 self.inf, self.eps)
+        return self.loss_metric(labels, preds, batch_size, self.anchors, self.strides, self.image_size,
+                                self.iou_threshold, self.inf, self.eps)
