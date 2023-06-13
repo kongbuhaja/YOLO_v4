@@ -48,7 +48,7 @@ class YOLO(Model):
     def call(self, input, training=False):
         small_branch, medium_branch, large_branch = self.backbone(input, training)
 
-        large_branch = self.spp_block(large_branch)
+        large_branch = self.spp_block(large_branch, training)
         medium_branch = self.large_upsample_layer(medium_branch, large_branch, training)
         small_branch = self.medium_upsample_layer(small_branch, medium_branch, training)
 

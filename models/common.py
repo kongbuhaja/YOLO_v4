@@ -19,7 +19,7 @@ class Mish(Layer):
         return input * tf.math.tanh(tf.math.softplus(input))
 
 class DarknetConv(Layer):
-    def __init__(self, units, kernel_size, strides=1, kernel_initializer=glorot, activate='LeakyReLU', bn=True, **kwargs):
+    def __init__(self, units, kernel_size, strides=1, padding='same', kernel_initializer=glorot, activate='LeakyReLU', bn=True, **kwargs):
         super().__init__(**kwargs)
         self.units = units
         self.kernel_size = kernel_size
@@ -27,7 +27,7 @@ class DarknetConv(Layer):
         self.kernel_initializer = kernel_initializer
         self.activate = activate
         self.bn = bn
-        self.padding = 'same'
+        self.padding = padding
         
         self.conv = Conv2D(self.units, self.kernel_size, padding=self.padding, strides=self.strides,
                            use_bias=not self.bn, kernel_regularizer=l2(0.0005),
@@ -97,10 +97,12 @@ class CSPDarknetResidualBlock(Layer):
         self.kernel_initializer = kernel_initializer
 
         self.pre_conv = DarknetConv(self.units[0], 3, 2, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        
         self.short_cut_conv = DarknetConv(self.units[0], 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
-
         self.conv = DarknetConv(self.units[0], 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
+
         self.res_blocks = [DarknetResidual(self.units, activate=self.activate, kernel_initializer=self.kernel_initializer) for _ in range(self.resblock_num)]
+        
         self.post_conv = DarknetConv(self.units[0], 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
 
         self.concat_conv = DarknetConv(self.units[1] * 2, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
@@ -124,9 +126,6 @@ class CSPDarknetResidualBlock(Layer):
 class SPP(Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.max_pool1 = MaxPool2D(13, 1, 'same')
-        self.max_pool2 = MaxPool2D(9, 1, 'same')
-        self.max_pool3 = MaxPool2D(5, 1, 'same')
 
     def call(self, input):
         pool1 = MaxPool2D(13, 1, 'same')(input)
@@ -151,7 +150,7 @@ class SPPBlock(Layer):
         self.post_conv2 = DarknetConv(1024, 3, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         self.post_conv3 = DarknetConv(512, 1, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
 
-    def call(self, input, training):
+    def call(self, input, training=False):
         x = self.pre_conv1(input, training)
         x = self.pre_conv2(x, training)
         x = self.pre_conv3(x, training)
@@ -196,12 +195,13 @@ class UpsampleConcat(Layer):
         self.conv1 = DarknetConv(self.unit, 1, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         self.conv2 = DarknetConv(self.unit, 1, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         
+        self.upsample = DarknetUpsample()
         self.concat_conv = ConcatConv(self.unit, kernel_initializer=self.kernel_initializer)
     
     def call(self, branch1, branch2, training=False):
         branch1 = self.conv1(branch1, training)
         branch2 = self.conv2(branch2, training)
-        branch2 = DarknetUpsample()(branch2)       
+        branch2 = self.upsample(branch2)       
 
         x = self.concat_conv(branch1, branch2, training)
 
