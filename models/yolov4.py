@@ -45,8 +45,6 @@ class YOLO(Model):
 
         self.large_grid_layer = GridOut(1024, self.scales[2], self.num_anchors, self.num_classes, kernel_initializer=self.kernel_initializer)
 
-        print('Model: YOLOv4')
-
     def call(self, input, training=False):
         small_branch, medium_branch, large_branch = self.backbone(input, training)
 

@@ -50,8 +50,6 @@ class YOLO(Model):
         
         self.small_concat_layer = ConcatConv(128, kernel_initializer=self.kernel_initializer)
         self.small_grid_layer = GridOut(256, self.scales[0], self.num_anchors, self.num_classes, kernel_initializer=self.kernel_initializer)
-
-        print('Model: YOLOv3')
     
     def call(self, input, training=False):
         small_branch, medium_branch, large_branch = self.darknet53(input, training)

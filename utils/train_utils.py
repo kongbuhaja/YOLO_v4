@@ -102,6 +102,8 @@ def get_model(load_checkpoints=LOAD_CHECKPOINTS):
         from models.yolov3 import YOLO
     elif MODEL_TYPE == 'YOLOv3_tiny':
         from models.yolov3_tiny import YOLO
+    print(f'Model: {MODEL_TYPE}')
+    print(f'Loss Metric: {LOSS_METRIC}')
     
     if load_checkpoints:
         return load_model(YOLO(), CHECKPOINTS)
