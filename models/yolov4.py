@@ -24,6 +24,11 @@ class YOLO(Model):
         self.kernel_initializer = kernel_initializer
         self.eps = eps
         self.inf = inf
+        
+        if LOSS_METRIC == 'YOLOv4Loss':
+            self.loss_metric = yolo_loss.v4_loss
+        elif LOSS_METRIC == 'YOLOv3Loss':
+            self.loss_metric = yolo_loss.v3_loss
 
         self.backbone = CSPDarknet53(kernel_initializer = self.kernel_initializer)
 
@@ -61,7 +66,5 @@ class YOLO(Model):
     
     @tf.function
     def loss(self, labels, preds, batch_size):
-        return yolo_loss.v4_loss(labels, preds, batch_size, self.anchors, self.strides, self.image_size,
-                                 self.iou_threshold, self.inf, self.eps)
-        # return yolo_loss.v3_loss(labels, preds, batch_size, self.anchors, self.strides, self.iou_threshold,
-        #                          self.inf, self.eps)
+        return self.loss_metric(labels, preds, batch_size, self.anchors, self.strides, self.image_size,
+                                self.iou_threshold, self.inf, self.eps)

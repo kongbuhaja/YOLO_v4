@@ -15,14 +15,19 @@ class YOLO(Model):
                  iou_threshold=IOU_THRESHOLD, num_anchors=NUM_ANCHORS, eps=EPS, inf=INF, kernel_initializer=glorot, **kwargs):
         super().__init__(**kwargs)
         self.num_classes = num_classes
-        self.strides = np.array(strides)
+        self.strides = strides
         self.anchors = anchor_utils.get_anchors_xywh(anchors, self.strides, image_size)
-        self.scales = image_size//self.strides
+        self.scales = image_size//np.array(self.strides)
         self.iou_threshold = iou_threshold
         self.num_anchors = num_anchors
+        self.kernel_initializer = kernel_initializer
         self.eps = eps
         self.inf = inf
-        self.kernel_initializer = kernel_initializer
+
+        if LOSS_METRIC == 'YOLOv4Loss':
+            self.loss_metric = yolo_loss.v4_loss
+        elif LOSS_METRIC == 'YOLOv3Loss':
+            self.loss_metric = yolo_loss.v3_loss
 
         self.darknet53 = Darknet53(kernel_initializer=self.kernel_initializer)
         
@@ -73,5 +78,6 @@ class YOLO(Model):
 
         return s_grid, m_grid, l_grid
     @tf.function
-    def loss(self, labels, preds):
-        return yolo_loss.v3_loss(labels, preds, self.anchors, self.iou_threshold, self.inf, self.eps)
+    def loss(self, labels, preds, batch_size):
+        return yolo_loss.v3_loss(labels, preds, batch_size, self.anchors, self.strides, self.iou_threshold,
+                                 self.inf, self.eps)

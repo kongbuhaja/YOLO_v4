@@ -9,8 +9,8 @@ def main():
     dataloader = data_utils.DataLoader()
     train_dataset = dataloader('train')
     valid_dataset = dataloader('val', use_label=True)
-    train_dataset_length = int(tf.math.ceil(dataloader.length('train')/BATCH_SIZE))
-    valid_dataset_length = int(tf.math.ceil(dataloader.length('val')/BATCH_SIZE))
+    train_dataset_length = dataloader.length('train') // GLOBAL_BATCH_SIZE
+    valid_dataset_length = dataloader.length('val') // GLOBAL_BATCH_SIZE
 
     model, start_epoch, max_mAP, max_loss = train_utils.get_model()
     train_max_loss = valid_max_loss = max_loss
@@ -46,9 +46,6 @@ def main():
                 train_loss = model.loss(batch_grids, preds, BATCH_SIZE)
                 gradients = train_tape.gradient(train_loss[3], model.trainable_variables)
                 optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-
-            for l in range(len(train_loss)):
-                train_loss[l] = tf.reduce_mean(train_loss[l])
 
             train_loc_loss += train_loss[0]
             train_conf_loss += train_loss[1]
@@ -90,10 +87,6 @@ def main():
                     NMS_preds = post_processing.NMS(processed_preds).numpy()
                     labels = bbox_utils.extract_real_labels(labels).numpy()
                     stats.update_stats(NMS_preds, labels)
-                
-
-                for l in range(len(valid_loss)):
-                    valid_loss[l] = tf.reduce_mean(valid_loss[l])
 
                 mAP50, mAP = stats.calculate_mAP()
                 

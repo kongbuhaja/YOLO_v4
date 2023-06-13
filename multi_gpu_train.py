@@ -9,9 +9,10 @@ def main():
 
     dataloader = data_utils.DataLoader()
     with strategy.scope():
-        model, start_epoch, max_mAP, max_loss = train_utils.get_model()
         train_dataset = strategy.experimental_distribute_dataset(dataloader('train'))
         valid_dataset = strategy.experimental_distribute_dataset(dataloader('val', use_label=True))
+        model, start_epoch, max_mAP, max_loss = train_utils.get_model()
+    
     train_dataset_length = dataloader.length('train') // GLOBAL_BATCH_SIZE
     valid_dataset_length = dataloader.length('val') // GLOBAL_BATCH_SIZE
 
@@ -34,6 +35,7 @@ def main():
 
     for epoch in range(start_epoch, EPOCHS + 1):
         with strategy.scope():
+            @tf.function
             def train_step(batch_images, batch_grids):
                 with tf.GradientTape() as train_tape:
                     preds = model(batch_images, True)
@@ -42,7 +44,7 @@ def main():
                     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
                 
                 return train_loss
-            
+            @tf.function
             def test_step(batch_images, batch_grids):
                 preds = model(batch_images)
                 valid_loss = model.loss(batch_grids, preds, GLOBAL_BATCH_SIZE)
