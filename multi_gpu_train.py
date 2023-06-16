@@ -32,44 +32,58 @@ def main():
     
     anchors = list(map(lambda x: tf.reshape(x, [-1,4]), anchor_utils.get_anchors_xywh(ANCHORS, STRIDES, IMAGE_SIZE)))
 
+    stats = eval_utils.stats()
 
-    for epoch in range(start_epoch, EPOCHS + 1):
-        with strategy.scope():
-            @tf.function
-            def train_step(batch_images, batch_grids):
-                with tf.GradientTape() as train_tape:
-                    preds = model(batch_images, True)
-                    train_loss = model.loss(batch_grids, preds, GLOBAL_BATCH_SIZE)
-                    gradients = train_tape.gradient(train_loss[3], model.trainable_variables)
-                    optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-                
-                return train_loss
-            @tf.function
-            def test_step(batch_images, batch_grids):
-                preds = model(batch_images)
-                valid_loss = model.loss(batch_grids, preds, GLOBAL_BATCH_SIZE)
-
-                batch_processed_preds = post_processing.prediction_to_bbox(preds, anchors)
-                
-                return valid_loss, batch_processed_preds
+    with strategy.scope():
+        @tf.function
+        def train_step(batch_images, batch_grids):
+            with tf.GradientTape() as train_tape:
+                preds = model(batch_images, True)
+                train_loss = model.loss(batch_grids, preds, GLOBAL_BATCH_SIZE)
+                gradients = train_tape.gradient(train_loss[3], model.trainable_variables)
+                optimizer.apply_gradients(zip(gradients, model.trainable_variables))
             
-            @tf.function
-            def distributed_train_step(batch_images, batch_grids):
-                per_replica_losses = strategy.run(train_step, args=(batch_images, batch_grids))
-                loss = strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None)
-
-                return loss
-            
-            @tf.function
-            def distributed_test_step(batch_images, batch_grids):
-                per_replica_losses, batch_processed_preds = strategy.run(test_step, args=(batch_images, batch_grids))
-                loss = strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None)          
-
-                return loss, batch_processed_preds
+            return train_loss
         
+        @tf.function
+        def test_step(batch_images, batch_grids):
+            preds = model(batch_images)
+            valid_loss = model.loss(batch_grids, preds, GLOBAL_BATCH_SIZE)
+
+            batch_processed_preds = post_processing.prediction_to_bbox(preds, anchors)
+            
+            return valid_loss, batch_processed_preds
+        
+        @tf.function
+        def distributed_train_step(batch_images, batch_grids):
+            per_replica_losses = strategy.run(train_step, args=(batch_images, batch_grids))
+            train_loss = strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None)
+
+            return train_loss
+        
+        @tf.function
+        def distributed_test_step(batch_images, batch_grids):
+            per_replica_losses, batch_processed_preds = strategy.run(test_step, args=(batch_images, batch_grids))
+            test_loss = strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None)          
+
+            return test_loss, batch_processed_preds
+        
+        def update_stats_step(batch_processed_preds, batch_labels):
+            for gpu in range(GPUS):
+                for batch in range(BATCH_SIZE):
+                    if GPUS==1:
+                        NMS_preds = post_processing.NMS(batch_processed_preds[batch])
+                        labels = bbox_utils.extract_real_labels(batch_labels[batch])
+                    else:
+                        NMS_preds = post_processing.NMS(batch_processed_preds.values[gpu][batch])
+                        labels = bbox_utils.extract_real_labels(batch_labels.values[gpu][batch])
+                    stats.update_stats(NMS_preds, labels)
+            
+            return stats.calculate_mAP()
+            
+    for epoch in range(start_epoch, EPOCHS + 1):       
         #train
         train_iter, train_loc_loss, train_conf_loss, train_prob_loss, train_total_loss = 0, 0., 0., 0., 0.
-        stats = eval_utils.stats()
             
         train_tqdm = tqdm.tqdm(train_dataset, total=train_dataset_length, desc=f'train epoch {epoch}/{EPOCHS}', ascii=' =', colour='red')
         for batch_data in train_tqdm:
@@ -106,6 +120,7 @@ def main():
                 
         # valid
         if epoch % EVAL_PER_EPOCHS == 0:
+            stats.init_stat()
             valid_iter, valid_loc_loss, valid_conf_loss, valid_prob_loss, valid_total_loss = 0, 0., 0., 0., 0.
             valid_tqdm = tqdm.tqdm(valid_dataset, total=valid_dataset_length, desc=f'valid epoch {epoch}/{EPOCHS}', ascii=' =', colour='blue')
             for batch_data in valid_tqdm:
@@ -113,19 +128,9 @@ def main():
                 batch_grids = batch_data[1:-1]
                 batch_labels = batch_data[-1]
 
-                valid_loss, preds = distributed_test_step(batch_images, batch_grids)
+                valid_loss, batch_processed_preds = distributed_test_step(batch_images, batch_grids)
                 
-                for gpu in range(GPUS):
-                    for batch in range(BATCH_SIZE):
-                        if GPUS==1:
-                            NMS_preds = post_processing.NMS(preds[batch]).numpy()
-                            labels = bbox_utils.extract_real_labels(batch_labels[batch]).numpy()
-                        else:
-                            NMS_preds = post_processing.NMS(preds.values[gpu][batch]).numpy()
-                            labels = bbox_utils.extract_real_labels(batch_labels.values[gpu][batch]).numpy()
-                        stats.update_stats(NMS_preds, labels)
-                
-                mAP50, mAP = stats.calculate_mAP()
+                mAP50, mAP = update_stats_step(batch_processed_preds, batch_labels)
                 
                 valid_loc_loss += valid_loss[0]
                 valid_conf_loss += valid_loss[1]
@@ -137,7 +142,8 @@ def main():
                 valid_loss_ = [valid_loc_loss / valid_iter, valid_conf_loss / valid_iter, 
                                valid_prob_loss / valid_iter, valid_total_loss / valid_iter]
 
-                tqdm_text = f'mAP50={mAP50:.3f}, mAP={mAP:.3f}, ' +\
+                tqdm_text = f'mAP50={mAP50:.4f}, ' +\
+                            f'mAP={mAP:.4f}, ' +\
                             f'total_loss={valid_loss_[3].numpy():.3f}, ' +\
                             f'loc_loss={valid_loss_[0].numpy():.3f}, ' +\
                             f'conf_loss={valid_loss_[1].numpy():.3f}, ' +\

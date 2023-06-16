@@ -15,6 +15,7 @@ class YOLO(Model):
                  iou_threshold=IOU_THRESHOLD, num_anchors=NUM_ANCHORS, eps=EPS, inf=INF, kernel_initializer=glorot, **kwargs):
         super().__init__(**kwargs)
         self.num_classes = num_classes
+        self.image_size = IMAGE_SIZE
         self.strides = strides
         self.anchors = anchor_utils.get_anchors_xywh(anchors, self.strides, image_size)
         self.scales = image_size//np.array(self.strides)

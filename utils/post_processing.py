@@ -40,7 +40,7 @@ def NMS(preds, score_threshold=SCORE_THRESHOLD, iou_threshold=IOU_THRESHOLD, sig
 
             targets = tf.concat([targets[:max_index], targets[max_index+1:]], 0)
             
-            ious = bbox_utils.bbox_iou(max_target[..., :4], targets[..., :4], xywh=False, iou_type='iou')
+            ious = bbox_utils.bbox_iou(max_target[..., :4], targets[..., :4], xywh=False, iou_type='diou')
             if method == 'normal':
                 target_scores = tf.where(ious > iou_threshold, 0, targets[..., 4])
             elif method == 'soft_normal':

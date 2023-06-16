@@ -16,7 +16,14 @@ class stats:
                 'fp': [[] for _ in range(len(self.iou_threshold))],
                 'scores':[],
             }
-        
+    
+    def init_stat(self):
+        for i in range(len(self.stats)):
+            self.stats[i]['total'] = 0
+            self.stats[i]['tp'] = [[] for _ in range(len(self.iou_threshold))]
+            self.stats[i]['fp'] = [[] for _ in range(len(self.iou_threshold))]
+            self.stats[i]['scores'] = []
+
 
     def update_stats(self, preds, gt_labels):      
         pred_bboxes = preds[..., :4]
@@ -27,15 +34,15 @@ class stats:
         gt_classes = gt_labels[..., 5]
 
         if not gt_labels.shape[0]:
-            for pred_class in pred_classes:
+            for pred_class in pred_classes.numpy().astype(np.int32):
                 for i in range(len(self.iou_threshold)):
                     self.stats[pred_class]['tp'][i] += [0]
                     self.stats[pred_class]['fp'][i] += [1]
             return
 
         u_classes, u_count = np.unique(gt_classes, return_counts=True)
-        for i, u_class, in enumerate(u_classes):
-            self.stats[int(u_class)]["total"] += u_count[i]
+        for i, u_class, in enumerate(u_classes.astype(np.int32)):
+            self.stats[u_class]["total"] += u_count[i]
 
         if not preds.shape[0]:
             return
