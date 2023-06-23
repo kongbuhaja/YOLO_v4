@@ -84,10 +84,11 @@ def load_model(model, checkpoints):
     try:
         model.load_weights(checkpoints)
         saved = io_utils.read_model_info()
-        return model, saved['epoch'], saved['mAP'], saved['total_loss']
+        print(f"succeed to load model| epoch:{saved['epoch']} mAP50:{saved['mAP50']} mAP:{saved['mAP']} total_loss:{saved['total_loss']}")
+        return model, saved['epoch'], saved['mAP50'], saved['mAP'], saved['total_loss']
     except:
         print('checkpoints is not exist. \nmake new model')
-        return model, 1, -1., INF
+        return model, 1, -1, -1., INF
 
 def get_model(load_checkpoints=LOAD_CHECKPOINTS):
     if MODEL_TYPE == 'YOLOv4':
@@ -102,12 +103,12 @@ def get_model(load_checkpoints=LOAD_CHECKPOINTS):
     if load_checkpoints:
         return load_model(YOLO(), CHECKPOINTS)
     print('make new model')
-    return YOLO(), 1, -1., INF
+    return YOLO(), 1, -1, -1., INF
 
-def save_model(model, epoch, mAP, loss, dir_path):
+def save_model(model, epoch, mAP50, mAP, loss, dir_path):
     checkpoints = dir_path + MODEL_TYPE
 
     model.save_weights(checkpoints)
-    io_utils.write_model_info(checkpoints, epoch, mAP, loss)
+    io_utils.write_model_info(checkpoints, epoch, mAP50, mAP, loss)
     if 'train' not in dir_path:
-        print(f'{dir_path} epoch:{epoch}, mAP:{mAP:.7f} best_model is saved')
+        print(f'{dir_path} epoch:{epoch}, mAP50:{mAP50:.7f}, mAP:{mAP:.7f} best_model is saved')

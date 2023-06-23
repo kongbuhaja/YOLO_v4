@@ -12,7 +12,7 @@ def main():
     test_dataset = dataloader('val', use_label=True)
     test_dataset_legnth = int(dataloader.length('val')//BATCH_SIZE)
     
-    model, _, _, _ = train_utils.get_model(load_checkpoints=True)
+    model, _, _, _, _ = train_utils.get_model(load_checkpoints=True)
     
     stats = eval_utils.stats()
     

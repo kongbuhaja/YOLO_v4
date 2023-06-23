@@ -1,9 +1,10 @@
 import tensorflow as tf
 from config import *
 
-def write_model_info(checkpoints, epoch, mAP, loss):
+def write_model_info(checkpoints, epoch, mAP50, mAP, loss):
     with open(checkpoints + '.info', 'w') as f:
         text = f'epoch:{epoch}\n' +\
+               f'mAP50:{mAP50}\n' +\
                f'mAP:{mAP}\n' +\
                f'total_loss:{loss[3]}\n' +\
                f'loc_loss:{loss[0]}\n' +\
@@ -33,7 +34,8 @@ def write_summary(writer, step, lr_or_mAP, loss, train=True):
             tf.summary.scalar('train_loss/total_loss', loss[3], step=step)
             
         else:
-            tf.summary.scalar("mAP", lr_or_mAP, step=step)
+            tf.summary.scalar("mAP50", lr_or_mAP[0], step=step)
+            tf.summary.scalar("mAP", lr_or_mAP[1], step=step)
             tf.summary.scalar("validate_loss/loc_loss", loss[0], step=step)
             tf.summary.scalar("validate_loss/conf_loss", loss[1], step=step)
             tf.summary.scalar("validate_loss/prob_loss", loss[2], step=step)

@@ -20,10 +20,10 @@ def bbox_iou(bbox1, bbox2, xywh=True, iou_type='iou', eps=EPS, inf=INF, image_si
     area1 = tf.reduce_prod(bbox1[..., 2:] - bbox1[..., :2], -1)
     area2 = tf.reduce_prod(bbox2[..., 2:] - bbox2[..., :2], -1)
 
-    Left_Top = tf.maximum(bbox1[..., :2], bbox2[..., :2])
-    Right_Bottom = tf.minimum(bbox1[..., 2:], bbox2[..., 2:])
+    i_Left_Top = tf.maximum(bbox1[..., :2], bbox2[..., :2])
+    i_Right_Bottom = tf.minimum(bbox1[..., 2:], bbox2[..., 2:])
 
-    inter_area = tf.reduce_prod(tf.maximum(Right_Bottom - Left_Top, 0.0), -1)
+    inter_area = tf.reduce_prod(tf.maximum(i_Right_Bottom - i_Left_Top, 0.0), -1)
     union_area = tf.maximum(area1 + area2 - inter_area, eps)
 
     iou = inter_area / union_area
@@ -39,8 +39,8 @@ def bbox_iou(bbox1, bbox2, xywh=True, iou_type='iou', eps=EPS, inf=INF, image_si
         elif iou_type in ['diou', 'ciou']:
             center_xy1 = (bbox1[..., :2] + bbox1[..., 2:]) * 0.5
             center_xy2 = (bbox2[..., :2] + bbox2[..., 2:]) * 0.5
-            p_square = tf.reduce_sum(tf.minimum(tf.square(center_xy1 - center_xy2), inf), -1)
-            c_square = tf.reduce_sum(tf.minimum(tf.maximum(tf.square(c_Right_Bottom - c_Left_Top), eps), inf), -1)
+            p_square = tf.reduce_sum(tf.square(center_xy2 - center_xy1), -1)
+            c_square = tf.maximum(tf.reduce_sum(tf.square(c_Right_Bottom - c_Left_Top), -1), eps)
 
             if iou_type == 'diou':
                 diou = iou - p_square/c_square
@@ -51,7 +51,7 @@ def bbox_iou(bbox1, bbox2, xywh=True, iou_type='iou', eps=EPS, inf=INF, image_si
             w2 = bbox2[..., 2] - bbox2[..., 0]
             h2 = tf.maximum(bbox2[..., 3] - bbox2[..., 1], eps)
 
-            v = 4/tf.square(np.pi) * tf.square(tf.math.atan(w1/h1) - tf.math.atan(w2/h2))
+            v = 4/tf.square(np.pi) * tf.square(tf.math.atan(w2/h2) - tf.math.atan(w1/h1))
             alpha = v/tf.maximum((1.0 - iou + v), eps)
             ciou = iou - p_square/c_square - alpha*v
             return ciou

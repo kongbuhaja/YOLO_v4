@@ -11,7 +11,7 @@ def main():
     with strategy.scope():
         train_dataset = strategy.experimental_distribute_dataset(dataloader('train'))
         valid_dataset = strategy.experimental_distribute_dataset(dataloader('val', use_label=True))
-        model, start_epoch, max_mAP, max_loss = train_utils.get_model()
+        model, start_epoch, max_mAP50, max_mAP, max_loss = train_utils.get_model()
     
     train_dataset_length = dataloader.length('train') // GLOBAL_BATCH_SIZE
     valid_dataset_length = dataloader.length('val') // GLOBAL_BATCH_SIZE
@@ -116,7 +116,7 @@ def main():
             
         if train_loss_[3] < train_max_loss:
             train_max_loss = train_loss_[3]
-            train_utils.save_model(model, epoch, 0., train_loss_, TRAIN_CHECKPOINTS_DIR)
+            train_utils.save_model(model, epoch, 0., 0., train_loss_, TRAIN_CHECKPOINTS_DIR)
                 
         # valid
         if epoch % EVAL_PER_EPOCHS == 0:
@@ -150,14 +150,16 @@ def main():
                             f'prob_loss={valid_loss_[2].numpy():.3f}'
                 valid_tqdm.set_postfix_str(tqdm_text)
             
-            io_utils.write_summary(val_writer, epoch, mAP, valid_loss_, False)
+            io_utils.write_summary(val_writer, epoch, [mAP50, mAP], valid_loss_, False)
             
             if valid_loss_[3] < valid_max_loss:
                 valid_max_loss = valid_loss_[3]
-                train_utils.save_model(model, epoch, mAP, valid_loss_, LOSS_CHECKPOINTS_DIR)
+                train_utils.save_model(model, epoch, mAP50, mAP, valid_loss_, LOSS_CHECKPOINTS_DIR)
+            if mAP50 > max_mAP50:
+                max_mAP50 = mAP50
             if mAP > max_mAP:
                 max_mAP = mAP
-                train_utils.save_model(model, epoch, mAP, valid_loss_, MAP_CHECKPOINTS_DIR)
+                train_utils.save_model(model, epoch, mAP50, mAP, valid_loss_, MAP_CHECKPOINTS_DIR)
 
 if __name__ == '__main__':
     preset()
