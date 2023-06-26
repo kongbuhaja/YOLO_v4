@@ -80,7 +80,7 @@ class Dataset(Base_Dataset):
                                 xmax = float(dim.text)
                             elif 'ymax' in dim.tag:
                                 ymax = float(dim.text)
-                        labels.append([xmin, ymin, xmax, ymax, label])
+                        labels.append([xmin, ymin, xmax, ymax, 1., label])
         if self.create_anchors:
             labels_ = np.array(labels)[:,:4]
             length = np.maximum(width, height)

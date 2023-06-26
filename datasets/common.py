@@ -127,7 +127,7 @@ def parse_tfrecord_fn(example):
     }
     example = tf.io.parse_single_example(example, feature_description)
     example['image'] = tf.io.decode_jpeg(example['image'], channels=3)
-    example['labels'] = tf.reshape(tf.sparse.to_dense(example['labels']), [-1, 5])
+    example['labels'] = tf.reshape(tf.sparse.to_dense(example['labels']), [-1, 6])
 
     return example['image'], example['labels'], example['width'], example['height']
         

@@ -33,13 +33,15 @@ class DataLoader():
 
         data = dataset.load(use_tfrecord)
         self._length[split] = dataset.length
+
+        data = data.map(self.tf_preprocessing, num_parallel_calls=-1)
         data = data.cache()
         
         if split == 'train':
             data = data.shuffle(buffer_size = min(self.length(split) * 3, 200000)) # ram memory limit
             data = data.map(aug_utils.tf_augmentation, num_parallel_calls=-1)
         
-        data = data.map(self.tf_preprocessing, num_parallel_calls=-1)
+        data = data.map(self.tf_resize_padding, num_parallel_calls=-1)
         data = data.padded_batch(self.batch_size, padded_shapes=get_padded_shapes(), padding_values=get_padding_values(), drop_remainder=True)
         
         # data = data.map(lambda x, y: self.py_labels_to_grids(x, y, use_label), num_parallel_calls=-1).prefetch(1)
@@ -57,10 +59,12 @@ class DataLoader():
     
     @tf.function
     def tf_preprocessing(self, image, labels, width, height):
+        return tf.cast(image, tf.float32)/255., labels, width, height
+    
+    @tf.function
+    def tf_resize_padding(self, image, labels, width, height):
         image, labels = aug_utils.tf_resize_padding(image, labels, width, height, self.image_size)
-        # labels = bbox_utils.xyxy_to_xywh(labels, True) 
-        labels = tf.concat([labels[..., :4], tf.where(tf.reduce_sum(labels[..., 2:4], -1, keepdims=True)==0, 0., 1.), labels[..., 4:5]], -1)
-        return tf.cast(image, tf.float32)/255., labels
+        return image, labels
     
     @tf.function
     def tf_labels_to_grids(self, image, labels, use_label):
