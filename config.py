@@ -1,5 +1,5 @@
 # hardware config
-GPUS = 4
+GPUS = 1
 
 # data config
 DTYPE = 'coco'
@@ -10,7 +10,7 @@ POSITIVE_IOU_THRESHOLD = 0.5
 
 # train config
 EPOCHS = 1000
-BATCH_SIZE = 4
+BATCH_SIZE = 16
 GLOBAL_BATCH_SIZE = BATCH_SIZE * GPUS
 LOSS_METRIC = 'YOLOv4Loss'
 LR = 1e-3

@@ -32,7 +32,7 @@ class Dataset(Base_Dataset):
         else:
             image_files = os.listdir(image_dir)
             for image_file in image_files:
-                self.data += [[image_dir + image_file, []]
+                self.data += [[image_dir + image_file, []]]
                 
         np.random.shuffle(self.data)
         print('Done!')

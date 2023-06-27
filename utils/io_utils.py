@@ -19,7 +19,7 @@ def read_model_info():
         for line in lines:
             key, value = line[:-1].split(':')
             if key == 'epoch':
-                saved_parameter[key] = int(value) + 1
+                saved_parameter[key] = int(value)
             else:
                 saved_parameter[key] = float(value)
     return saved_parameter
