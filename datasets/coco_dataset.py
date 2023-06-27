@@ -23,8 +23,8 @@ class Dataset(Base_Dataset):
                 break
             elif self.split in anno_file and 'instances' in anno_file:
                 break        
-        
-        parsed_data, normalized_wh = self.parse_annotation(anno_dir + anno_file)
+
+        parsed_data = self.parse_annotation(anno_dir + anno_file)
         
         for value in parsed_data.values():
             file_name = value['file_name']
@@ -36,11 +36,9 @@ class Dataset(Base_Dataset):
             else:
                 labels = value['labels']
             
-            self.data += [[image_dir + file_name, labels]]
+            self.data += [[image_dir + file_name, labels, value['width'], value['height']]]
         np.random.shuffle(self.data)
         print('Done!')
-               
-        return normalized_wh
 
     def load_directory(self, split):
         extracted_dir = './data/' + self.dtype + '/downloads/extracted/'
@@ -64,8 +62,7 @@ class Dataset(Base_Dataset):
     def parse_annotation(self, anno_path):
         data = {}
         categories = {}
-        normalized_wh = np.zeros((0,2))
-
+    
         with open(anno_path) as f:
             json_data = json.load(f)
             
@@ -74,19 +71,20 @@ class Dataset(Base_Dataset):
             
         for image in json_data['images']:
             data[image['id']] = {'file_name': image['file_name'],
-                                 'labels': []}
-            if self.create_anchors:
-                data[image['id']]['length'] = np.max([image['height'], image['width']])
+                                 'labels': [],
+                                 'width': float(image['width']),
+                                 'height': float(image['height'])}        
 
         for anno in json_data['annotations']:
             bbox = bbox_utils.coco_to_xyxy(np.array(anno['bbox']))
             data[anno['image_id']]['labels'] += [[*bbox, 1., float(LABELS.index(categories[anno['category_id']]))]]
                 
-        if self.create_anchors:
-            for value in data.values():
-                length = value['length']
-                labels_wh = np.array(value['labels'])[..., 2:4]/length
-                if(len(labels_wh)!=0):
-                    normalized_wh = np.concatenate([normalized_wh, labels_wh], 0)
+        # if self.create_anchors:
+        #     for value in data.values():
+        #         length = value['length']
+        #         labels_wh = np.array(value['labels'])[..., 2:4]/length
+        #         if(len(labels_wh)!=0):
+        #             normalized_wh = np.concatenate([normalized_wh, labels_wh], 0)
+        #     return data, normalized_wh
 
-        return data, normalized_wh
+        return data

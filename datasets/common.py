@@ -21,28 +21,37 @@ class Base_Dataset():
     def load(self, use_tfrecord):
         assert self.split in ['train', 'val', 'test'], 'Check your dataset type and split.'
         self.download_dataset()
+ 
         if self.create_anchors:
-            normalized_wh = self.read_files()
-            self.make_new_anchors(normalized_wh)
-            print('Anchors are changed. You need to restart file!')
-            print('Please restart train.py')
-            sys.exit()
+            self.read_files()
+            self.make_new_anchors()
+            print('Anchors are edited. Please restart train!')
+            sys.exit()# config 종속관계 확인해서 지워주기
+
         if use_tfrecord:
             filepath = f'./data/{self.dtype}/{self.split}.tfrecord'
             infopath = f'./data/{self.dtype}/{self.split}.txt'
             if os.path.exists(filepath):
                 print(f'{filepath} is exist')
             else:
-                normalized_wh = self.read_files()
+                if not self.create_anchors:
+                    self.read_files()
                 self.make_tfrecord(filepath, infopath)                
             data = self.read_tfrecord(filepath)
+            del self.data
         else:
-            normalized_wh = self.read_files()
+            if not self.create_anchors:
+                self.read_files()
             data = tf.data.Dataset.from_generator(self.generator, 
                                                   output_types=(tf.uint8, tf.float32, tf.float32, tf.float32),
-                                                  output_shapes=((None, None, 3), (None, 5), (), ()))
+                                                  output_shapes=((None, None, 3), (None, 6), (), ()))
         self.length = self.len(use_tfrecord)
+
         return data
+
+    def read_files(self):
+        # empty super method
+        pass
 
     def read_tfrecord(self, filepath):
         dataset =  tf.data.TFRecordDataset(filepath, num_parallel_reads=-1) \
@@ -50,9 +59,9 @@ class Base_Dataset():
         return dataset
     
     def generator(self):
-        for image_file, labels in self.data:
+        for image_file, labels, width, height in self.data:
             image = self.read_image(image_file)
-            labels = tf.constant([[0, 0, 0, 0, 0]], tf.float32) if len(labels)==0 else labels
+            labels = tf.constant([[0, 0, 0, 0, 0, 0]], tf.float32) if len(labels)==0 else labels
             height, width = image.shape[:2]
             yield image, labels, float(width), float(height)
     
@@ -62,7 +71,7 @@ class Base_Dataset():
 
         print(f'Start make {filepath}......      ', end='', flush=True)
         with tf.io.TFRecordWriter(filepath) as writer:
-            for image_file, labels in tqdm.tqdm(self.data):
+            for image_file, labels, width, height in tqdm.tqdm(self.data):
                 image = self.read_image(image_file)
                 height, width = image.shape[:2]
                 writer.write(_data_features(image, labels, float(width), float(height)))
@@ -99,8 +108,17 @@ class Base_Dataset():
                 
                 os.remove(out_dir + self.dtype + '.zip')
 
-    def make_new_anchors(self, normalized_wh):
+    def extract_normalized_wh(self):
+        normalized_wh = np.zeros((0, 2))
+        for image_file, labels, width, height in self.data:
+            normalized_wh = np.concatenate([normalized_wh, np.array(labels)[..., 2:4]/max(width, height)], 0)
+
+        return normalized_wh
+
+    def make_new_anchors(self):
         print(f'Start calulate anchors......      ', end='', flush=True)
+        normalized_wh = self.extract_normalized_wh()
+
         anchors = np.array(ANCHORS)
         new_anchors = anchor_utils.generate_anchors(normalized_wh, np.prod(anchors.shape[:-1]), IMAGE_SIZE, IMAGE_SIZE)
         io_utils.edit_config(str(ANCHORS), str(new_anchors.reshape(anchors.shape).tolist()))
@@ -115,7 +133,7 @@ class Base_Dataset():
             infopath = f'./data/{self.dtype}/{self.split}.txt'
             with open(infopath, 'r') as f:
                 lines = f.readlines()
-            return int(lines[0]) 
+            return int(lines[0])
         return len(self.data)
 
 def parse_tfrecord_fn(example):

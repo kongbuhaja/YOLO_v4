@@ -21,10 +21,8 @@ class Dataset(Base_Dataset):
         anno_files = os.listdir(anno_dir)
 
         for anno_file in anno_files:
-            image_file, labels, labels_wh = self.parse_annotation(anno_dir + anno_file)
-            self.data += [[image_dir + image_file, labels]]
-            if self.create_anchors:
-                normalized_wh = np.concatenate([normalized_wh, labels_wh], 0)
+            image_file, labels, width, height = self.parse_annotation(anno_dir + anno_file)
+            self.data += [[image_dir + image_file, labels, width, height]]
             
         np.random.shuffle(self.data)
         print('Done!')
@@ -46,7 +44,6 @@ class Dataset(Base_Dataset):
     def parse_annotation(self, anno_path):
         tree = ET.parse(anno_path)
         labels = []
-        labels_wh = np.zeros((0,2))
         
         for elem in tree.iter():
             if 'filename' in elem.tag:
@@ -70,11 +67,5 @@ class Dataset(Base_Dataset):
                             elif 'ymax' in dim.tag:
                                 ymax = float(dim.text)
                         labels.append([xmin, ymin, xmax, ymax, 1., label])
-        if self.create_anchors:
-            labels_ = np.array(labels)[:,:4]
-            length = np.maximum(width, height)
-            labels_w = (labels_[:,2:3] - labels_[:,0:1])/length
-            labels_h = (labels_[:,3:4] - labels_[:,1:2])/length
-            labels_wh = np.concatenate([labels_w, labels_h], -1)
             
-        return filename, labels, labels_wh
+        return filename, labels, width, height
