@@ -77,7 +77,7 @@ class Dataset(Base_Dataset):
 
         for anno in json_data['annotations']:
             bbox = bbox_utils.coco_to_xyxy(np.array(anno['bbox']))
-            data[anno['image_id']]['labels'] += [[*bbox, float(LABELS.index(categories[anno['category_id']]))]]
+            data[anno['image_id']]['labels'] += [[*bbox, 1.,float(LABELS.index(categories[anno['category_id']]))]]
                 
         # if self.create_anchors:
         #     for value in data.values():

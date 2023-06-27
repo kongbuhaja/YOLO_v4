@@ -34,18 +34,23 @@ class DataLoader():
         data = dataset.load(use_tfrecord)
         self._length[split] = dataset.length
 
-        data = data.map(self.tf_preprocessing, num_parallel_calls=-1)
         data = data.cache()
-        
+
         if split == 'train':
-            data = data.shuffle(buffer_size = min(self.length(split) * 3, 200000)) # ram memory limit
-            # data = data.map(aug_utils.tf_augmentation, num_parallel_calls=-1)
+            data = data.shuffle(buffer_size = min(self.length(split) * 3, 200000))
+            
+        # if you have enough ram move this line before data.cache(), it will be faster
+        data = data.map(self.tf_preprocessing, num_parallel_calls=-1) 
+
+        if split == 'train':
+            data = data.map(aug_utils.tf_augmentation, num_parallel_calls=-1)
+            data = data.map(self.tf_minmax, num_parallel_calls=-1)
         
-        data = data.map(self.tf_resize_padding, num_parallel_calls=-1)
+        data = data.map(lambda image, labels, width, height: aug_utils.tf_resize_padding(image, labels, width, height, self.image_size), num_parallel_calls=-1)
         data = data.padded_batch(self.batch_size, padded_shapes=get_padded_shapes(), padding_values=get_padding_values(), drop_remainder=True)
         
         # data = data.map(lambda x, y: self.py_labels_to_grids(x, y, use_label), num_parallel_calls=-1).prefetch(1)
-        data = data.map(lambda x, y: self.tf_labels_to_grids(x, y, use_label), num_parallel_calls=-1).prefetch(1)
+        data = data.map(lambda image, labels: self.tf_encode(image, labels, use_label), num_parallel_calls=-1).prefetch(1)
         return data
     
     def length(self, split):
@@ -59,17 +64,21 @@ class DataLoader():
     
     @tf.function
     def tf_preprocessing(self, image, labels, width, height):
-        labels = tf.concat([labels[..., :4], tf.ones_like(labels[..., 4:5]), labels[..., 4:5]], -1)
-        return tf.cast(image, tf.float32)/255., labels, width, height
+        image = tf.cast(image, tf.float32)/255.
+        return image, labels, width, height
+    
+    def tf_minmax(self, image, labels, width, height):
+        return tf.maximum(tf.minimum(image, 1.), 0), labels, width, height
     
     @tf.function
     def tf_resize_padding(self, image, labels, width, height):
         image, labels = aug_utils.tf_resize_padding(image, labels, width, height, self.image_size)
+
         return image, labels
     
     @tf.function
-    def tf_labels_to_grids(self, image, labels, use_label):
-        grids = self.labels_to_grids(labels)
+    def tf_encode(self, image, labels, use_label):
+        grids = self.encode(labels)
         if use_label:
             return image, *grids, labels
         return image, *grids
@@ -82,7 +91,7 @@ class DataLoader():
         return onehot
 
     @tf.function
-    def labels_to_grids(self, labels):
+    def encode(self, labels):
         labels = bbox_utils.xyxy_to_xywh(labels, True)
         wh = labels[..., 2:4]
         conf = labels[..., 4:5]
@@ -94,8 +103,7 @@ class DataLoader():
         anchor_wh = [tf.reshape(anchor[..., 2:], [-1,2]) for anchor in self.anchors]
 
         center_anchors = tf.concat([tf.concat([anchor_xy[i] + 0.5, anchor_wh[i]], -1) * self.strides[i] for i in range(self.len_anchors)], 0)
-        # base_anchor_xy = tf.concat([tf.concat([anchor_xy[i], anchor_wh[i]], -1) * self.strides[i] for i in range(self.len_anchors)], 0)
-        base_anchor_xy = tf.concat([tf.concat([anchor_xy[i]], -1) * self.strides[i] for i in range(self.len_anchors)], 0)
+
         ious = bbox_utils.bbox_iou(center_anchors[:, None], labels[:, None, ..., :4])
 
         # assign maximum label
@@ -109,8 +117,6 @@ class DataLoader():
         joined_ious = tf.where(tf.cast(minimum_positive_ious, tf.bool), minimum_positive_ious, maximum_positive_ious)
         joined_positive_mask = tf.cast(tf.reduce_any(tf.cast(joined_ious, tf.bool), -1, keepdims=True), tf.float32)
 
-        # assigned_labels = tf.concat([tf.tile(base_anchor_xy[None], [self.batch_size, 1,1]), tf.gather(tf.concat([ conf, onehot], -1), tf.argmax(joined_ious, -1), batch_dims=1) * joined_positive_mask], -1)
-        # assigned_labels = tf.concat([tf.tile(base_anchor_xy[None], [self.batch_size, 1,1]), tf.gather(tf.concat([wh, conf, onehot], -1), tf.argmax(joined_ious, -1), batch_dims=1) * joined_positive_mask], -1)
         assigned_labels = tf.gather(tf.concat([labels[..., :5], onehot],-1), tf.argmax(joined_ious, -1), batch_dims=1) * joined_positive_mask
 
         for i in range(self.len_anchors):

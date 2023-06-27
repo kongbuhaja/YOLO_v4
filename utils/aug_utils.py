@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np
 import cv2
 
-
 @tf.function
 def tf_resize_padding(image, labels, width, height, image_size):
     scale = tf.minimum(image_size/width, image_size/height)
@@ -23,18 +22,19 @@ def tf_resize_padding(image, labels, width, height, image_size):
 @tf.function
 def tf_augmentation(image, labels, width, height):
     bboxes = labels[..., :4]
-    color_methods = [random_brigthness, random_hue, random_saturation, random_contrast, random_gaussian_blur]
-    geometric_methods = [random_flip_horizontally, random_flip_vertically, random_scale, random_crop]
-    for augmentation_method in geometric_methods + color_methods:
-        image, bboxes, width, height = randomly_apply(augmentation_method, image, bboxes, width, height)
+    color_methods = [[random_brigthness, 0.5], [random_hue, 0.5], [random_saturation, 0.5], [random_contrast, 0.5]]
+    kernel_methods = [[random_gaussian_blur, 0.5]]
+    geometric_methods = [[random_rotate90, 0.25], [random_flip_horizontally, 0.5], [random_scale, 0.5], [random_crop, 0.5]]
+
+    for augmentation_method, prob_threshold in geometric_methods + kernel_methods + color_methods:
+        image, bboxes, width, height = randomly_apply(augmentation_method, image, bboxes, width, height, prob_threshold)
     labels = tf.concat([bboxes, labels[..., 4:]], -1)
-    image = tf.maximum(tf.minimum(image, 1.), 0.)
 
     return image, labels, width, height
 
 @tf.function
-def randomly_apply(method, image, bboxes, width, height):
-    if tf.random.uniform(())>0.5:
+def randomly_apply(method, image, bboxes, width, height, prob_threshold=0.5):
+    if tf.random.uniform(()) > prob_threshold:
         return method(image, bboxes, width, height)
     return image, bboxes, width, height
 
@@ -50,7 +50,6 @@ def random_scale(image, bboxes, width, height, lower=0.7, upper=1.3):
                                        bboxes[..., 3] * ratio[1]], -1))
     
     return scaled_image, scaled_bboxes, new_width, new_height
-
 
 @tf.function
 def random_crop(image, bboxes, width, height):
@@ -86,12 +85,18 @@ def random_flip_horizontally(image, bboxes, width, height):
     return tf.image.flip_left_right(image), bboxes, width, height
 
 @tf.function
-def random_flip_vertically(image, bboxes, width, height):
-    bboxes = tf.stack([bboxes[..., 0],
-                       height - bboxes[..., 3] - 1,
-                       bboxes[..., 2],
-                       height - bboxes[..., 1] - 1,], -1)
-    return tf.image.flip_up_down(image), bboxes, width, height
+def random_rotate90(image, bboxes, width, height):
+    def rotate90_bboxes(bboxes_, width_, height_):
+        new_bboxes_ = tf.stack([bboxes_[..., 1],
+                                width_ - bboxes_[..., 0],
+                                bboxes_[..., 3],
+                                width_ - bboxes_[..., 2]], -1)
+        return new_bboxes_, height_, width_
+    
+    k = tf.random.uniform((), minval=1, maxval=4, dtype=tf.int32)
+    for time in tf.range(k):
+        bboxes, width, height = rotate90_bboxes(bboxes, width, height)
+    return tf.image.rot90(image, k), bboxes, width, height
 
 @tf.function
 def random_gaussian_blur(image, bboxes, width, height, ksize=3, sigma=1):

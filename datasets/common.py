@@ -44,7 +44,7 @@ class Base_Dataset():
                 self.read_files()
             data = tf.data.Dataset.from_generator(self.generator, 
                                                   output_types=(tf.uint8, tf.float32, tf.float32, tf.float32),
-                                                  output_shapes=((None, None, 3), (None, 5), (), ()))
+                                                  output_shapes=((None, None, 3), (None, 6), (), ()))
         self.length = self.len(use_tfrecord)
 
         return data
@@ -61,7 +61,7 @@ class Base_Dataset():
     def generator(self):
         for image_file, labels, width, height in self.data:
             image = self.read_image(image_file)
-            labels = tf.constant([[0, 0, 0, 0, 0]], tf.float32) if len(labels)==0 else labels
+            labels = tf.constant([[0, 0, 0, 0, 0, 0]], tf.float32) if len(labels)==0 else labels
             height, width = image.shape[:2]
             yield image, labels, float(width), float(height)
     
@@ -145,7 +145,7 @@ def parse_tfrecord_fn(example):
     }
     example = tf.io.parse_single_example(example, feature_description)
     example['image'] = tf.io.decode_jpeg(example['image'], channels=3)
-    example['labels'] = tf.reshape(tf.sparse.to_dense(example['labels']), [-1, 5])
+    example['labels'] = tf.reshape(tf.sparse.to_dense(example['labels']), [-1, 6])
 
     return example['image'], example['labels'], example['width'], example['height']
         
