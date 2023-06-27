@@ -33,11 +33,11 @@ class Darknet53(Layer):
         
         self.conv = DarknetConv(32, 3, kernel_initializer=self.kernel_initializer)
     
-        self.resblock1 = DarknetResidualBlock(64, 1)
-        self.resblock2 = DarknetResidualBlock(128, 2)
-        self.resblock3 = DarknetResidualBlock(256, 8)
-        self.resblock4 = DarknetResidualBlock(512, 8)
-        self.resblock5 = DarknetResidualBlock(1024, 4)
+        self.resblock1 = DarknetResidualBlock(64, 1, kernel_initializer=self.kernel_initializer)
+        self.resblock2 = DarknetResidualBlock(128, 2, kernel_initializer=self.kernel_initializer)
+        self.resblock3 = DarknetResidualBlock(256, 8, kernel_initializer=self.kernel_initializer)
+        self.resblock4 = DarknetResidualBlock(512, 8, kernel_initializer=self.kernel_initializer)
+        self.resblock5 = DarknetResidualBlock(1024, 4, kernel_initializer=self.kernel_initializer)
 
     def call(self, input, training=False):
         x = self.conv(input, training)

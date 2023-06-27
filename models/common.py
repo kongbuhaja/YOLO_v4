@@ -57,8 +57,8 @@ class DarknetResidual(Layer):
         self.activate = activate
         self.kernel_initializer = kernel_initializer
         
-        self.conv1 = DarknetConv(self.units[1], 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        self.conv2 = DarknetConv(self.units[0], 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.conv1 = DarknetConv(self.units[0], 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.conv2 = DarknetConv(self.units[1], 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
         # self.drop_block = DropBlock(0.9, 3)
     
     def call(self, input, training=False):
