@@ -39,7 +39,7 @@ class DataLoader():
         
         if split == 'train':
             data = data.shuffle(buffer_size = min(self.length(split) * 3, 200000)) # ram memory limit
-            data = data.map(aug_utils.tf_augmentation, num_parallel_calls=-1)
+            # data = data.map(aug_utils.tf_augmentation, num_parallel_calls=-1)
         
         data = data.map(self.tf_resize_padding, num_parallel_calls=-1)
         data = data.padded_batch(self.batch_size, padded_shapes=get_padded_shapes(), padding_values=get_padding_values(), drop_remainder=True)
@@ -59,6 +59,7 @@ class DataLoader():
     
     @tf.function
     def tf_preprocessing(self, image, labels, width, height):
+        labels = tf.concat([labels[..., :4], tf.ones_like(labels[..., 4:5]), labels[..., 4:5]], -1)
         return tf.cast(image, tf.float32)/255., labels, width, height
     
     @tf.function
