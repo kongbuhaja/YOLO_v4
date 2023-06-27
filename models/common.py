@@ -76,10 +76,11 @@ class DarknetResidualBlock(Layer):
         self.activate = activate
         self.kernel_initializer = kernel_initializer
 
-        self.pre_conv = DarknetConv(self.units[0], 3, 2, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.pre_conv = DarknetConv(self.units, 3, 2, activate=self.activate, kernel_initializer=self.kernel_initializer)
 
-        self.res_blocks = [DarknetResidual(self.units, activate=self.activate, kernel_initializer=self.kernel_initializer) for _ in range(self.resblock_num)]
-    
+        self.res_blocks = [DarknetResidual([self.units//2, self.units], activate=self.activate, kernel_initializer=self.kernel_initializer) for _ in range(self.resblock_num)]
+
+
     def call(self, input, training=False):
         x = self.pre_conv(input, training)
 
@@ -96,30 +97,32 @@ class CSPDarknetResidualBlock(Layer):
         self.activate = activate
         self.kernel_initializer = kernel_initializer
 
-        self.pre_conv = DarknetConv(self.units[0], 3, 2, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        
-        self.short_cut_conv = DarknetConv(self.units[0], 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        self.conv = DarknetConv(self.units[0], 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        div = 2 if resblock_num // 2 > 0 else 1
 
-        self.res_blocks = [DarknetResidual(self.units, activate=self.activate, kernel_initializer=self.kernel_initializer) for _ in range(self.resblock_num)]
+        self.pre_conv = DarknetConv(self.units, 3, 2, activate=self.activate, kernel_initializer=self.kernel_initializer)     
         
-        self.post_conv = DarknetConv(self.units[0], 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.res_pre_conv = DarknetConv(self.units//div, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.res_blocks = [DarknetResidual([self.units//2, self.units//div], activate=self.activate, kernel_initializer=self.kernel_initializer) for _ in range(self.resblock_num)]
+        self.res_transition = DarknetConv(self.units//div, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        
+        self.short_cut_transition = DarknetConv(self.units//div, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
 
-        self.concat_conv = DarknetConv(self.units[1] * 2, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.concat_transition = DarknetConv(self.units, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
     
     def call(self, input, training=False):
         x = self.pre_conv(input, training)
+        short_cut = x
 
-        short_cut = self.short_cut_conv(x, training)
-        x = self.conv(x, training)
-
+        x = self.res_pre_conv(x, training)
         for r in range(len(self.res_blocks)):
             x = self.res_blocks[r](x, training)
-        
-        x = self.post_conv(x, training)
+        x = self.res_transition(x, training)
+
+        short_cut = self.short_cut_transition(short_cut, training)
 
         x = Concatenate()([x, short_cut])
-        x = self.concat_conv(x, training)
+
+        x = self.concat_transition(x, training)
 
         return x
 
@@ -127,7 +130,7 @@ class SPP(Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def call(self, input):
+    def call(self, input, training=False):
         pool1 = MaxPool2D(13, 1, 'same')(input)
         pool2 = MaxPool2D(9, 1, 'same')(input)
         pool3 = MaxPool2D(5, 1, 'same')(input)
@@ -163,11 +166,10 @@ class SPPBlock(Layer):
         
         return x
 
-
-class ConcatConv(Layer):
+class DarknetConv5(Layer):
     def __init__(self, unit, kernel_initializer=glorot, **kwargs):
         super().__init__(**kwargs)
-        self.unit = unit
+        self.unit=unit
         self.kernel_initializer = kernel_initializer
 
         self.conv1 = DarknetConv(self.unit, 1, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
@@ -176,13 +178,26 @@ class ConcatConv(Layer):
         self.conv4 = DarknetConv(self.unit * 2, 3, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         self.conv5 = DarknetConv(self.unit, 1, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
 
-    def call(self, branch1, branch2, training=False):
-        x = Concatenate()([branch1, branch2])
-        x = self.conv1(x, training)
+    def call(self, input, training=False):
+        x = self.conv1(input, training)
         x = self.conv2(x, training)
         x = self.conv3(x, training)
         x = self.conv4(x, training)
         x = self.conv5(x, training)
+
+        return x
+    
+class ConcatConv(Layer):
+    def __init__(self, unit, kernel_initializer=glorot, **kwargs):
+        super().__init__(**kwargs)
+        self.unit = unit
+        self.kernel_initializer = kernel_initializer
+
+        self.conv = DarknetConv5(unit, kernel_initializer=self.kernel_initializer)
+
+    def call(self, branch1, branch2, training=False):
+        x = Concatenate()([branch1, branch2])
+        x = self.conv(x, training)
 
         return x
 
@@ -201,7 +216,7 @@ class UpsampleConcat(Layer):
     def call(self, branch1, branch2, training=False):
         branch1 = self.conv1(branch1, training)
         branch2 = self.conv2(branch2, training)
-        branch2 = self.upsample(branch2)       
+        branch2 = self.upsample(branch2, training)       
 
         x = self.concat_conv(branch1, branch2, training)
 

@@ -50,14 +50,14 @@ class YOLO(Model):
 
         large_branch = self.spp_block(large_branch, training)
         medium_branch = self.large_upsample_layer(medium_branch, large_branch, training)
+        
         small_branch = self.medium_upsample_layer(small_branch, medium_branch, training)
-
         s_grid = self.small_grid_layer(small_branch, training)
+        
         medium_branch = self.small_downsample_layer(small_branch, medium_branch, training)
-
         m_grid = self.medium_grid_layer(medium_branch, training)
+        
         large_branch = self.medium_downsample_layer(medium_branch, large_branch, training)
-
         l_grid = self.large_grid_layer(large_branch, training)
         
         return s_grid, m_grid, l_grid

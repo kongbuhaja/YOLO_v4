@@ -9,11 +9,11 @@ class CSPDarknet53(Layer):
         self.kernel_initializer = kernel_initializer
         self.conv = DarknetConv(32, 3, activate='Mish', kernel_initializer=self.kernel_initializer)
 
-        self.csp_resblock1 = CSPDarknetResidualBlock([64, 32], 1, activate='Mish', kernel_initializer=self.kernel_initializer)
-        self.csp_resblock2 = CSPDarknetResidualBlock([64, 64], 2, activate='Mish', kernel_initializer=self.kernel_initializer)
-        self.csp_resblock3 = CSPDarknetResidualBlock([128, 128], 8, activate='Mish', kernel_initializer=self.kernel_initializer)
-        self.csp_resblock4 = CSPDarknetResidualBlock([256, 256], 8, activate='Mish', kernel_initializer=self.kernel_initializer)
-        self.csp_resblock5 = CSPDarknetResidualBlock([512, 512], 4, activate='Mish', kernel_initializer=self.kernel_initializer)
+        self.csp_resblock1 = CSPDarknetResidualBlock(64, 1, activate='Mish', kernel_initializer=self.kernel_initializer)
+        self.csp_resblock2 = CSPDarknetResidualBlock(128, 2, activate='Mish', kernel_initializer=self.kernel_initializer)
+        self.csp_resblock3 = CSPDarknetResidualBlock(256, 8, activate='Mish', kernel_initializer=self.kernel_initializer)
+        self.csp_resblock4 = CSPDarknetResidualBlock(512, 8, activate='Mish', kernel_initializer=self.kernel_initializer)
+        self.csp_resblock5 = CSPDarknetResidualBlock(1024, 4, activate='Mish', kernel_initializer=self.kernel_initializer)
 
     def call(self, input, training=False):
         x = self.conv(input, training)
@@ -33,11 +33,11 @@ class Darknet53(Layer):
         
         self.conv = DarknetConv(32, 3, kernel_initializer=self.kernel_initializer)
     
-        self.resblock1 = DarknetResidualBlock([64, 32], 1)
-        self.resblock2 = DarknetResidualBlock([128, 64], 2)
-        self.resblock3 = DarknetResidualBlock([256, 128], 8)
-        self.resblock4 = DarknetResidualBlock([512, 256], 8)
-        self.resblock5 = DarknetResidualBlock([1024, 512], 4)
+        self.resblock1 = DarknetResidualBlock(64, 1)
+        self.resblock2 = DarknetResidualBlock(128, 2)
+        self.resblock3 = DarknetResidualBlock(256, 8)
+        self.resblock4 = DarknetResidualBlock(512, 8)
+        self.resblock5 = DarknetResidualBlock(1024, 4)
 
     def call(self, input, training=False):
         x = self.conv(input, training)

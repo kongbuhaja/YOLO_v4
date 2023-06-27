@@ -32,11 +32,7 @@ class YOLO(Model):
 
         self.darknet53 = Darknet53(kernel_initializer=self.kernel_initializer)
         
-        self.conv_layers  = [DarknetConv(512, 1, kernel_initializer=self.kernel_initializer),
-                                   DarknetConv(1024, 3, kernel_initializer=self.kernel_initializer),
-                                   DarknetConv(512, 1, kernel_initializer=self.kernel_initializer),
-                                   DarknetConv(1024, 3, kernel_initializer=self.kernel_initializer),
-                                   DarknetConv(512, 1, kernel_initializer=self.kernel_initializer)]
+        self.conv_layers  = DarknetConv5(512, kernel_initializer=self.kernel_initializer)
         
         self.large_grid_layer = GridOut(1024, self.scales[2], self.num_anchors, self.num_classes, kernel_initializer=self.kernel_initializer)
         
@@ -56,26 +52,26 @@ class YOLO(Model):
         small_branch, medium_branch, large_branch = self.darknet53(input, training)
         
         # l_grid
-        for i in range(len(self.conv_layers)):
-            large_branch = self.conv_layers[i](large_branch, training)
+        large_branch = self.conv_layers(large_branch, training)
         
-        l_grid = self.large_grid_layer(large_branch)
+        l_grid = self.large_grid_layer(large_branch, training)
 
         # m_grid
         for i in range(len(self.large_upsample_layers)):
-            large_branch = self.large_upsample_layers[i](large_branch)
+            large_branch = self.large_upsample_layers[i](large_branch, training)
         
         medium_branch = self.medium_concat_layer(large_branch, medium_branch, training)
-        m_grid = self.medium_grid_layer(medium_branch)
+        m_grid = self.medium_grid_layer(medium_branch, training)
 
         # s_grid
         for i in range(len(self.medium_upsample_layers)):
-            medium_branch = self.medium_upsample_layers[i](medium_branch)
+            medium_branch = self.medium_upsample_layers[i](medium_branch, training)
         
         small_branch = self.small_concat_layer(medium_branch, small_branch, training)
-        s_grid = self.small_grid_layer(small_branch)
+        s_grid = self.small_grid_layer(small_branch, training)
 
         return s_grid, m_grid, l_grid
+    
     @tf.function
     def loss(self, labels, preds, batch_size):
         return self.loss_metric(labels, preds, batch_size, self.anchors, self.strides, self.image_size,
