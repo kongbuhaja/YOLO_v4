@@ -29,7 +29,6 @@ elif LR_SCHEDULER == 'cosine_annealing':
     MIN_LR = 1e-7
 
 # model config
-
 MODEL_TYPE = 'YOLOv3'
 BASED_DTYPE = 'coco'
 
