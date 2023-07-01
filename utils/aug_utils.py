@@ -77,9 +77,9 @@ def random_crop(image, bboxes, width, height):
 
 @tf.function
 def random_flip_horizontally(image, bboxes, width, height):
-    bboxes = tf.stack([width - bboxes[..., 2] - 1,
+    bboxes = tf.stack([width - bboxes[..., 0] - 1,
                        bboxes[..., 1],
-                       width - bboxes[..., 0] - 1,
+                       width - bboxes[..., 2] - 1,
                        bboxes[..., 3]], -1)
     
     return tf.image.flip_left_right(image), bboxes, width, height
