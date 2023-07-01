@@ -2,7 +2,7 @@
 GPUS = 1
 
 # data config
-DTYPE = 'custom'
+DTYPE = 'coco'
 IMAGE_SIZE = 416
 MAX_BBOXES = 100
 CREATE_ANCHORS = False
