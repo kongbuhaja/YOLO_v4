@@ -5,23 +5,23 @@ from config import *
 class stats:
     def __init__(self, labels=LABELS):
         self.stats = {}
-        self.iou_threshold = [0.5+ i*0.05 for i in range(10)]
+        self.iou_threshold = np.array([0.5+ i*0.05 for i in range(10)])
         self.mAP = 0.0
         self.mAP50 = 0.0
         for i, label in enumerate(labels):
             self.stats[i] = {
                 'label': label,
                 'total': 0,
-                'tp': [[] for _ in range(len(self.iou_threshold))],
-                'fp': [[] for _ in range(len(self.iou_threshold))],
-                'scores':[],
+                'tp': [],
+                'fp': [],
+                'scores':[]
             }
     
     def init_stat(self):
         for i in range(len(self.stats)):
             self.stats[i]['total'] = 0
-            self.stats[i]['tp'] = [[] for _ in range(len(self.iou_threshold))]
-            self.stats[i]['fp'] = [[] for _ in range(len(self.iou_threshold))]
+            self.stats[i]['tp'] = []
+            self.stats[i]['fp'] = []
             self.stats[i]['scores'] = []
 
 
@@ -34,10 +34,9 @@ class stats:
         gt_classes = gt_labels[..., 5]
 
         if not gt_labels.shape[0]:
-            for pred_class in pred_classes.numpy().astype(np.int32):
-                for i in range(len(self.iou_threshold)):
-                    self.stats[pred_class]['tp'][i] += [0]
-                    self.stats[pred_class]['fp'][i] += [1]
+            for pred_class in pred_classes.astype(np.int32):
+                self.stats[pred_class]['tp'] += [np.array([0] * len(self.iou_threshold))]
+                self.stats[pred_class]['fp'] += [np.array([1] * len(self.iou_threshold))]
             return
 
         u_classes, u_count = np.unique(gt_classes, return_counts=True)
@@ -47,31 +46,30 @@ class stats:
         if not preds.shape[0]:
             return
                 
-        ious = bbox_utils.bbox_iou(pred_bboxes[:,None], gt_bboxes[None], xywh=False, iou_type='iou').numpy()
-        pred_ious = np.max(ious, -1)
-        pred_ids = np.argmax(ious, -1)
-        sorted_iou_ids = np.argsort(-pred_ious)
+        for u_class in np.unique(pred_classes):
+            cls_gt_bboxes = gt_bboxes[gt_classes==u_class]
+            if cls_gt_bboxes.shape[0] == 0:
+                self.stats[u_class]['tp'] += [np.array([0] * len(self.iou_threshold))]
+                self.stats[u_class]['fp'] += [np.array([1] * len(self.iou_threshold))]
+            else:
+                cls_pred_bboxes = pred_bboxes[pred_classes==u_class]
+                cls_pred_scores = pred_scores[pred_classes==u_class]
+                cls_ious = bbox_utils.bbox_iou(cls_pred_bboxes[:, None], cls_gt_bboxes[None], xywh=False).numpy()
+            
+                cls_max_ious = np.max(cls_ious, -1)
+                # sorted_pred_ids = np.argsort(-cls_max_ious) # past_ids 뺄거면 정렬 지우자
 
-        past_ids = [[[]] for _ in range(len(self.iou_threshold))]
-        for iou_id in sorted_iou_ids:             
-            pred_class = int(pred_classes[iou_id])
-            iou = pred_ious[iou_id]
-            pred_id = pred_ids[iou_id]
-            score = pred_scores[iou_id]
-            
-            gt_class = int(gt_classes[pred_id])
-            
-            self.stats[pred_class]['scores'].append(score)
-            
-            for i, iou_threshold in enumerate(self.iou_threshold):
-                if pred_class == gt_class and pred_id not in past_ids[i] and iou >= iou_threshold:
-                    self.stats[pred_class]['tp'][i] += [1]
-                    self.stats[pred_class]['fp'][i] += [0]
-                    past_ids[i] += [pred_id]
-                else:
-                    self.stats[pred_class]['tp'][i] += [0]
-                    self.stats[pred_class]['fp'][i] += [1]
-    
+                # for pred_id in sorted_pred_ids:
+                for pred_id in range(len(cls_pred_scores)):
+                    iou = cls_max_ious[pred_id]
+                    score = cls_pred_scores[pred_id]
+                            
+                    self.stats[u_class]['scores'].append(score)
+                
+                    tp = (iou >= self.iou_threshold).astype(int)
+                    self.stats[u_class]['tp'] += [tp]
+                    self.stats[u_class]['fp'] += [1 - tp]
+
     def calculate_mAP(self):
         aps = []
         ap50s = []
@@ -81,16 +79,17 @@ class stats:
             ids = np.argsort(-np.array(label_stats['scores']))
             total = label_stats['total']
             
-            cumsum_tps = np.cumsum(np.array(label_stats['tp'])[:, ids], -1)
-            cumsum_fps = np.cumsum(np.array(label_stats['fp'])[:, ids], -1)
+            cumsum_tps = np.cumsum(np.array(label_stats['tp'])[ids], 0)
+            cumsum_fps = np.cumsum(np.array(label_stats['fp'])[ids], 0)
             
-            if total == 0:
-                recalls = np.zeros_like(cumsum_tps) + EPS
+            if cumsum_tps.shape[0] == 0:
+                ap = 0
+                ap50 = 0
             else:
                 recalls = cumsum_tps / total
-            precisions = cumsum_tps / (cumsum_tps + cumsum_fps)
-            ap, ap50 = self.calculate_AP(recalls, precisions)
-        
+                precisions = cumsum_tps / (cumsum_tps + cumsum_fps)
+                ap, ap50 = self.calculate_AP(recalls, precisions)
+                
             self.stats[label]['ap'] = ap
             self.stats[label]['ap50'] = ap50
             aps += [ap]
@@ -104,7 +103,7 @@ class stats:
         aps = np.array([0.] * len(self.iou_threshold))
         for r in np.arange(0, 1.01, 0.01):
             prec_rec = np.where(recalls >= r, precisions, 0)
-            aps += np.amax(prec_rec, -1)
+            aps += np.amax(prec_rec, 0)
         aps /= 101
         return np.mean(aps), aps[0]
     
