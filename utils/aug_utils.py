@@ -88,9 +88,9 @@ def random_flip_horizontally(image, bboxes, width, height):
 def random_rotate90(image, bboxes, width, height):
     def rotate90_bboxes(bboxes_, width_, height_):
         new_bboxes_ = tf.stack([bboxes_[..., 1],
-                                width_ - bboxes_[..., 0],
+                                width_ - bboxes_[..., 0] -1,
                                 bboxes_[..., 3],
-                                width_ - bboxes_[..., 2]], -1)
+                                width_ - bboxes_[..., 2]] -1, -1)
         return new_bboxes_, height_, width_
     
     k = tf.random.uniform((), minval=1, maxval=4, dtype=tf.int32)
