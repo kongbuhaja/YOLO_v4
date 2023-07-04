@@ -101,16 +101,11 @@ class stats:
         return self.mAP50, self.mAP
         
     def calculate_AP(self, recalls, precisions):
-        aps = []
-        for recall, precision in zip(recalls, precisions):
-            ap = 0
-            for r in np.arange(0, 1.01, 0.01):
-                prec_rec = precision[recall >= r]
-                if len(prec_rec) > 0:
-                    ap += np.max(prec_rec)
-
-            ap /= 101
-            aps += [ap]
+        aps = np.array([0.] * len(self.iou_threshold))
+        for r in np.arange(0, 1.01, 0.01):
+            prec_rec = np.where(recalls >= r, precisions, 0)
+            aps += np.amax(prec_rec, -1)
+        aps /= 101
         return np.mean(aps), aps[0]
     
     def get_result(self):
