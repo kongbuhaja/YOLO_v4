@@ -93,8 +93,8 @@ class stats:
         
             self.stats[label]['ap'] = ap
             self.stats[label]['ap50'] = ap50
-            aps.append(ap)
-            ap50s.append(ap50)
+            aps += [ap]
+            ap50s += [ap50]
 
         self.mAP = np.mean(aps)
         self.mAP50 = np.mean(ap50s)
