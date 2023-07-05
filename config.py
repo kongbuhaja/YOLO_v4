@@ -12,7 +12,7 @@ POSITIVE_IOU_THRESHOLD = 0.5
 EPOCHS = 1000
 BATCH_SIZE = 16
 GLOBAL_BATCH_SIZE = BATCH_SIZE * GPUS
-LOSS_METRIC = 'YOLOv4Loss'
+LOSS_METRIC = 'YOLOv3Loss'
 LR = 1e-2
 LR_SCHEDULER = 'cosine_annealing'
 IOU_THRESHOLD = 0.5
@@ -29,7 +29,7 @@ elif LR_SCHEDULER == 'cosine_annealing':
     MIN_LR = 1e-5
 
 # model config
-MODEL_TYPE = 'YOLOv4'
+MODEL_TYPE = 'YOLOv3'
 BASED_DTYPE = 'custom'
 
 LOAD_CHECKPOINTS = False
@@ -44,7 +44,7 @@ if 'tiny' in MODEL_TYPE:
 else:
     STRIDES = [8, 16, 32]
 
-if 'YOLOv3' in MODEL_TYPE or True:
+if 'YOLOv3' in MODEL_TYPE:
     COORD = 5
     NOOBJ = 0.5
 
@@ -102,7 +102,7 @@ elif BASED_DTYPE == 'custom':
         ANCHORS = [[[36, 39], [60, 67], [85, 93]], [[113, 125], [151, 170], [200, 228]]]
 
 NUM_CLASSES = len(LABELS)
-NUM_ANCHORS = len(ANCHORS)
+NUM_ANCHORS = len(ANCHORS[0])
 
 # draw config
 DRAW = True

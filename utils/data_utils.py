@@ -9,7 +9,7 @@ class DataLoader():
                  
         self.batch_size = batch_size
         self.num_anchors = num_anchors
-        self.len_anchors = len(ANCHORS)
+        self.len_anchors = len(anchors)
         self.num_classes = num_classes
         self.image_size = image_size
         self.strides = np.array(strides)
@@ -121,9 +121,9 @@ class DataLoader():
 
         for i in range(self.len_anchors):
             scale = self.scales[i]
-            start = 0 if i==0 else tf.reduce_sum((self.image_size//self.strides[:i])**2 * self.len_anchors)
-            end = start + (scale)**2 * self.len_anchors
-            grids += [tf.reshape(assigned_labels[:, start:end], [self.batch_size, scale, scale, self.len_anchors, -1])]
+            start = 0 if i==0 else tf.reduce_sum((self.image_size//self.strides[:i])**2 * self.num_anchors)
+            end = start + (scale)**2 * self.num_anchors
+            grids += [tf.reshape(assigned_labels[:, start:end], [self.batch_size, scale, scale, self.num_anchors, -1])]
 
         return grids
     
