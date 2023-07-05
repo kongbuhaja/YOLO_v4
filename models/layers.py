@@ -61,7 +61,7 @@ class DarknetResidual(Layer):
         return Add()([input, x])
     
 class SPP(Layer):
-    def __init__(self, units, activate='LeakyReLU', kernel_initializer='glorot', **kwargs):
+    def __init__(self, units, activate='LeakyReLU', kernel_initializer=glorot, **kwargs):
         super().__init__(**kwargs)
         self.units = units
         self.activate = activate
@@ -91,7 +91,7 @@ class DarknetUpsample(Layer):
         return x
     
 class DarknetDownsample(Layer):
-    def __init__(self, units, activate='Mish', kernel_initializer='glorot', **kwargs):
+    def __init__(self, units, activate='Mish', kernel_initializer=glorot, **kwargs):
         super().__init__(**kwargs)
         self.units = units
         self.activate = activate
