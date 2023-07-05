@@ -1,10 +1,10 @@
 import tensorflow as tf
+import numpy as np
 from tensorflow.keras.initializers import GlorotUniform as glorot
 from tensorflow.keras.initializers import HeUniform as he
 from tensorflow.keras import Model
-from models.common import *
+from models.blocks import *
 from models.backbone import CSPDarknet53
-import numpy as np
 from config import *
 from utils import anchor_utils
 from losses import yolo_loss
@@ -30,35 +30,37 @@ class YOLO(Model):
         elif LOSS_METRIC == 'YOLOv3Loss':
             self.loss_metric = yolo_loss.v3_loss
 
-        self.backbone = CSPDarknet53(kernel_initializer = self.kernel_initializer)
+        self.backbone = CSPDarknet53(activate='Mish', kernel_initializer = self.kernel_initializer)
 
-        self.spp_block = SPPBlock()
+        self.spp_block = ReverseDarknetBlock(512, block='SPP', activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.medium_upsample_block = DarknetUpsampleBlock(256, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.small_upsample_block = DarknetUpsampleBlock(128, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
 
-        self.large_upsample_layer = UpsampleConcat(256, kernel_initializer=self.kernel_initializer)
-        self.medium_upsample_layer = UpsampleConcat(128, kernel_initializer=self.kernel_initializer)
+        self.small_grid_block = GridBlock(256, self.scales[0], self.num_anchors, self.num_classes, 
+                                          activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
 
-        self.small_grid_layer = GridOut(256, self.scales[0], self.num_anchors, self.num_classes, kernel_initializer=self.kernel_initializer)
-        self.small_downsample_layer = DownsampleConcat(256, kernel_initializer=self.kernel_initializer)
+        self.medium_downsample_block = DarknetDownsampleBlock(256, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.medium_grid_block = GridBlock(512, self.scales[1], self.num_anchors, self.num_classes,
+                                           activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
 
-        self.medium_grid_layer = GridOut(512, self.scales[1], self.num_anchors, self.num_classes, kernel_initializer=self.kernel_initializer)
-        self.medium_downsample_layer = DownsampleConcat(512, kernel_initializer=self.kernel_initializer)
-
-        self.large_grid_layer = GridOut(1024, self.scales[2], self.num_anchors, self.num_classes, kernel_initializer=self.kernel_initializer)
+        self.large_downsample_block = DarknetDownsampleBlock(512, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.large_grid_block = GridBlock(1024, self.scales[2], self.num_anchors, self.num_classes,
+                                          activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
 
     def call(self, input, training=False):
         small_branch, medium_branch, large_branch = self.backbone(input, training)
 
         large_branch = self.spp_block(large_branch, training)
-        medium_branch = self.large_upsample_layer(medium_branch, large_branch, training)
+        medium_branch = self.medium_upsample_block(medium_branch, large_branch, training)
+        small_branch = self.small_upsample_block(small_branch, medium_branch, training)
         
-        small_branch = self.medium_upsample_layer(small_branch, medium_branch, training)
-        s_grid = self.small_grid_layer(small_branch, training)
+        s_grid = self.small_grid_block(small_branch, training)
         
-        medium_branch = self.small_downsample_layer(small_branch, medium_branch, training)
-        m_grid = self.medium_grid_layer(medium_branch, training)
+        medium_branch = self.medium_downsample_block(small_branch, medium_branch, training)
+        m_grid = self.medium_grid_block(medium_branch, training)
         
-        large_branch = self.medium_downsample_layer(medium_branch, large_branch, training)
-        l_grid = self.large_grid_layer(large_branch, training)
+        large_branch = self.large_downsample_block(medium_branch, large_branch, training)
+        l_grid = self.large_grid_block(large_branch, training)
         
         return s_grid, m_grid, l_grid
     
