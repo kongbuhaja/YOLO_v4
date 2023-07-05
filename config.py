@@ -26,7 +26,7 @@ if LR_SCHEDULER == 'poly':
 elif LR_SCHEDULER == 'cosine_annealing':
     T_STEP = 10
     T_MULT = 2
-    MIN_LR = 1e-5
+    MIN_LR = 1e-6
 
 # model config
 MODEL_TYPE = 'YOLOv3'
