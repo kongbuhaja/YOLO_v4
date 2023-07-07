@@ -1,8 +1,8 @@
 # hardware config
-GPUS = 1
+GPUS = 4
 
 # data config
-DTYPE = 'custom'
+DTYPE = 'coco'
 IMAGE_SIZE = 416
 MAX_BBOXES = 100
 CREATE_ANCHORS = False
@@ -30,7 +30,7 @@ elif LR_SCHEDULER == 'cosine_annealing':
 
 # model config
 MODEL_TYPE = 'YOLOv4'
-BASED_DTYPE = 'custom'
+BASED_DTYPE = 'coco'
 
 LOAD_CHECKPOINTS = False
 CHECKPOINTS_DIR = 'checkpoints/' + BASED_DTYPE + '/'

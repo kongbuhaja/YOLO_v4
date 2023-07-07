@@ -26,12 +26,12 @@ class stats:
 
 
     def update_stats(self, preds, gt_labels):      
-        pred_bboxes = preds[..., :4]
-        pred_scores = preds[..., 4]
-        pred_classes = preds[..., 5]
+        pred_bboxes = preds[..., :4].numpy()
+        pred_scores = preds[..., 4].numpy()
+        pred_classes = preds[..., 5].numpy()
 
-        gt_bboxes = gt_labels[..., :4]
-        gt_classes = gt_labels[..., 5]
+        gt_bboxes = gt_labels[..., :4].numpy()
+        gt_classes = gt_labels[..., 5].numpy()
 
         if not gt_labels.shape[0]:
             for pred_class in pred_classes.astype(np.int32):

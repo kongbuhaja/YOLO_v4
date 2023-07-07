@@ -32,7 +32,7 @@ class YOLO(Model):
 
         self.backbone = CSPDarknet53(activate='Mish', kernel_initializer = self.kernel_initializer)
 
-        self.spp_block = ReverseDarknetBlock(512, block='SPP', activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.spp_block = ReverseDarknetBlock(512, layer='SPP', activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         self.medium_upsample_block = DarknetUpsampleBlock(256, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         self.small_upsample_block = DarknetUpsampleBlock(128, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
 
