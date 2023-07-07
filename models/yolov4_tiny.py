@@ -5,7 +5,7 @@ from tensorflow.keras.initializers import GlorotUniform as glorot
 from tensorflow.keras.initializers import HeUniform as he
 from tensorflow.keras import Model
 from models.blocks import *
-from models.backbone import Darknet19
+from models.backbone import CSPDarknet19
 from config import *
 from utils import anchor_utils
 from losses import yolo_loss
@@ -31,8 +31,8 @@ class YOLO(Model):
         elif LOSS_METRIC == 'YOLOv3Loss':
             self.loss_metric = yolo_loss.v3_loss
 
-        self.darknet19_tiny = Darknet19(activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        self.conv1 = DarknetConv(1024, 3, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.darknet19_tiny = CSPDarknet19(activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.conv1 = DarknetConv(512, 3, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         self.conv2 = DarknetConv(256, 1, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         
         self.large_grid_block = GridBlock(512, self.scales[1], self.num_anchors, self.num_classes, 
@@ -42,8 +42,9 @@ class YOLO(Model):
         self.medium_grid_block = GridBlock(256, self.scales[0], self.num_anchors, self.num_classes, 
                                            activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         self.concat = Concatenate()
-        
+
         print('Model: YOLOv3_tiny')
+
     def call(self, input, training=False):
         medium_branch, large_branch = self.darknet19_tiny(input, training)
         

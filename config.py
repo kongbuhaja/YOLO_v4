@@ -9,10 +9,10 @@ CREATE_ANCHORS = False
 POSITIVE_IOU_THRESHOLD = 0.5
 
 # train config
-EPOCHS = 1000
+EPOCHS = 2000
 BATCH_SIZE = 16
 GLOBAL_BATCH_SIZE = BATCH_SIZE * GPUS
-LOSS_METRIC = 'YOLOv3Loss'
+LOSS_METRIC = 'YOLOv4Loss'
 LR = 1e-3
 LR_SCHEDULER = 'cosine_annealing'
 IOU_THRESHOLD = 0.5
@@ -29,7 +29,7 @@ elif LR_SCHEDULER == 'cosine_annealing':
     MIN_LR = 1e-6
 
 # model config
-MODEL_TYPE = 'YOLOv3'
+MODEL_TYPE = 'YOLOv4'
 BASED_DTYPE = 'custom'
 
 LOAD_CHECKPOINTS = False
