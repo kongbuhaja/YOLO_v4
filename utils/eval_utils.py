@@ -37,6 +37,7 @@ class stats:
             for pred_class in pred_classes.astype(np.int32):
                 self.stats[pred_class]['tp'] += [np.array([0] * len(self.iou_threshold))]
                 self.stats[pred_class]['fp'] += [np.array([1] * len(self.iou_threshold))]
+                self.stats[pred_class]['scores'] += [0.]
             return
 
         u_classes, u_count = np.unique(gt_classes, return_counts=True)
@@ -83,8 +84,8 @@ class stats:
             cumsum_fps = np.cumsum(np.array(label_stats['fp'])[ids], 0)
             
             if cumsum_tps.shape[0] == 0:
-                ap = 0
-                ap50 = 0
+                ap = 0.
+                ap50 = 0.
             else:
                 recalls = cumsum_tps / total
                 precisions = cumsum_tps / (cumsum_tps + cumsum_fps)
