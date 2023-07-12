@@ -1,8 +1,8 @@
 # hardware config
-GPUS = 4
+GPUS = 1
 
 # data config
-DTYPE = 'coco'
+DTYPE = 'custom'
 IMAGE_SIZE = 416
 MAX_BBOXES = 100
 CREATE_ANCHORS = False
@@ -29,8 +29,8 @@ elif LR_SCHEDULER == 'cosine_annealing':
     MIN_LR = 1e-6
 
 # model config
-MODEL_TYPE = 'YOLOv4'
-BASED_DTYPE = 'coco'
+MODEL_TYPE = 'YOLOv4_tiny'
+BASED_DTYPE = 'custom'
 
 LOAD_CHECKPOINTS = False
 CHECKPOINTS_DIR = 'checkpoints/' + BASED_DTYPE + '/'
@@ -66,10 +66,11 @@ if BASED_DTYPE =='voc':
               'bus', 'car', 'cat', 'chair', 'cow',
               'diningtable', 'dog', 'horse', 'motorbike', 'person',
               'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
-    if MODEL_TYPE in ['YOLOv3', 'YOLOv4']:
-        ANCHORS = [[[22, 31], [55, 64], [69, 144]], [[141, 89], [118, 227], [188, 166]], [[335, 146], [220, 290], [356, 283]]]
-    elif MODEL_TYPE in ['YOLOv3_tiny', 'YOLOv4_tiny']:
+    if 'tiny' in MODEL_TYPE:
         ANCHORS = [[[28, 37], [72, 91], [102, 187]], [[249, 127], [180, 262], [330, 278]]]
+    else:
+        ANCHORS = [[[22, 31], [55, 64], [69, 144]], [[141, 89], [118, 227], [188, 166]], [[335, 146], [220, 290], [356, 283]]]
+
 
 elif BASED_DTYPE == 'coco':
     LABELS = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 
@@ -88,18 +89,19 @@ elif BASED_DTYPE == 'coco':
                'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 
                'toaster', 'sink', 'refrigerator', 'book', 'clock', 
                'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush']
-    if MODEL_TYPE in ['YOLOv3', 'YOLOv4']:
-        ANCHORS = [[[41, 176], [231, 48], [126, 124]], [[109, 261], [311, 110], [205, 186]], [[341, 192], [227, 312], [368, 292]]]
-    elif MODEL_TYPE in ['YOLOv3_tiny', 'YOLOv4_tiny']:
+    if 'tiny' in MODEL_TYPE:
         ANCHORS = [[[9, 37], [71, 89], [100, 183]], [[244, 125], [179, 259], [331, 273]]]
-           
+    else:
+        ANCHORS = [[[41, 176], [231, 48], [126, 124]], [[109, 261], [311, 110], [205, 186]], [[341, 192], [227, 312], [368, 292]]]
+
 elif BASED_DTYPE == 'custom':
     LABELS = ['Nam Joo-hyuk', 'Kim Da-mi', 'Kim Seong-cheol', 'Yoo Jae-suk', 
               'Kim Tae-ri', 'Choi Woo-shik']
-    if MODEL_TYPE in ['YOLOv3', 'YOLOv4']:
-        ANCHORS = [[[31, 35], [48, 52], [60, 68]], [[71, 78], [83, 90], [96, 106]], [[118, 129], [152, 171], [200, 228]]]
-    elif MODEL_TYPE in ['YOLOv3_tiny', 'YOLOv4_tiny']:
+    if 'tiny' in MODEL_TYPE:
         ANCHORS = [[[36, 39], [60, 67], [85, 93]], [[113, 125], [151, 170], [200, 228]]]
+    else:
+        ANCHORS = [[[31, 35], [48, 52], [60, 68]], [[71, 78], [83, 90], [96, 106]], [[118, 129], [152, 171], [200, 228]]]
+
 
 NUM_CLASSES = len(LABELS)
 NUM_ANCHORS = len(ANCHORS[0])

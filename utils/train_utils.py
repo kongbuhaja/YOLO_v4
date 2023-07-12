@@ -91,7 +91,9 @@ def load_model(model, checkpoints):
         return model, 1, -1, -1., INF
 
 def get_model(load_checkpoints=LOAD_CHECKPOINTS):
-    if MODEL_TYPE == 'YOLOv4':
+    if MODEL_TYPE == 'YOLOv4_csp':
+        from models.yolov4_csp import YOLO
+    elif MODEL_TYPE == 'YOLOv4':
         from models.yolov4 import YOLO
     elif MODEL_TYPE == 'YOLOv3':
         from models.yolov3 import YOLO

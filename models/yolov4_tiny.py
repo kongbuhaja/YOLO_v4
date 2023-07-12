@@ -12,7 +12,7 @@ from losses import yolo_loss
 
     
 class YOLO(Model):
-    def __init__(self, anchors=ANCHORS, num_classes=NUM_CLASSES, image_size=IMAGE_SIZE, strides=STRIDES,
+    def __init__(self, anchors=ANCHORS, num_classes=NUM_CLASSES, image_size=IMAGE_SIZE, strides=STRIDES, loss_metric=LOSS_METRIC,
                  iou_threshold=IOU_THRESHOLD, num_anchors=NUM_ANCHORS, eps=EPS, inf=INF, kernel_initializer=glorot, **kwargs):
         super().__init__(**kwargs)
         self.anchors = anchor_utils.get_anchors_xywh(anchors, strides, image_size)
@@ -26,9 +26,9 @@ class YOLO(Model):
         self.inf = inf
         self.kernel_initializer = kernel_initializer
 
-        if LOSS_METRIC == 'YOLOv4Loss':
+        if loss_metric == 'YOLOv4Loss':
             self.loss_metric = yolo_loss.v4_loss
-        elif LOSS_METRIC == 'YOLOv3Loss':
+        elif loss_metric == 'YOLOv3Loss':
             self.loss_metric = yolo_loss.v3_loss
 
         self.darknet19_tiny = CSPDarknet19(activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
@@ -42,8 +42,6 @@ class YOLO(Model):
         self.medium_grid_block = GridBlock(256, self.scales[0], self.num_anchors, self.num_classes, 
                                            activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         self.concat = Concatenate()
-
-        print('Model: YOLOv3_tiny')
 
     def call(self, input, training=False):
         medium_branch, large_branch = self.darknet19_tiny(input, training)

@@ -4,34 +4,17 @@ from tensorflow.keras.initializers import GlorotUniform as glorot
 from tensorflow.keras.initializers import HeUniform as he
 from tensorflow.keras.regularizers import l2
 
+class OSANet(Layer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
 class Mish(Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def call(self, input):
         return input * tf.math.tanh(tf.math.softplus(input))
-    
-class CSPDarknetConv(Layer):
-    def __init__(self, unit, activate='Mish', kernel_initializer=glorot, **kwargs):
-        super().__init__(**kwargs)
-        self.unit = unit
-        self.activate = activate
-        self.kernel_initializer = kernel_initializer
-        
-        self.pre_conv = DarknetConv(self.unit//2, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        self.conv = DarknetConv(self.unit//2, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        
-        self.concat = Concatenate()
-        self.transition = DarknetConv(self.unit, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
-
-    def call(self, input, training):
-        x = self.pre_conv(input, training)
-        short_cut = x
-        x = self.conv(x, training)
-        x = self.concat([x, short_cut])
-        x = self.transition(x, training)
-
-        return x
 
 class DarknetConv(Layer):
     def __init__(self, unit, kernel_size, strides=1, padding='same', activate='Mish', bn=True, kernel_initializer=glorot, **kwargs):
@@ -62,6 +45,37 @@ class DarknetConv(Layer):
         x = self.activate(x)
         
         return x
+
+class DarknetOSA(Layer):
+    def __init__(self, unit, growth_rate, activate='Mish', kernel_initializer=glorot, **kwargs):
+        super().__init__(**kwargs)
+        self.unit = unit
+        self.growth_rate = growth_rate
+        self.activate = activate
+        self.kernel_initializer = kernel_initializer
+
+        self.layers = [DarknetConv(self.unit//growth_rate, 3, activate=self.activate, kernel_initializer=self.kernel_initializer) for _ in range(self.growth_rate)]
+        self.features = []
+
+        self.concat = Concatenate()
+        self.transition = DarknetConv(self.unit, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
+
+    def call(self, input, training=False):
+        for l in range(self.growth_rate):
+            input = self.layers[l](input, training)
+            self.features += [input]
+        
+        x = self.concat(self.features)
+        x = self.transition(x, training)
+        
+class SplitLayer(Layer):
+    def __init__(self, groups, group, **kwargs):
+        super().__init__(**kwargs)
+        self.groups = groups
+        self.group = group
+    
+    def call(self, input):
+        return tf.split(input, self.groups, -1)[self.group]
     
 class DarknetResidual(Layer):
     def __init__(self, units, activate='LeakyReLU', kernel_initializer=glorot, **kwargs):
