@@ -2,7 +2,7 @@
 GPUS = 1
 
 # data config
-DTYPE = 'custom'
+DTYPE = 'coco'
 IMAGE_SIZE = 416
 MAX_BBOXES = 100
 CREATE_ANCHORS = False
@@ -12,7 +12,7 @@ POSITIVE_IOU_THRESHOLD = 0.5
 EPOCHS = 2000
 BATCH_SIZE = 16
 GLOBAL_BATCH_SIZE = BATCH_SIZE * GPUS
-LOSS_METRIC = 'YOLOv4Loss'
+LOSS_METRIC = 'YOLOv3Loss'
 LR = 1e-3
 LR_SCHEDULER = 'cosine_annealing'
 IOU_THRESHOLD = 0.5
@@ -29,10 +29,10 @@ elif LR_SCHEDULER == 'cosine_annealing':
     MIN_LR = 1e-6
 
 # model config
-MODEL_TYPE = 'YOLOv4_tiny'
-BASED_DTYPE = 'custom'
+MODEL_TYPE = 'YOLOv3'
+BASED_DTYPE = 'coco'
 
-LOAD_CHECKPOINTS = False
+LOAD_CHECKPOINTS = True
 CHECKPOINTS_DIR = 'checkpoints/' + BASED_DTYPE + '/'
 TRAIN_CHECKPOINTS_DIR = CHECKPOINTS_DIR + MODEL_TYPE + '/train_loss/'
 LOSS_CHECKPOINTS_DIR = CHECKPOINTS_DIR + MODEL_TYPE + '/val_loss/'

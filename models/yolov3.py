@@ -11,7 +11,7 @@ from losses import yolo_loss
 
 
 class YOLO(Model):
-    def __init__(self, anchors=ANCHORS, num_classes=NUM_CLASSES, image_size=IMAGE_SIZE, strides=STRIDES, loss_metric=LOSS_METRIC
+    def __init__(self, anchors=ANCHORS, num_classes=NUM_CLASSES, image_size=IMAGE_SIZE, strides=STRIDES, loss_metric=LOSS_METRIC,
                  iou_threshold=IOU_THRESHOLD, num_anchors=NUM_ANCHORS, eps=EPS, inf=INF, kernel_initializer=glorot, **kwargs):
         super().__init__(**kwargs)
         self.anchors = anchor_utils.get_anchors_xywh(anchors, strides, image_size)
