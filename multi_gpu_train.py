@@ -72,12 +72,12 @@ def main():
             for gpu in range(GPUS):
                 for batch in range(BATCH_SIZE):
                     if GPUS==1:
-                        NMS_preds = post_processing.NMS(batch_processed_preds[batch])
-                        labels = bbox_utils.extract_real_labels(batch_labels[batch])
+                        NMS_preds = post_processing.NMS(batch_processed_preds[batch]).numpy()
+                        labels = bbox_utils.extract_real_labels(batch_labels[batch]).numpy()
                     else:
-                        NMS_preds = post_processing.NMS(batch_processed_preds.values[gpu][batch])
-                        labels = bbox_utils.extract_real_labels(batch_labels.values[gpu][batch])
-                    stats.update_stats(NMS_preds, labels)
+                        NMS_preds = post_processing.NMS(batch_processed_preds.values[gpu][batch]).numpy()
+                        labels = bbox_utils.extract_real_labels(batch_labels.values[gpu][batch]).numpy()
+                    stats.update_stats(NMS_preds.numpy(), labels.numpy())
             
             return stats.calculate_mAP()
             
