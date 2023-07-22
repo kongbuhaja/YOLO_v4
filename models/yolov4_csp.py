@@ -13,7 +13,7 @@ class YOLO(Model):
     def __init__(self, anchors=ANCHORS, num_classes=NUM_CLASSES, image_size=IMAGE_SIZE, strides=STRIDES, loss_metric=LOSS_METRIC,
                  iou_threshold=IOU_THRESHOLD, num_anchors=NUM_ANCHORS, eps=EPS, inf=INF, kernel_initializer=glorot, **kwargs):
         super().__init__(**kwargs)
-        self.anchors = anchors
+        self.anchors = anchor_utils.get_anchors_xywh(anchors, strides, image_size)
         self.num_classes = num_classes
         self.image_size = image_size
         self.strides = strides
