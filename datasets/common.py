@@ -111,18 +111,24 @@ class Base_Dataset():
     def extract_normalized_wh(self):
         normalized_wh = np.zeros((0, 2))
         for image_file, labels, width, height in self.data:
+            # print(np.array(labels).shape)
+            if len(labels)==0:
+                continue
             normalized_wh = np.concatenate([normalized_wh, np.array(labels)[..., 2:4]/max(width, height)], 0)
 
         return normalized_wh
 
     def make_new_anchors(self):
-        print(f'Start calulate anchors......      ', end='', flush=True)
+        print(f'Start make anchors...   ', end='\n', flush=True)
         normalized_wh = self.extract_normalized_wh()
 
         anchors = np.array(ANCHORS)
-        new_anchors = anchor_utils.generate_anchors(normalized_wh, np.prod(anchors.shape[:-1]), IMAGE_SIZE, IMAGE_SIZE)
+        new_anchors, acc = anchor_utils.generate_anchors(normalized_wh, np.prod(anchors.shape[:-1]))
         io_utils.edit_config(str(ANCHORS), str(new_anchors.reshape(anchors.shape).tolist()))
         print('Done!')
+        print("Average accuracy: {:.2f}%".format(acc*100))
+        print("Anchors")
+        print(new_anchors)
         
     def read_image(self, image_file):
         image = cv2.imread(image_file)

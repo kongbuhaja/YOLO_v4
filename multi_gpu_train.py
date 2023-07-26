@@ -77,7 +77,7 @@ def main():
                     else:
                         NMS_preds = post_processing.NMS(batch_processed_preds.values[gpu][batch]).numpy()
                         labels = bbox_utils.extract_real_labels(batch_labels.values[gpu][batch]).numpy()
-                    stats.update_stats(NMS_preds.numpy(), labels.numpy())
+                    stats.update_stats(NMS_preds, labels)
             
             return stats.calculate_mAP()
             

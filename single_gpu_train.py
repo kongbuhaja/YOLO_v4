@@ -50,9 +50,9 @@ def main():
     
     def update_stats_step(batch_processed_preds, batch_labels):
         for processed_preds, labels in zip(batch_processed_preds, batch_labels):
-            NMS_preds = post_processing.NMS(processed_preds)
-            labels = bbox_utils.extract_real_labels(labels)
-            stats.update_stats(NMS_preds.numpy(), labels.numpy())
+            NMS_preds = post_processing.NMS(processed_preds).numpy()
+            labels = bbox_utils.extract_real_labels(labels).numpy()
+            stats.update_stats(NMS_preds, labels)
 
         return stats.calculate_mAP()
 

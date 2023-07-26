@@ -3,6 +3,7 @@ import tensorflow as tf
 from utils.bbox_utils import bbox_iou_wh_np
 
 def get_anchors_xywh(anchors, strides, image_size):
+    # anchors = tf.constant(anchors) * image_size
     grid_anchors = []
     for i in range(len(strides)):
         scale = image_size // strides[i]
@@ -38,15 +39,14 @@ def kmeans(boxes, k):
         last_cluster = current_nearest
     return clusters
 
-def generate_anchors(boxes, k, w, h):
-    result = kmeans(boxes, k)
-    avg_acc = avg_iou(boxes, result)*100
-    print(f'{w}x{h}')
-    print("Average accuracy: {:.2f}%".format(avg_acc))
-    result = np.array(sorted(np.array(result), key=lambda x: x[0]*x[1]), dtype=np.float32)
-    result[..., 0] = result[..., 0] * w
-    result[..., 1] = result[..., 1] * h
-    result = result.astype(np.int32)
-    print("Anchors")
-    print(result)
-    return result
+def generate_anchors(boxes, k):
+    best_avg_acc = 0.
+    anchors = np.zeros((9,))
+    for i in range(5):
+        result = kmeans(boxes, k)
+        avg_acc = avg_iou(boxes, result)
+        if best_avg_acc < avg_acc:
+            best_avg_acc = avg_acc
+            anchors = np.array(sorted(np.array(result), key=lambda x: x[0]*x[1]), dtype=np.float16)
+
+    return anchors, best_avg_acc

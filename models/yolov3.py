@@ -12,7 +12,7 @@ from losses import yolo_loss
 
 class YOLO(Model):
     def __init__(self, anchors=ANCHORS, num_classes=NUM_CLASSES, image_size=IMAGE_SIZE, strides=STRIDES, loss_metric=LOSS_METRIC,
-                 iou_threshold=IOU_THRESHOLD, num_anchors=NUM_ANCHORS, eps=EPS, inf=INF, kernel_initializer=glorot, **kwargs):
+                 iou_threshold=IOU_THRESHOLD, eps=EPS, inf=INF, kernel_initializer=glorot, **kwargs):
         super().__init__(**kwargs)
         self.anchors = anchor_utils.get_anchors_xywh(anchors, strides, image_size)
         self.num_classes = num_classes
@@ -20,7 +20,7 @@ class YOLO(Model):
         self.strides = strides
         self.scales = self.image_size // np.array(self.strides)
         self.iou_threshold = iou_threshold
-        self.num_anchors = num_anchors
+        self.col_anchors = len(anchors[0])
         self.eps = eps
         self.inf = inf
         self.kernel_initializer = kernel_initializer
@@ -32,16 +32,16 @@ class YOLO(Model):
 
         self.darknet53 = Darknet53(activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         
-        self.reverse_darknet_block  = ReverseDarknetBlock(512, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        self.large_grid_block = GridBlock(1024, self.scales[2], self.num_anchors, self.num_classes, 
+        self.reverse_darknet_block  = ReverseDarknetBlock(512, size=2, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.large_grid_block = GridBlock(1024, self.scales[2], self.col_anchors, self.num_classes, 
                                           activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         
-        self.medium_upsample_block = DarknetUpsampleBlock(256, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        self.medium_grid_block = GridBlock(512, self.scales[1], self.num_anchors, self.num_classes, 
+        self.medium_upsample_block = DarknetUpsampleBlock(256, size=2, branch_transition=False, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.medium_grid_block = GridBlock(512, self.scales[1], self.col_anchors, self.num_classes, 
                                            activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         
-        self.small_upsample_block = DarknetUpsampleBlock(256, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        self.small_grid_block = GridBlock(256, self.scales[0], self.num_anchors, self.num_classes, 
+        self.small_upsample_block = DarknetUpsampleBlock(256, size=2, branch_transition=False, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.small_grid_block = GridBlock(256, self.scales[0], self.col_anchors, self.num_classes, 
                                           activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
     
         print('Model: YOLOv3_tiny')

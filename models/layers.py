@@ -4,11 +4,6 @@ from tensorflow.keras.initializers import GlorotUniform as glorot
 from tensorflow.keras.initializers import HeUniform as he
 from tensorflow.keras.regularizers import l2
 
-class OSANet(Layer):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-
 class Mish(Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

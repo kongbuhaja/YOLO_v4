@@ -13,7 +13,7 @@ from losses import yolo_loss
     
 class YOLO(Model):
     def __init__(self, anchors=ANCHORS, num_classes=NUM_CLASSES, image_size=IMAGE_SIZE, strides=STRIDES, loss_metric=LOSS_METRIC,
-                 iou_threshold=IOU_THRESHOLD, num_anchors=NUM_ANCHORS, eps=EPS, inf=INF, kernel_initializer=glorot, **kwargs):
+                 iou_threshold=IOU_THRESHOLD, eps=EPS, inf=INF, kernel_initializer=glorot, **kwargs):
         super().__init__(**kwargs)
         self.anchors = anchor_utils.get_anchors_xywh(anchors, strides, image_size)
         self.num_classes = num_classes
@@ -21,7 +21,7 @@ class YOLO(Model):
         self.strides = strides
         self.scales = (self.image_size // np.array(self.strides)).tolist()
         self.iou_threshold = iou_threshold
-        self.num_anchors = num_anchors
+        self.col_anchors = len(anchors[0])
         self.eps = eps
         self.inf = inf
         self.kernel_initializer = kernel_initializer
@@ -35,11 +35,11 @@ class YOLO(Model):
         self.conv1 = DarknetConv(1024, 3, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         self.conv2 = DarknetConv(256, 1, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         
-        self.large_grid_block = GridBlock(512, self.scales[1], self.num_anchors, self.num_classes, 
+        self.large_grid_block = GridBlock(512, self.scales[1], self.col_anchors, self.num_classes, 
                                           activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         
         self.medium_upsample_layer = DarknetUpsample(128, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        self.medium_grid_block = GridBlock(256, self.scales[0], self.num_anchors, self.num_classes, 
+        self.medium_grid_block = GridBlock(256, self.scales[0], self.col_anchors, self.num_classes, 
                                            activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         self.concat = Concatenate()
         

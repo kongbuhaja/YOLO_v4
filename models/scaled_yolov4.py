@@ -4,7 +4,7 @@ from tensorflow.keras.initializers import GlorotUniform as glorot
 from tensorflow.keras.initializers import HeUniform as he
 from tensorflow.keras import Model
 from models.blocks import *
-from models.backbone import CSPDarknet53
+from models.backbone import CSPScaled
 from config import *
 from utils import anchor_utils
 from losses import yolo_loss
@@ -20,7 +20,7 @@ class YOLO(Model):
         self.strides = strides
         self.scales = (self.image_size // np.array(self.strides)).tolist()
         self.iou_threshold = iou_threshold
-        self.col_anchors = len(anchors)
+        self.col_anchors = len(anchors[0])
         self.kernel_initializer = kernel_initializer
         self.eps = eps
         self.inf = inf
@@ -30,20 +30,20 @@ class YOLO(Model):
         elif loss_metric == 'YOLOv3Loss':
             self.loss_metric = yolo_loss.v3_loss
 
-        self.backbone = CSPDarknet53(activate='Mish', scaled=False, kernel_initializer = self.kernel_initializer)
+        self.backbone = CSPScaled(activate='Mish', scaled=False, kernel_initializer = self.kernel_initializer)
 
-        self.spp_block = ReverseDarknetBlock(512, size=2, block_layer='SPP', activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        self.medium_upsample_block = DarknetUpsampleBlock(256, size=2, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        self.small_upsample_block = DarknetUpsampleBlock(128, size=2, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.spp_block = ReverseDarknetBlock(512, block_layer='SPP', activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.medium_upsample_block = DarknetUpsampleBlock(256, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.small_upsample_block = DarknetUpsampleBlock(128, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
 
         self.small_grid_block = GridBlock(256, self.scales[0], self.col_anchors, self.num_classes, 
                                           activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
 
-        self.medium_downsample_block = DarknetDownsampleBlock(256, size=2, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.medium_downsample_block = DarknetDownsampleBlock(256, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         self.medium_grid_block = GridBlock(512, self.scales[1], self.col_anchors, self.num_classes,
                                            activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
 
-        self.large_downsample_block = DarknetDownsampleBlock(512, size=2, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.large_downsample_block = DarknetDownsampleBlock(512, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         self.large_grid_block = GridBlock(1024, self.scales[2], self.col_anchors, self.num_classes,
                                           activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
 

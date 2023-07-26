@@ -4,14 +4,14 @@ from tensorflow.keras.initializers import GlorotUniform as glorot
 from tensorflow.keras.initializers import HeUniform as he
 from tensorflow.keras import Model
 from models.blocks import *
-from models.backbone import CSPDarknet53_scaled
+from models.backbone import CSPDarknet53
 from config import *
 from utils import anchor_utils
 from losses import yolo_loss
 
 class YOLO(Model):
     def __init__(self, anchors=ANCHORS, num_classes=NUM_CLASSES, image_size=IMAGE_SIZE, strides=STRIDES, loss_metric=LOSS_METRIC,
-                 iou_threshold=IOU_THRESHOLD, num_anchors=NUM_ANCHORS, eps=EPS, inf=INF, kernel_initializer=glorot, **kwargs):
+                 iou_threshold=IOU_THRESHOLD, eps=EPS, inf=INF, kernel_initializer=glorot, **kwargs):
         super().__init__(**kwargs)
         self.anchors = anchor_utils.get_anchors_xywh(anchors, strides, image_size)
         self.num_classes = num_classes
@@ -19,7 +19,7 @@ class YOLO(Model):
         self.strides = strides
         self.scales = (self.image_size // np.array(self.strides)).tolist()
         self.iou_threshold = iou_threshold
-        self.num_anchors = num_anchors
+        self.col_anchors = len(anchors[0])
         self.eps = eps
         self.inf = inf
         self.kernel_initializer = kernel_initializer
@@ -29,21 +29,21 @@ class YOLO(Model):
         elif loss_metric == 'YOLOv4Loss':
             self.loss_metric = yolo_loss.v3_loss
         
-        self.backbone = CSPDarknet53_scaled(activate='Mish', kernel_initializer=self.kernel_initializer)
+        self.backbone = CSPDarknet53(activate='Mish', scaled=True, kernel_initializer=self.kernel_initializer)
 
-        self.spp_block = ReverseCSPDarknetBlock(512, layer='SPP', activate='Mish', kernel_initializer=self.kernel_initializer)
-        self.medium_upsample_block = CSPDarknetUpsampleBlock(256, activate='Mish', kernel_initializer=self.kernel_initializer)
-        self.small_upsample_block = CSPDarknetUpsampleBlock(128, activate='Mish', kernel_initializer=self.kernel_initializer)
+        self.spp_block = ReverseCSPDarknetBlock(512, size=2, block_layer='SPP', activate='Mish', kernel_initializer=self.kernel_initializer)
+        self.medium_upsample_block = CSPDarknetUpsampleBlock(256, size=2, activate='Mish', kernel_initializer=self.kernel_initializer)
+        self.small_upsample_block = CSPDarknetUpsampleBlock(128, size=2, activate='Mish', kernel_initializer=self.kernel_initializer)
 
-        self.small_grid_block = GridBlock(256, self.scales[0], self.num_anchors, self.num_classes,
+        self.small_grid_block = GridBlock(256, self.scales[0], self.col_anchors, self.num_classes,
                                           activate='Mish', kernel_initializer=self.kernel_initializer)
         
-        self.medium_downsample_block = CSPDarknetDownsampleBlock(256, activate='Mish', kernel_initializer=self.kernel_initializer)
-        self.medium_grid_block = GridBlock(512, self.scales[1], self.num_anchors, self.num_classes,
+        self.medium_downsample_block = CSPDarknetDownsampleBlock(256, size=2, activate='Mish', kernel_initializer=self.kernel_initializer)
+        self.medium_grid_block = GridBlock(512, self.scales[1], self.col_anchors, self.num_classes,
                                            activate='Mish', kernel_initializer=self.kernel_initializer)
         
-        self.large_downsample_block = CSPDarknetDownsampleBlock(512, activate='Mish', kernel_initializer=self.kernel_initializer)
-        self.large_grid_block = GridBlock(1024, self.scales[2], self.num_anchors, self.num_classes,
+        self.large_downsample_block = CSPDarknetDownsampleBlock(512, size=2, activate='Mish', kernel_initializer=self.kernel_initializer)
+        self.large_grid_block = GridBlock(1024, self.scales[2], self.col_anchors, self.num_classes,
                                           activate='Mish', kernel_initializer=self.kernel_initializer)
 
     def call(self, input, training=False):

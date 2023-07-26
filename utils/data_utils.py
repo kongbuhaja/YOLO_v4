@@ -4,12 +4,12 @@ import numpy as np
 from utils import aug_utils, bbox_utils, anchor_utils
 
 class DataLoader():
-    def __init__(self, dtype=DTYPE, batch_size=GLOBAL_BATCH_SIZE, anchors=ANCHORS, num_anchors=NUM_ANCHORS, num_classes=NUM_CLASSES,
+    def __init__(self, dtype=DTYPE, batch_size=GLOBAL_BATCH_SIZE, anchors=ANCHORS, num_classes=NUM_CLASSES,
                  image_size=IMAGE_SIZE, strides=STRIDES, positive_iou_threshold=POSITIVE_IOU_THRESHOLD, max_bboxes=MAX_BBOXES):
                  
         self.batch_size = batch_size
-        self.num_anchors = num_anchors
-        self.len_anchors = len(anchors)
+        self.col_anchors = len(anchors[0])
+        self.raw_anchors = len(anchors)
         self.num_classes = num_classes
         self.image_size = image_size
         self.strides = np.array(strides)
@@ -57,7 +57,7 @@ class DataLoader():
         return self._length[split]
     
     def py_labels_to_grids(self, image, labels, use_label=False):
-        grids = tf.py_function(self.labels_to_grids, [labels], [tf.float32]*self.len_anchors)
+        grids = tf.py_function(self.labels_to_grids, [labels], [tf.float32]*self.raw_anchors)
         if use_label:
             return image, *grids, labels
         return image, *grids
@@ -102,7 +102,7 @@ class DataLoader():
         anchor_xy = [tf.reshape(anchor[..., :2], [-1,2]) for anchor in self.anchors]
         anchor_wh = [tf.reshape(anchor[..., 2:], [-1,2]) for anchor in self.anchors]
 
-        center_anchors = tf.concat([tf.concat([anchor_xy[i] + 0.5, anchor_wh[i]], -1) * self.strides[i] for i in range(self.len_anchors)], 0)
+        center_anchors = tf.concat([tf.concat([anchor_xy[i] + 0.5, anchor_wh[i]], -1) * self.strides[i] for i in range(self.raw_anchors)], 0)
 
         ious = bbox_utils.bbox_iou(center_anchors[:, None], labels[:, None, ..., :4])
 
@@ -119,11 +119,11 @@ class DataLoader():
 
         assigned_labels = tf.gather(tf.concat([labels[..., :5], onehot],-1), tf.argmax(joined_ious, -1), batch_dims=1) * joined_positive_mask
 
-        for i in range(self.len_anchors):
+        for i in range(self.raw_anchors):
             scale = self.scales[i]
-            start = 0 if i==0 else tf.reduce_sum((self.image_size//self.strides[:i])**2 * self.num_anchors)
-            end = start + (scale)**2 * self.num_anchors
-            grids += [tf.reshape(assigned_labels[:, start:end], [self.batch_size, scale, scale, self.num_anchors, -1])]
+            start = 0 if i==0 else tf.reduce_sum((self.image_size//self.strides[:i])**2 * self.col_anchors)
+            end = start + (scale)**2 * self.col_anchors
+            grids += [tf.reshape(assigned_labels[:, start:end], [self.batch_size, scale, scale, self.col_anchors, -1])]
 
         return grids
     
