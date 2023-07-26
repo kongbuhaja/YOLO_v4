@@ -46,6 +46,7 @@ class YOLO(Model):
         self.large_grid_block = GridBlock(1024, self.scales[2], self.col_anchors, self.num_classes,
                                           activate='Mish', kernel_initializer=self.kernel_initializer)
 
+    @tf.function
     def call(self, input, training=False):
         small_branch, medium_branch, large_branch = self.backbone(input, training)
 

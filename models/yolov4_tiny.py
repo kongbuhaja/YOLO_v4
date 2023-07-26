@@ -43,6 +43,7 @@ class YOLO(Model):
                                            activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         self.concat = Concatenate()
 
+    @tf.function
     def call(self, input, training=False):
         medium_branch, large_branch = self.darknet19_tiny(input, training)
         

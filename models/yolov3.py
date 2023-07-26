@@ -43,9 +43,8 @@ class YOLO(Model):
         self.small_upsample_block = DarknetUpsampleBlock(256, size=2, branch_transition=False, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         self.small_grid_block = GridBlock(256, self.scales[0], self.col_anchors, self.num_classes, 
                                           activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-    
-        print('Model: YOLOv3_tiny')
-    
+
+    @tf.function    
     def call(self, input, training=False):
         small_branch, medium_branch, large_branch = self.darknet53(input, training)
         
