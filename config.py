@@ -2,7 +2,7 @@
 GPUS = 1
 
 # data config
-DTYPE = 'voc'
+DTYPE = 'custom'
 IMAGE_SIZE = 416
 MAX_BBOXES = 100
 CREATE_ANCHORS = False
@@ -12,7 +12,7 @@ POSITIVE_IOU_THRESHOLD = 0.5
 EPOCHS = 2000
 BATCH_SIZE = 16
 GLOBAL_BATCH_SIZE = BATCH_SIZE * GPUS
-LOSS_METRIC = 'YOLOv3Loss'
+LOSS_METRIC = 'YOLOv4Loss'
 LR = 1e-3
 LR_SCHEDULER = 'cosine_annealing'
 IOU_THRESHOLD = 0.5
@@ -30,8 +30,8 @@ elif LR_SCHEDULER == 'cosine_annealing':
 
 # model config
 # YOLOv3, YOLOv3_tiny, YOLOv4, YOLOv4_tiny, YOLOv4_csp
-MODEL_TYPE = 'YOLOv3_tiny'
-BASED_DTYPE = 'voc'
+MODEL_TYPE = 'YOLOv4'
+BASED_DTYPE = 'custom'
 
 LOAD_CHECKPOINTS = False
 CHECKPOINTS_DIR = 'checkpoints/' + BASED_DTYPE + '/'

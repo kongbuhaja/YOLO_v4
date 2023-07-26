@@ -3,7 +3,7 @@ import tensorflow as tf
 from utils.bbox_utils import bbox_iou_wh_np
 
 def get_anchors_xywh(anchors, strides, image_size):
-    # anchors = tf.constant(anchors) * image_size
+    anchors = tf.constant(anchors) * image_size
     grid_anchors = []
     for i in range(len(strides)):
         scale = image_size // strides[i]
