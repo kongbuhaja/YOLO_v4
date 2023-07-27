@@ -42,9 +42,9 @@ def NMS(preds, score_threshold=SCORE_THRESHOLD, iou_threshold=IOU_THRESHOLD, sig
             
             ious = bbox_utils.bbox_iou(max_target[..., :4], targets[..., :4], xywh=False, iou_type='diou')
             if method == 'normal':
-                target_scores = tf.where(ious > iou_threshold, 0, targets[..., 4])
+                target_scores = tf.where(ious >= iou_threshold, 0, targets[..., 4])
             elif method == 'soft_normal':
-                target_scores = tf.where(ious > iou_threshold, targets[..., 4] * (1 - ious), targets[..., 4])
+                target_scores = tf.where(ious >= iou_threshold, targets[..., 4] * (1 - ious), targets[..., 4])
             elif method == 'soft_gaussian':
                 target_scores = tf.exp(-(ious)**2/sigma) * targets[..., 4]
                 

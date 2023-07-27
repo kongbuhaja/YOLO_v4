@@ -18,7 +18,7 @@ LR_SCHEDULER = 'cosine_annealing'
 IOU_THRESHOLD = 0.5
 EPS = 1e-5
 INF = 1e+30
-EVAL_PER_EPOCHS = 5
+EVAL_PER_EPOCHS = 1
 WARMUP_EPOCHS = 5
 
 if LR_SCHEDULER == 'poly':
