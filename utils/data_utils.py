@@ -56,8 +56,8 @@ class DataLoader():
     def length(self, split):
         return self._length[split]
     
-    def py_labels_to_grids(self, image, labels, use_label=False):
-        grids = tf.py_function(self.labels_to_grids, [labels], [tf.float32]*self.raw_anchors)
+    def py_encode(self, image, labels, use_label):
+        grids = tf.py_function(self.encode, [labels], [tf.float32]*self.raw_anchors)
         if use_label:
             return image, *grids, labels
         return image, *grids
