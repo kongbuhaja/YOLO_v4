@@ -114,7 +114,9 @@ class Base_Dataset():
             # print(np.array(labels).shape)
             if len(labels)==0:
                 continue
-            normalized_wh = np.concatenate([normalized_wh, np.array(labels)[..., 2:4]/max(width, height)], 0)
+            labels = np.array(labels)
+            wh = labels[..., 2:4] - labels[..., :2]
+            normalized_wh = np.concatenate([normalized_wh, wh / max(width, height)], 0)
 
         return normalized_wh
 
@@ -122,9 +124,8 @@ class Base_Dataset():
         print(f'Start make anchors...   ', end='\n', flush=True)
         normalized_wh = self.extract_normalized_wh()
 
-        anchors = np.array(ANCHORS)
-        new_anchors, acc = anchor_utils.generate_anchors(normalized_wh, np.prod(anchors.shape[:-1]))
-        io_utils.edit_config(str(ANCHORS), str(new_anchors.reshape(anchors.shape).tolist()))
+        new_anchors, acc = anchor_utils.generate_anchors(normalized_wh, np.prod(self.anchors.shape[:-1]))
+        io_utils.edit_config(str(self.anchors.tolist()), str(new_anchors.reshape(self.anchors.shape).tolist()))
         print('Done!')
         print("Average accuracy: {:.2f}%".format(acc*100))
         print("Anchors")

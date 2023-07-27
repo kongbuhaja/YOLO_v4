@@ -41,7 +41,7 @@ def kmeans(boxes, k):
 
 def generate_anchors(boxes, k):
     best_avg_acc = 0.
-    anchors = np.zeros((9,))
+    anchors = np.zeros((k,))
     for i in range(5):
         result = kmeans(boxes, k)
         avg_acc = avg_iou(boxes, result)
