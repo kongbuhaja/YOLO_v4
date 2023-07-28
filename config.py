@@ -55,7 +55,7 @@ LOGDIR = 'logs/' + MODEL_TYPE + '_' + DTYPE + '_log'
 # inference config
 NMS_TYPE = 'soft_gaussian'
 if 'soft' in NMS_TYPE:
-    SCORE_THRESHOLD = 0.001
+    SCORE_THRESHOLD = 0.45
 else:
     SCORE_THRESHOLD = 0.5
 SIGMA = 0.3
