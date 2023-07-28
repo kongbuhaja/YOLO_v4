@@ -18,7 +18,7 @@ LR_SCHEDULER = 'cosine_annealing'
 IOU_THRESHOLD = 0.5
 EPS = 1e-5
 INF = 1e+30
-EVAL_PER_EPOCHS = 5
+EVAL_PER_EPOCHS = 1
 WARMUP_EPOCHS = 5
 
 if LR_SCHEDULER == 'poly':
@@ -55,10 +55,10 @@ LOGDIR = 'logs/' + MODEL_TYPE + '_' + DTYPE + '_log'
 # inference config
 NMS_TYPE = 'soft_gaussian'
 if 'soft' in NMS_TYPE:
-    SCORE_THRESHOLD = 0.45
+    SCORE_THRESHOLD = 0.01
 else:
     SCORE_THRESHOLD = 0.5
-SIGMA = 0.3
+SIGMA = 0.5
 OUTPUT_DIR = 'outputs/' + DTYPE + '/' + BASED_DTYPE + '_' + MODEL_TYPE + '/'
 
 # cam config
