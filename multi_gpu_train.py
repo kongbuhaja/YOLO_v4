@@ -32,7 +32,7 @@ def main():
     
     anchors = list(map(lambda x: tf.reshape(x, [-1,4]), anchor_utils.get_anchors_xywh(ANCHORS, STRIDES, IMAGE_SIZE)))
 
-    stats = eval_utils.stats()
+    eval = eval_utils.Eval()
 
     with strategy.scope():
         @tf.function
@@ -77,9 +77,9 @@ def main():
                     else:
                         NMS_preds = post_processing.NMS(batch_processed_preds.values[gpu][batch]).numpy()
                         labels = bbox_utils.extract_real_labels(batch_labels.values[gpu][batch]).numpy()
-                    stats.update_stats(NMS_preds, labels)
+                    eval.update_stats(NMS_preds, labels)
             
-            return stats.calculate_mAP()
+            return eval.calculate_mAP()
             
     for epoch in range(start_epoch, EPOCHS + 1):       
         #train
@@ -120,7 +120,7 @@ def main():
                 
         # valid
         if epoch % EVAL_PER_EPOCHS == 0:
-            stats.init_stat()
+            eval.init_stat()
             valid_iter, valid_loc_loss, valid_conf_loss, valid_prob_loss, valid_total_loss = 0, 0., 0., 0., 0.
             valid_tqdm = tqdm.tqdm(valid_dataset, total=valid_dataset_length, desc=f'valid epoch {epoch}/{EPOCHS}', ascii=' =', colour='blue')
             for batch_data in valid_tqdm:

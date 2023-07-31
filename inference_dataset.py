@@ -14,7 +14,7 @@ def main():
     
     model, _, _, _, _ = train_utils.get_model(load_checkpoints=True)
     
-    stats = eval_utils.stats()
+    eval = eval_utils.Eval()
     
     all_images = []
     all_grids = []
@@ -45,9 +45,9 @@ def main():
                 output = np.concatenate([origin, pred], 1)
                 draw_utils.show_and_save_image(output, just_save=True)
 
-            stats.update_stats(NMS_preds, labels)
-    stats.calculate_mAP()
-    evaluation = stats.get_result()
+            eval.update_stats(NMS_preds, labels)
+    eval.calculate_mAP()
+    evaluation = eval.get_result()
     print(evaluation)
     io_utils.write_eval(evaluation)   
     

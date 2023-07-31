@@ -28,7 +28,7 @@ def main():
     
     anchors = list(map(lambda x: tf.reshape(x, [-1,4]), anchor_utils.get_anchors_xywh(ANCHORS, STRIDES, IMAGE_SIZE)))
 
-    stats = eval_utils.stats()
+    eval = eval_utils.Eval()
     @tf.function
     def train_step(batch_images, batch_grids):
         with tf.GradientTape() as train_tape:
@@ -52,9 +52,9 @@ def main():
         for processed_preds, labels in zip(batch_processed_preds, batch_labels):
             NMS_preds = post_processing.NMS(processed_preds).numpy()
             labels = bbox_utils.extract_real_labels(labels).numpy()
-            stats.update_stats(NMS_preds, labels)
+            eval.update_stats(NMS_preds, labels)
 
-        return stats.calculate_mAP()
+        return eval.calculate_mAP()
 
     for epoch in range(start_epoch, EPOCHS + 1):
         #train
@@ -95,7 +95,7 @@ def main():
                 
         # valid
         if epoch % EVAL_PER_EPOCHS == 0:
-            stats.init_stat()
+            eval.init_stat()
             valid_iter, valid_loc_loss, valid_conf_loss, valid_prob_loss, valid_total_loss = 0, 0, 0, 0, 0
             valid_tqdm = tqdm.tqdm(valid_dataset, total=valid_dataset_length, desc=f'valid epoch {epoch}/{EPOCHS}', ascii=' =', colour='blue')
             for batch_data in valid_tqdm:
@@ -107,7 +107,7 @@ def main():
 
                 mAP50, mAP = update_stats_step(batch_processed_preds, batch_labels)
 
-                mAP50, mAP = stats.calculate_mAP()
+                mAP50, mAP = eval.calculate_mAP()
                 
                 valid_loc_loss += valid_loss[0]
                 valid_conf_loss += valid_loss[1]
