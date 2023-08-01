@@ -20,7 +20,7 @@ def tf_resize_padding(image, labels, width, height, image_size):
     return padded_image, resized_labels
 
 @tf.function
-def tf_random_resize_padding(image, labels, width, height, image_size):
+def tf_resize_random_padding(image, labels, width, height, image_size):
     scale = tf.minimum(image_size/width, image_size/height)
     new_width, new_height = tf.floor(scale * width), tf.floor(scale * height)
     random_w, random_h = tf.random.uniform((), minval=0, maxval=1), tf.random.uniform((), minval=0, maxval=1)
