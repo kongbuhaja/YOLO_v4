@@ -257,7 +257,7 @@ class DataLoader():
         assigned_labels = tf.gather(tf.concat([labels[..., :5], onehot],-1), tf.argmax(joined_ious, -1), batch_dims=1) * joined_positive_mask
         grid_xy = tf.concat([anchor_xy[i] for i in range(self.raw_anchors)], 0)
         tiled_strides = tf.cast(tf.concat([tf.tile(stride[None, None, None], [self.batch_size, scale**2*self.col_anchors, 1]) for stride, scale in zip(self.strides, self.scales)], 1), tf.float32)
-        based_xy = (grid_xy[None] - tf.minimum(tf.maximum(grid_xy[None] - assigned_labels[..., :2] / tiled_strides, 0), -1)) * joined_positive_mask * tiled_strides
+        based_xy = (grid_xy[None] - tf.minimum(tf.maximum(grid_xy[None] - assigned_labels[..., :2] / tiled_strides, -1), 0)) * joined_positive_mask * tiled_strides
         assigned_labels = tf.concat([based_xy, assigned_labels[..., 2:]], -1)
 
         for i in range(self.raw_anchors):

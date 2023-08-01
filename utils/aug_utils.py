@@ -20,6 +20,24 @@ def tf_resize_padding(image, labels, width, height, image_size):
     return padded_image, resized_labels
 
 @tf.function
+def tf_random_resize_padding(image, labels, width, height, image_size):
+    scale = tf.minimum(image_size/width, image_size/height)
+    new_width, new_height = tf.floor(scale * width), tf.floor(scale * height)
+    random_w, random_h = tf.random.uniform((), minval=0, maxval=1), tf.random.uniform((), minval=0, maxval=1)
+    pad_left, pad_top = (image_size - new_width) * random_w, (image_size - new_height) * random_h
+    pad_right, pad_bottom = image_size - new_width - pad_left, image_size - new_height - pad_top
+    resized_image = tf.image.resize(image, [new_height,new_width])
+    padding = tf.cast(tf.reshape(tf.stack([pad_top, pad_bottom, pad_left, pad_right, 0,0]), [3,2]), tf.int32)
+    padded_image = tf.pad(resized_image, padding)
+    resized_labels = tf.round(tf.concat([labels[..., 0:1] * scale + pad_left,
+                                         labels[..., 1:2] * scale + pad_top,
+                                         labels[..., 2:3] * scale + pad_left,
+                                         labels[..., 3:4] * scale + pad_top,
+                                         labels[..., 4:]],-1))
+    
+    return padded_image, resized_labels
+
+@tf.function
 def tf_augmentation(image, labels, width, height):
     bboxes = labels[..., :4]
     color_methods = [[random_brigthness, 0.5], [random_hue, 0.5], [random_saturation, 0.5], [random_contrast, 0.5]]
