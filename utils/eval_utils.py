@@ -51,7 +51,7 @@ class Eval:
 
         gt_unique_classes = np.unique(gt_classes.astype(np.int32))
 
-        ap = np.zeros((10, self.num_of_ious))
+        ap = np.zeros((len(self.labels), self.num_of_ious))
         for c in gt_unique_classes:
             i_p = pred_classes == c
             n_g = (gt_classes == c).sum()
