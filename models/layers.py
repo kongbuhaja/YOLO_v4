@@ -8,8 +8,8 @@ class Mish(Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def call(self, input):
-        return input * tf.math.tanh(tf.math.softplus(input))
+    def call(self, x):
+        return x * tf.math.tanh(tf.math.softplus(x))
 
 class DarknetConv(Layer):
     def __init__(self, unit, kernel_size, strides=1, padding='same', activate='Mish', bn=True, kernel_initializer=glorot, **kwargs):
@@ -34,8 +34,8 @@ class DarknetConv(Layer):
         elif activate == 'LeakyReLU':
             self.activate = LeakyReLU(alpha=0.1)
 
-    def call(self, input, training=False):
-        x = self.conv(input)
+    def call(self, x, training=False):
+        x = self.conv(x)
         x = self.bn(x, training)
         x = self.activate(x)
         
@@ -55,10 +55,10 @@ class DarknetOSA(Layer):
         self.concat = Concatenate()
         self.transition = DarknetConv(self.unit, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
 
-    def call(self, input, training=False):
+    def call(self, x, training=False):
         for l in range(self.growth_rate):
-            input = self.layers[l](input, training)
-            self.features += [input]
+            x = self.layers[l](x, training)
+            self.features += [x]
         
         x = self.concat(self.features)
         x = self.transition(x, training)
@@ -69,8 +69,8 @@ class SplitLayer(Layer):
         self.groups = groups
         self.group = group
     
-    def call(self, input):
-        return tf.split(input, self.groups, -1)[self.group]
+    def call(self, x):
+        return tf.split(x, self.groups, -1)[self.group]
     
 class DarknetResidual(Layer):
     def __init__(self, units, activate='LeakyReLU', kernel_initializer=glorot, **kwargs):
@@ -83,11 +83,12 @@ class DarknetResidual(Layer):
         self.conv2 = DarknetConv(self.units[1], 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
         self.add = Add()
     
-    def call(self, input, training=False):
-        x = self.conv1(input, training)
+    def call(self, x, training=False):
+        branch = x
+        x = self.conv1(x, training)
         x = self.conv2(x, training)
 
-        return self.add([input, x])
+        return self.add([x, branch])
     
 class SPP(Layer):
     def __init__(self, unit, activate='Mish', kernel_initializer=glorot, **kwargs):
@@ -102,11 +103,11 @@ class SPP(Layer):
         self.concat = Concatenate()        
         self.conv = DarknetConv(self.unit, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
 
-    def call(self, input, training=False):
-        pool1 = self.maxpool1(input)
-        pool2 = self.maxpool2(input)
-        pool3 = self.maxpool3(input)
-        x = self.concat([pool1, pool2, pool3, input])
+    def call(self, x, training=False):
+        pool1 = self.maxpool1(x)
+        pool2 = self.maxpool2(x)
+        pool3 = self.maxpool3(x)
+        x = self.concat([pool1, pool2, pool3, x])
         x = self.conv(x, training)
 
         return x
@@ -119,8 +120,8 @@ class DarknetUpsample(Layer):
         self.kernel_initializer = kernel_initializer
         self.conv = DarknetConv(self.unit, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
 
-    def call(self, input, training=False):
-        x = self.conv(input, training)
+    def call(self, x, training=False):
+        x = self.conv(x, training)
         x = tf.image.resize(x, (x.shape[1]*2, x.shape[2]*2), method='nearest')
         return x
     
@@ -132,13 +133,13 @@ class DarknetDownsample(Layer):
         self.kernel_initializer = kernel_initializer
         self.conv = DarknetConv(self.unit, 3, 2, activate=self.activate, kernel_initializer=self.kernel_initializer)
 
-    def call(self, input, training=False):
-        x = self.conv(input, training)
+    def call(self, x, training=False):
+        x = self.conv(x, training)
         return x
     
 class Identity(Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def call(self, input, training=False):
-        return input
+    def call(self, x, training=False):
+        return x

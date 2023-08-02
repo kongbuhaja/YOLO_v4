@@ -6,6 +6,8 @@ from tensorflow.keras.initializers import HeUniform as he
 from tensorflow.keras import Model
 from models.blocks import *
 from models.backbone import CSPDarknet19
+from models.necks import tinyFPN
+from models.heads import Head
 from config import *
 from utils import anchor_utils
 from losses import yolo_loss
@@ -32,30 +34,16 @@ class YOLO(Model):
             self.loss_metric = yolo_loss.v3_loss
 
         self.darknet19_tiny = CSPDarknet19(activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        self.conv1 = DarknetConv(512, 3, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        self.conv2 = DarknetConv(256, 1, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        
-        self.large_grid_block = GridBlock(512, self.scales[1], self.col_anchors, self.num_classes, 
-                                          activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        
-        self.medium_upsample_layer = DarknetUpsample(128, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        self.medium_grid_block = GridBlock(256, self.scales[0], self.col_anchors, self.num_classes, 
-                                           activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        self.concat = Concatenate()
-
+        self.neck = tinyFPN(256, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.head = Head(256, self.scales, self.col_anchors, self.num_classes, 
+                         activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
     @tf.function
-    def call(self, input, training=False):
-        medium_branch, large_branch = self.darknet19_tiny(input, training)
-        
-        x = self.conv1(large_branch, training)
-        large_branch = self.conv2(x, training)
-        l_grid = self.large_grid_block(large_branch, training)
-                    
-        upsampled_medium_branch = self.medium_upsample_layer(large_branch, training)
-        medium_branch = self.concat([medium_branch, upsampled_medium_branch])
-        m_grid = self.medium_grid_block(medium_branch, training)
+    def call(self, x, training=False):
+        backbone = self.darknet19_tiny(x, training)
+        neck = self.neck(backbone, training)
+        head = self.head(neck, training)
 
-        return m_grid, l_grid
+        return head
     
     @tf.function
     def loss(self, labels, preds, batch_size):

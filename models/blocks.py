@@ -18,8 +18,8 @@ class DarknetBlock(Layer):
         elif block_layer == 'Resnet':
             self.layers += [DarknetResidual([self.unit//2, self.unit], activate=self.activate, kernel_initializer=self.kernel_initializer) for _ in range(self.size)]
 
-    def call(self, input, training=False):
-        x = input
+    def call(self, x, training=False):
+        x = x
 
         for l in range(len(self.layers)):
             x = self.layers[l](x, training)
@@ -54,8 +54,8 @@ class CSPOSABlock(Layer):
     
         self.concat = Concatenate()
 
-    def call(self, input, training=False):
-        x = self.pre_conv(input, training)
+    def call(self, x, training=False):
+        x = self.pre_conv(x, training)
         branch1 = self.branch_transition(x, training)
     
         branch2 = self.block_pre_transition(x, training)
@@ -99,8 +99,8 @@ class CSPDarknetBlock(Layer):
     
         self.concat = Concatenate()
 
-    def call(self, input, training=False):
-        x = self.pre_conv(input, training)
+    def call(self, x, training=False):
+        x = self.pre_conv(x, training)
         branch = self.branch_transition(x, training)
     
         for l in range(len(self.layers)):
@@ -131,8 +131,8 @@ class DarknetTinyBlock(Layer):
         self.concat = Concatenate()
         self.transition = DarknetConv(self.unit, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
 
-    def call(self, input, training):
-        x = self.split(input)
+    def call(self, x, training):
+        x = self.split(x)
         x = self.pre_conv(x, training)
         short_cut = x
         for l in range(self.size):
@@ -159,8 +159,8 @@ class ReverseDarknetBlock(Layer):
             self.layers += [DarknetConv(self.unit * 2, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)]
         self.layers += [DarknetConv(self.unit, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)]
 
-    def call(self, input, training=False):
-        x = input
+    def call(self, x, training=False):
+        x = x
         for l in range(len(self.layers)):
             x = self.layers[l](x, training)
 
@@ -188,10 +188,10 @@ class ReverseCSPDarknetBlock(Layer):
 
         self.concat = Concatenate()
 
-    def call(self, input, training=False):
-        branch = self.branch_transition(input, training)
+    def call(self, x, training=False):
+        branch = self.branch_transition(x, training)
 
-        x = input
+        x = x
         for l in range(len(self.layers)):
             x = self.layers[l](x, training)
         
@@ -218,8 +218,8 @@ class CSPDarknetUpsampleBlock(Layer):
         self.concat = Concatenate()
 
     def call(self, branch1, branch2, training=False):
-        branch1 = self.branch_transition(branch1, training)
-        branch2 = self.upsample(branch2, training)       
+        branch1 = self.upsample(branch1, training)
+        branch2 = self.branch_transition(branch2, training)
         x = self.concat([branch1, branch2])
         x = self.reverse_csp_darknet_block(x, training)
 
@@ -233,7 +233,7 @@ class CSPDarknetDownsampleBlock(Layer):
         self.activate = activate
         self.kernel_initializer = kernel_initializer
 
-        self.downsample = DarknetDownsample(self.unit, self.size, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.downsample = DarknetDownsample(self.unit, activate=self.activate, kernel_initializer=self.kernel_initializer)
         self.reverse_csp_darknet_block = ReverseCSPDarknetBlock(self.unit, size=self.size, activate=self.activate, kernel_initializer=self.kernel_initializer)
     
         self.concat = Concatenate()
@@ -263,8 +263,8 @@ class DarknetUpsampleBlock(Layer):
         self.concat = Concatenate()
 
     def call(self, branch1, branch2, training=False):
-        branch1 = self.branch_transition(branch1, training)
-        branch2 = self.upsample(branch2, training)
+        branch1 = self.upsample(branch1, training)
+        branch2 = self.branch_transition(branch2, training)
         x = self.concat([branch1, branch2])
         x = self.reverse_darknet_block(x, training)
 
@@ -290,7 +290,7 @@ class DarknetDownsampleBlock(Layer):
 
         return x
 
-class GridBlock(Layer):
+class HeadBlock(Layer):
     def __init__(self, unit, scale, col_anchors, num_classes, activate='LeakyReLU', kernel_initializer=glorot, **kwargs):
         super().__init__(**kwargs)
         self.unit = unit
@@ -304,8 +304,8 @@ class GridBlock(Layer):
         self.conv2 = DarknetConv(self.col_anchors * (self.num_classes + 5), 1, activate=False, bn=False, kernel_initializer=self.kernel_initializer)
         self.reshape = Reshape((self.scale, self.scale, self.col_anchors, self.num_classes + 5))
         
-    def call(self, input, training=False):
-        x = self.conv1(input, training)
+    def call(self, x, training=False):
+        x = self.conv1(x, training)
         x = self.conv2(x, training)
         x = self.reshape(x)
 

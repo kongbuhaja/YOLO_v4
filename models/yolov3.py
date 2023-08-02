@@ -5,6 +5,8 @@ from tensorflow.keras.initializers import HeUniform as he
 from tensorflow.keras import Model
 from models.blocks import *
 from models.backbone import Darknet53
+from models.necks import FPNSPP
+from models.heads import Head
 from config import *
 from utils import anchor_utils
 from losses import yolo_loss
@@ -30,37 +32,19 @@ class YOLO(Model):
         elif loss_metric == 'YOLOv3Loss':
             self.loss_metric = yolo_loss.v3_loss
 
-        self.darknet53 = Darknet53(activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        
-        self.reverse_darknet_block  = ReverseDarknetBlock(512, size=2, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        self.large_grid_block = GridBlock(1024, self.scales[2], self.col_anchors, self.num_classes, 
-                                          activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        
-        self.medium_upsample_block = DarknetUpsampleBlock(256, size=2, branch_transition=False, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        self.medium_grid_block = GridBlock(512, self.scales[1], self.col_anchors, self.num_classes, 
-                                           activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        
-        self.small_upsample_block = DarknetUpsampleBlock(256, size=2, branch_transition=False, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        self.small_grid_block = GridBlock(256, self.scales[0], self.col_anchors, self.num_classes, 
-                                          activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.backbone = Darknet53(activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.neck = FPNSPP(512, layer_size=3, block_size=2, branch_transition=False,
+                           activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
+        self.head = Head(256, self.scales, self.col_anchors, self.num_classes, 
+                         activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
 
     @tf.function    
-    def call(self, input, training=False):
-        small_branch, medium_branch, large_branch = self.darknet53(input, training)
-        
-        # l_grid
-        large_branch = self.reverse_darknet_block(large_branch, training)
-        l_grid = self.large_grid_block(large_branch, training)
+    def call(self, x, training=False):
+        backbone = self.backbone(x, training)
+        neck = self.neck(backbone, training)
+        head = self.head(neck, training)
 
-        # m_grid
-        medium_branch = self.medium_upsample_block(medium_branch, large_branch, training)
-        m_grid = self.medium_grid_block(medium_branch, training)
-
-        # s_grid
-        small_branch = self.small_upsample_block(small_branch, medium_branch, training)
-        s_grid = self.small_grid_block(small_branch, training)
-
-        return s_grid, m_grid, l_grid
+        return head
     
     @tf.function
     def loss(self, labels, preds, batch_size):
