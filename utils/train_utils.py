@@ -54,7 +54,7 @@ class cosine_annealing_lr_scheduler():
         while(t_cur >= self.t_max):
             t_cur -= self.t_max
             self.csum += self.t_max
-            self.t_max *= self.T_mult
+            self.t_max *= self.t_mult
             
         lr = self.min_lr + 0.5 * (self.init_lr - self.min_lr) * (1 + math.cos(t_cur / self.t_max * math.pi))
         return lr
