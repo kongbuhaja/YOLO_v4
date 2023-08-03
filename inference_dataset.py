@@ -8,7 +8,7 @@ import numpy as np
 
 def main():
     model, _, _, _, _ = train_utils.load_model(MODEL_TYPE, ANCHORS, NUM_CLASSES, STRIDES, IOU_THRESHOLD,
-                                               EPS, INF, KERNEL_INITIALIZER, LOAD_CHECKPOINTS, CHECKPOINTS)
+                                               EPS, INF, KERNEL_INITIALIZER, True, CHECKPOINTS)
     dataloader = data_utils.DataLoader(DTYPE, LABELS, BATCH_SIZE, ANCHORS, NUM_CLASSES, 
                                        model.input_size, model.strides, POSITIVE_IOU_THRESHOLD, MAX_BBOXES, 
                                        CREATE_ANCHORS)

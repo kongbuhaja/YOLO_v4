@@ -7,7 +7,7 @@ from utils import bbox_utils, draw_utils, io_utils, train_utils, aug_utils, post
 
 def main():
     model, _, _, _, _ = train_utils.load_model(MODEL_TYPE, ANCHORS, NUM_CLASSES, STRIDES, IOU_THRESHOLD,
-                                               EPS, INF, KERNEL_INITIALIZER, False, CHECKPOINTS)
+                                               EPS, INF, KERNEL_INITIALIZER, True, CHECKPOINTS)
 
     cap = cv2.VideoCapture(VIDEO_PATH)
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
