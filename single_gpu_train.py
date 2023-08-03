@@ -8,9 +8,8 @@ from utils.preset import preset
 def main():
     model, start_epoch, max_mAP50, max_mAP, max_loss = train_utils.load_model(MODEL_TYPE, ANCHORS, NUM_CLASSES, STRIDES, IOU_THRESHOLD,
                                                                               EPS, INF, KERNEL_INITIALIZER, LOAD_CHECKPOINTS, CHECKPOINTS)
-    dataloader = data_utils.DataLoader(DTYPE, LABELS, BATCH_SIZE, ANCHORS, NUM_CLASSES, 
-                                       model.input_size, model.strides, POSITIVE_IOU_THRESHOLD, MAX_BBOXES, 
-                                       CREATE_ANCHORS)
+    dataloader = data_utils.DataLoader(DTYPE, LABELS, BATCH_SIZE, ANCHORS, model.input_size, 
+                                       model.strides, POSITIVE_IOU_THRESHOLD, MAX_BBOXES, CREATE_ANCHORS)
     train_dataset = dataloader('train')
     valid_dataset = dataloader('val', use_label=True)
     train_dataset_length = dataloader.length('train') // BATCH_SIZE

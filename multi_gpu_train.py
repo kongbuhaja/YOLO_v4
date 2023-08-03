@@ -9,11 +9,10 @@ def main():
     
     with strategy.scope():
         model, start_epoch, max_mAP50, max_mAP, max_loss = train_utils.load_model(MODEL_TYPE, ANCHORS, NUM_CLASSES, STRIDES, IOU_THRESHOLD,
-                                                                                EPS, INF, KERNEL_INITIALIZER, LOAD_CHECKPOINTS, CHECKPOINTS)
-    dataloader = data_utils.DataLoader(DTYPE, LABELS, GLOBAL_BATCH_SIZE, ANCHORS, NUM_CLASSES, 
-                                       model.input_size, model.strides, POSITIVE_IOU_THRESHOLD, MAX_BBOXES, 
-                                       CREATE_ANCHORS)
+                                                                                  EPS, INF, KERNEL_INITIALIZER, LOAD_CHECKPOINTS, CHECKPOINTS)
     with strategy.scope():
+        dataloader = data_utils.DataLoader(DTYPE, LABELS, BATCH_SIZE, ANCHORS, model.input_size, 
+                                           model.strides, POSITIVE_IOU_THRESHOLD, MAX_BBOXES, CREATE_ANCHORS)
         train_dataset = strategy.experimental_distribute_dataset(dataloader('train'))
         valid_dataset = strategy.experimental_distribute_dataset(dataloader('val', use_label=True))
     

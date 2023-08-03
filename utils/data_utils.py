@@ -3,15 +3,14 @@ import numpy as np
 from utils import aug_utils, bbox_utils, anchor_utils
 
 class DataLoader():
-    def __init__(self, dtype, labels, batch_size, anchors, num_classes, 
-                 input_size, strides, positive_iou_threshold, max_bboxes, 
-                 create_anchors):
+    def __init__(self, dtype, labels, batch_size, anchors, input_size, 
+                 strides, positive_iou_threshold, max_bboxes, create_anchors):
         self.dtype = dtype
         self.labels = labels
         self.batch_size = batch_size
         self.col_anchors = len(anchors[0])
         self.row_anchors = len(anchors)
-        self.num_classes = num_classes
+        self.num_classes = len(labels)
         self.input_size = input_size
         self.strides = np.array(strides)
         self.scales = (self.input_size // np.array(self.strides)).tolist()
