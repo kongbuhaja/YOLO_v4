@@ -17,7 +17,7 @@ def draw_labels(image, preds, labels, xywh=True):
         cv2.putText(image, f'{labels[cls]}:{score:.3f}', (bbox[0], bbox[1]-5), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, color, 1)
     return image
 
-def draw_image(image, input_size, output_dir, draw=True):
+def draw_image(image, input_size, output_dir, save=True):
     if image.shape[1] != input_size:
         title = 'truth_and_pred'
     else:
@@ -26,7 +26,7 @@ def draw_image(image, input_size, output_dir, draw=True):
     filename = output_dir + 'image/' + title
     filename += '_' + str(len(glob.glob(filename + '*.jpg')))
     
-    if draw:
+    if save:
         cv2.imwrite(filename + '.jpg', image)
     else:
         cv2.imshow(title, image)

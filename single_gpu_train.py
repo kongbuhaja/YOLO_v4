@@ -32,6 +32,7 @@ def main():
     anchors_xywh = list(map(lambda x: tf.reshape(x, [-1,4]), model.anchors_xywh))
 
     eval = eval_utils.Eval(LABELS, EPS)
+    
     @tf.function
     def train_step(batch_images, batch_grids):
         with tf.GradientTape() as train_tape:

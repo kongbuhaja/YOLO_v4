@@ -3,7 +3,7 @@ GPUS = 1
 
 # model config
 # YOLOv3, YOLOv3_tiny, YOLOv4, YOLOv4_tiny, YOLOv4_csp, YOLOv4_P5-7
-MODEL_TYPE = 'YOLOv4_P7'
+MODEL_TYPE = 'YOLOv4_csp'
 STRIDES = [8, 16, 32, 64, 128]
 KERNEL_INITIALIZER = 'glorot'
 
@@ -15,7 +15,7 @@ POSITIVE_IOU_THRESHOLD = 0.5
 
 # train config
 EPOCHS = 2000
-BATCH_SIZE = 16
+BATCH_SIZE = 4
 GLOBAL_BATCH_SIZE = BATCH_SIZE * GPUS
 # cosine_annealing, poly, step
 LR_SCHEDULER = 'cosine_annealing'
@@ -113,3 +113,4 @@ NUM_CLASSES = len(LABELS)
 
 # draw config
 DRAW = True
+SAVE = True

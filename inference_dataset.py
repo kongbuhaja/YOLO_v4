@@ -7,14 +7,18 @@ import numpy as np
 
 
 def main():
-    anchors = list(map(lambda x: tf.reshape(x, [-1,4]), anchor_utils.get_anchors_xywh(ANCHORS, STRIDES, IMAGE_SIZE)))
-    dataloader = data_utils.DataLoader(batch_size=BATCH_SIZE)
+    model, _, _, _, _ = train_utils.load_model(MODEL_TYPE, ANCHORS, NUM_CLASSES, STRIDES, IOU_THRESHOLD,
+                                               EPS, INF, KERNEL_INITIALIZER, LOAD_CHECKPOINTS, CHECKPOINTS)
+    dataloader = data_utils.DataLoader(DTYPE, LABELS, BATCH_SIZE, ANCHORS, NUM_CLASSES, 
+                                       model.input_size, model.strides, POSITIVE_IOU_THRESHOLD, MAX_BBOXES, 
+                                       CREATE_ANCHORS)
+    
     test_dataset = dataloader('val', use_label=True)
-    test_dataset_legnth = int(dataloader.length('val')//BATCH_SIZE)
-    
-    model, _, _, _, _ = train_utils.get_model(load_checkpoints=True)
-    
-    eval = eval_utils.Eval()
+    test_dataset_legnth = dataloader.length('val') // BATCH_SIZE
+        
+    anchors_xywh = list(map(lambda x: tf.reshape(x, [-1,4]), model.anchors_xywh))
+
+    eval = eval_utils.Eval(LABELS, EPS)
     
     all_images = []
     all_grids = []
@@ -28,22 +32,21 @@ def main():
         all_images.append((batch_images.numpy()[...,::-1]*255.).astype(np.uint8))
         all_grids.append([grid.numpy() for grid in model(batch_images)])
         all_labels.append(batch_labels.numpy())        
-        # break
         
     inference_tqdm = tqdm.tqdm(range(len(all_images)), desc=f'draw and calculate')
     for i in inference_tqdm:
         batch_images = all_images[i]
         batch_grids = all_grids[i]
         batch_labels = all_labels[i]
-        batch_processed_preds = post_processing.prediction_to_bbox(batch_grids, anchors)
+        batch_processed_preds = post_processing.prediction_to_bbox(batch_grids, anchors_xywh, BATCH_SIZE, model.strides, NUM_CLASSES, model.input_size)
         for image, processed_preds, labels in zip(batch_images, batch_processed_preds, batch_labels):
-            NMS_preds = post_processing.NMS(processed_preds).numpy()
+            NMS_preds = post_processing.NMS(processed_preds, SCORE_THRESHOLD, IOU_THRESHOLD, NMS_TYPE, SIGMA).numpy()
             labels = bbox_utils.extract_real_labels(labels).numpy()
             if DRAW:
-                pred = draw_utils.draw_labels(image.copy(), NMS_preds, xywh=False)
-                origin = draw_utils.draw_labels(image.copy(), labels, xywh=False)
+                pred = draw_utils.draw_labels(image.copy(), NMS_preds, LABELS, xywh=False)
+                origin = draw_utils.draw_labels(image.copy(), labels, LABELS, xywh=False)
                 output = np.concatenate([origin, pred], 1)
-                draw_utils.draw_image(output, model.input_size, OUTPUT_DIR just_save=True)
+                draw_utils.draw_image(output, model.input_size, OUTPUT_DIR, save=SAVE)
 
             eval.update_stats(NMS_preds, labels)
     eval.calculate_mAP()

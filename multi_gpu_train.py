@@ -6,12 +6,16 @@ from utils.preset import preset
 
 def main():
     strategy = tf.distribute.MirroredStrategy()
-
-    dataloader = data_utils.DataLoader()
+    
+    with strategy.scope():
+        model, start_epoch, max_mAP50, max_mAP, max_loss = train_utils.load_model(MODEL_TYPE, ANCHORS, NUM_CLASSES, STRIDES, IOU_THRESHOLD,
+                                                                                EPS, INF, KERNEL_INITIALIZER, LOAD_CHECKPOINTS, CHECKPOINTS)
+    dataloader = data_utils.DataLoader(DTYPE, LABELS, GLOBAL_BATCH_SIZE, ANCHORS, NUM_CLASSES, 
+                                       model.input_size, model.strides, POSITIVE_IOU_THRESHOLD, MAX_BBOXES, 
+                                       CREATE_ANCHORS)
     with strategy.scope():
         train_dataset = strategy.experimental_distribute_dataset(dataloader('train'))
         valid_dataset = strategy.experimental_distribute_dataset(dataloader('val', use_label=True))
-        model, start_epoch, max_mAP50, max_mAP, max_loss = train_utils.get_model()
     
     train_dataset_length = dataloader.length('train') // GLOBAL_BATCH_SIZE
     valid_dataset_length = dataloader.length('val') // GLOBAL_BATCH_SIZE
@@ -30,9 +34,9 @@ def main():
     train_writer = tf.summary.create_file_writer(LOGDIR)
     val_writer = tf.summary.create_file_writer(LOGDIR)
     
-    anchors = list(map(lambda x: tf.reshape(x, [-1,4]), anchor_utils.get_anchors_xywh(ANCHORS, STRIDES, IMAGE_SIZE)))
+    anchors_xywh = list(map(lambda x: tf.reshape(x, [-1,4]), model.anchors_xywh))
 
-    eval = eval_utils.Eval()
+    eval = eval_utils.Eval(LABELS, EPS)
 
     with strategy.scope():
         @tf.function
@@ -50,7 +54,7 @@ def main():
             preds = model(batch_images)
             valid_loss = model.loss(batch_grids, preds, GLOBAL_BATCH_SIZE)
 
-            batch_processed_preds = post_processing.prediction_to_bbox(preds, anchors)
+            batch_processed_preds = post_processing.prediction_to_bbox(preds, anchors_xywh, BATCH_SIZE, model.strides, NUM_CLASSES, model.input_size)
             
             return valid_loss, batch_processed_preds
         
@@ -72,10 +76,10 @@ def main():
             for gpu in range(GPUS):
                 for batch in range(BATCH_SIZE):
                     if GPUS==1:
-                        NMS_preds = post_processing.NMS(batch_processed_preds[batch]).numpy()
+                        NMS_preds = post_processing.NMS(batch_processed_preds[batch], SCORE_THRESHOLD, IOU_THRESHOLD, NMS_TYPE, SIGMA).numpy()
                         labels = bbox_utils.extract_real_labels(batch_labels[batch]).numpy()
                     else:
-                        NMS_preds = post_processing.NMS(batch_processed_preds.values[gpu][batch]).numpy()
+                        NMS_preds = post_processing.NMS(batch_processed_preds.values[gpu][batch], SCORE_THRESHOLD, IOU_THRESHOLD, NMS_TYPE, SIGMA).numpy()
                         labels = bbox_utils.extract_real_labels(batch_labels.values[gpu][batch]).numpy()
                     eval.update_stats(NMS_preds, labels)
             
