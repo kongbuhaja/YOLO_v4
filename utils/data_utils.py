@@ -80,7 +80,7 @@ class DataLoader():
     
     @tf.function
     def tf_encode(self, image, labels, use_label):
-        grids = self.encode(labels)
+        grids = self.encode2(labels)
         if use_label:
             return image, *grids, labels
         return image, *grids
