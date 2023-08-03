@@ -4,9 +4,9 @@ from tensorflow.keras.initializers import GlorotUniform as glorot
 from tensorflow.keras.initializers import HeUniform as he
 from tensorflow.keras import Model
 from models.blocks import *
-from models.backbone import CSPDarknet53
+from models.backbones import CSPDarknet53
 from models.necks import CSPPANSPP
-from models.heads import Head
+from models.heads import YoloHead
 from config import *
 from utils import anchor_utils
 from losses import yolo_loss
@@ -34,7 +34,7 @@ class YOLO(Model):
         self.backbone = CSPDarknet53(activate='Mish', scaled=True, kernel_initializer=self.kernel_initializer)
         self.neck = CSPPANSPP(512, layer_size=3, block_size=2, branch_transition=True,
                               activate='Mish', kernel_initializer=self.kernel_initializer)
-        self.head = Head(256, self.scales, self.col_anchors, self.num_classes, 
+        self.head = YoloHead(256, self.scales, self.col_anchors, self.num_classes, 
                          activate='Mish', kernel_initializer=self.kernel_initializer)
 
     @tf.function

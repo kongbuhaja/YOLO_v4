@@ -4,7 +4,6 @@ from tensorflow.keras.layers import Layer
 from tensorflow.keras.initializers import GlorotUniform as glorot
 from tensorflow.keras.initializers import HeUniform as he
 from models.blocks import *
-from config import *
 
 class CSPPANSPP(Layer):
     def __init__(self, unit, layer_size, block_size, branch_transition=True, activate='Mish', kernel_initializer=glorot, **kwargs):
@@ -21,8 +20,8 @@ class CSPPANSPP(Layer):
         for l in range(self.layer_size - 3):
             self.up_layers += [CSPDarknetUpsampleBlock(self.unit, size=self.block_size, branch_transition=self.branch_transition,
                                                        activate=self.activate, kernel_initializer=self.kernel_initializer)]
-        for u in range(2):
-            self.up_layers += [CSPDarknetUpsampleBlock(self.unit//2**(u+1), size=self.block_size,branch_transition=self.branch_transition,
+        for l in range(2):
+            self.up_layers += [CSPDarknetUpsampleBlock(self.unit//2**(l+1), size=self.block_size,branch_transition=self.branch_transition,
                                                        activate=self.activate, kernel_initializer=self.kernel_initializer)]
             
         self.down_layers = [CSPDarknetDownsampleBlock(self.unit//2, size=self.block_size,

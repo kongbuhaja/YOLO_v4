@@ -1,4 +1,3 @@
-from config import *
 from utils import anchor_utils, io_utils
 import numpy as np
 import sys, os, cv2, gdown, zipfile, shutil
@@ -7,12 +6,12 @@ import tensorflow_datasets as tfds
 import tqdm
 
 class Base_Dataset():
-    def __init__(self, split, dtype, anchors, labels, image_size, create_anchors):
+    def __init__(self, split, dtype, anchors, labels, input_size, create_anchors):
         self.split = split
         self.dtype = dtype
         self.anchors = np.array(anchors)
         self.labels = labels
-        self.image_size = image_size
+        self.input_size = input_size
         self.create_anchors = create_anchors
         self.data = []
         self.length = 0

@@ -5,9 +5,9 @@ from tensorflow.keras.initializers import GlorotUniform as glorot
 from tensorflow.keras.initializers import HeUniform as he
 from tensorflow.keras import Model
 from models.blocks import *
-from models.backbone import CSPDarknet19
+from models.backbones import CSPDarknet19
 from models.necks import tinyFPN
-from models.heads import Head
+from models.heads import YoloHead
 from config import *
 from utils import anchor_utils
 from losses import yolo_loss
@@ -35,7 +35,7 @@ class YOLO(Model):
 
         self.darknet19_tiny = CSPDarknet19(activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
         self.neck = tinyFPN(256, activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
-        self.head = Head(256, self.scales, self.col_anchors, self.num_classes, 
+        self.head = YoloHead(256, self.scales, self.col_anchors, self.num_classes, 
                          activate='LeakyReLU', kernel_initializer=self.kernel_initializer)
     @tf.function
     def call(self, x, training=False):

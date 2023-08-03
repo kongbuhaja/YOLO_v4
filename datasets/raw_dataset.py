@@ -1,11 +1,9 @@
 import os
-from config import *
 from datasets.common import Base_Dataset
 
 class Dataset(Base_Dataset):
-    def __init__(self, split, dtype=DTYPE, anchors=ANCHORS, labels=LABELS, image_size=IMAGE_SIZE,
-                 create_anchors=CREATE_ANCHORS):
-        super().__init__(split, dtype, anchors, labels, image_size, create_anchors)
+    def __init__(self, split, dtype, anchors, labels, input_size, create_anchors):
+        super().__init__(split, dtype, anchors, labels, input_size, create_anchors)
 
     def load(self, use_tfrecord=False):
         return super().load(use_tfrecord=False)

@@ -1,8 +1,7 @@
 import cv2, glob, sys
 import numpy as np
-from config import *
 
-def draw_labels(image, preds, xywh=True):
+def draw_labels(image, preds, labels, xywh=True):
     bboxes = preds[..., :4].astype(np.int32)
     scores = preds[..., 4]
     classes = preds[..., 5].astype(np.int32)
@@ -15,19 +14,19 @@ def draw_labels(image, preds, xywh=True):
             break;
         color = (np.random.randint(0, 256), np.random.randint(0, 256), np.random.randint(0, 256))
         cv2.rectangle(image, bbox[:2], bbox[2:], color, 2)
-        cv2.putText(image, f'{LABELS[cls]}:{score:.3f}', (bbox[0], bbox[1]-5), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, color, 1)
+        cv2.putText(image, f'{labels[cls]}:{score:.3f}', (bbox[0], bbox[1]-5), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, color, 1)
     return image
 
-def show_and_save_image(image, just_save=False):
-    if image.shape[1] != IMAGE_SIZE:
+def draw_image(image, input_size, output_dir, draw=True):
+    if image.shape[1] != input_size:
         title = 'truth_and_pred'
     else:
         title = 'prediction'
     
-    filename = OUTPUT_DIR + 'image/' + title
+    filename = output_dir + 'image/' + title
     filename += '_' + str(len(glob.glob(filename + '*.jpg')))
     
-    if just_save:
+    if draw:
         cv2.imwrite(filename + '.jpg', image)
     else:
         cv2.imshow(title, image)

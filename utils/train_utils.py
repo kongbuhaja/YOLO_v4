@@ -1,6 +1,6 @@
-from config import *
 from utils import io_utils
 import math
+from models.model import YOLO
 
 class warmup_lr_scheduler():
     def __init__(self, warmup_max_step, init_lr):
@@ -31,7 +31,7 @@ class step_lr_scheduler():
         return lr
     
 class poly_lr_scheduler():
-    def __init__(self, init_lr, max_step, power):
+    def __init__(self, init_lr, max_step, power=0.9):
         self.init_lr = init_lr
         self.max_step = max_step
         self.power = power
@@ -41,22 +41,22 @@ class poly_lr_scheduler():
         return lr
     
 class cosine_annealing_lr_scheduler():
-    def __init__(self, init_lr, T_step, T_mult, min_lr):
+    def __init__(self, init_lr, t_step=10, t_mult=2, min_lr=1e-6):
         self.init_lr = init_lr
-        self.T_step = T_step
-        self.T_max = T_step
-        self.T_mult = T_mult
+        self.t_step = t_step
+        self.t_max = t_step
+        self.t_mult = t_mult
         self.csum = 0
         self.min_lr = min_lr
 
     def __call__(self, step):
-        T_cur = step - self.csum
-        while(T_cur >= self.T_max):
-            T_cur -= self.T_max
-            self.csum += self.T_max
-            self.T_max *= self.T_mult
+        t_cur = step - self.csum
+        while(t_cur >= self.t_max):
+            t_cur -= self.t_max
+            self.csum += self.t_max
+            self.t_max *= self.T_mult
             
-        lr = self.min_lr + 0.5 * (self.init_lr - self.min_lr) * (1 + math.cos(T_cur / self.T_max * math.pi))
+        lr = self.min_lr + 0.5 * (self.init_lr - self.min_lr) * (1 + math.cos(t_cur / self.t_max * math.pi))
         return lr
     
 class LR_scheduler():
@@ -68,9 +68,9 @@ class LR_scheduler():
         self.init_lr = init_lr
         self.warmup_lr_scheduler = warmup_lr_scheduler(self.warmup_max_step, self.init_lr)
         if self.lr_type == 'cosine_annealing':
-            self.lr_scheduler = cosine_annealing_lr_scheduler(self.init_lr, T_STEP, T_MULT, MIN_LR)
+            self.lr_scheduler = cosine_annealing_lr_scheduler(self.init_lr)
         elif self.lr_type == 'poly':
-            self.lr_scheduler = poly_lr_scheduler(self.init_lr, self.max_step, POWER)
+            self.lr_scheduler = poly_lr_scheduler(self.init_lr, self.max_step)
         elif self.lr_type == 'step':
             self.lr_scheduler = step_lr_scheduler(self.init_lr, self.step_per_epoch)
 
@@ -80,37 +80,21 @@ class LR_scheduler():
             lr = self.warmup_lr_scheduler(warmup_step)
         return lr
 
-def load_model(model, checkpoints):
-    try:
-        model.load_weights(checkpoints)
-        saved = io_utils.read_model_info()
-        print(f"succeed to load model| epoch:{saved['epoch']} mAP50:{saved['mAP50']} mAP:{saved['mAP']} total_loss:{saved['total_loss']}")
-        return model, saved['epoch'], saved['mAP50'], saved['mAP'], saved['total_loss']
-    except:
-        print('checkpoints is not exist. \nmake new model')
-        return model, 1, -1, -1., INF
-
-def get_model(load_checkpoints=LOAD_CHECKPOINTS):
-    if MODEL_TYPE == 'YOLOv4_csp':
-        from models.yolov4_csp import YOLO
-    elif MODEL_TYPE == 'YOLOv4':
-        from models.yolov4 import YOLO
-    elif MODEL_TYPE == 'YOLOv3':
-        from models.yolov3 import YOLO
-    elif MODEL_TYPE == 'YOLOv3_tiny':
-        from models.yolov3_tiny import YOLO
-    elif MODEL_TYPE == 'YOLOv4_tiny':
-        from models.yolov4_tiny import YOLO
-    print(f'Model: {MODEL_TYPE}')
-    print(f'Loss Metric: {LOSS_METRIC}')
-    
+def load_model(model_type, anchors, num_classes, strides, iou_threshold, eps, inf, kernel_initializer, load_checkpoints, checkpoints):
+    model = YOLO(model_type, anchors, num_classes, strides, iou_threshold, eps, inf, kernel_initializer)
     if load_checkpoints:
-        return load_model(YOLO(), CHECKPOINTS)
+        try:
+            model.load_weights(checkpoints)
+            saved = io_utils.read_model_info()
+            print(f"succeed to load model| epoch:{saved['epoch']} mAP50:{saved['mAP50']} mAP:{saved['mAP']} total_loss:{saved['total_loss']}")
+            return model, saved['epoch'], saved['mAP50'], saved['mAP'], saved['total_loss']
+        except:
+            print('checkpoints is not exist.')
     print('make new model')
-    return YOLO(), 1, -1, -1., INF
+    return model, 1, -1, -1., inf
 
 def save_model(model, epoch, mAP50, mAP, loss, dir_path):
-    checkpoints = dir_path + MODEL_TYPE
+    checkpoints = dir_path + model.model_type
 
     model.save_weights(checkpoints)
     io_utils.write_model_info(checkpoints, epoch, mAP50, mAP, loss)

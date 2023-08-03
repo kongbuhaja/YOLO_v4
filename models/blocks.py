@@ -290,7 +290,7 @@ class DarknetDownsampleBlock(Layer):
 
         return x
 
-class HeadBlock(Layer):
+class YoloHeadBlock(Layer):
     def __init__(self, unit, scale, col_anchors, num_classes, activate='LeakyReLU', kernel_initializer=glorot, **kwargs):
         super().__init__(**kwargs)
         self.unit = unit

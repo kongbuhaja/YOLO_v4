@@ -1,22 +1,12 @@
 import tensorflow as tf
 import numpy as np
-from config import EPS, INF, IMAGE_SIZE
+from config import EPS
 
-def bbox_iou(bbox1, bbox2, xywh=True, iou_type='iou', eps=EPS, inf=INF, image_size=IMAGE_SIZE):
-    # if xywh:
-    #     area1 = tf.reduce_prod(bbox1[..., 2:], -1)
-    #     area2 = tf.reduce_prod(bbox2[..., 2:], -1)
-    #     bbox1 = tf.concat([bbox1[..., :2] - bbox1[..., 2:] * 0.5, bbox1[..., :2] + bbox1[..., 2:] * 0.5], -1)
-    #     bbox2 = tf.concat([bbox2[..., :2] - bbox2[..., 2:] * 0.5, bbox2[..., :2] + bbox2[..., 2:] * 0.5], -1)
-    # else:
-    #     area1 = tf.reduce_prod(bbox1[..., 2:] - bbox1[..., :2], -1)
-    #     area2 = tf.reduce_prod(bbox2[..., 2:] - bbox2[..., :2], -1)
-
+def bbox_iou(bbox1, bbox2, xywh=True, iou_type='iou', eps=EPS):
     if xywh:
         bbox1 = tf.concat([bbox1[..., :2] - bbox1[..., 2:] * 0.5, bbox1[..., :2] + bbox1[..., 2:] * 0.5], -1)
         bbox2 = tf.concat([bbox2[..., :2] - bbox2[..., 2:] * 0.5, bbox2[..., :2] + bbox2[..., 2:] * 0.5], -1)
-    # bbox1 = tf.minimum(tf.maximum(bbox1, 0.0), image_size)
-    # bbox2 = tf.minimum(tf.maximum(bbox2, 0.0), image_size)
+
     area1 = tf.reduce_prod(bbox1[..., 2:] - bbox1[..., :2], -1)
     area2 = tf.reduce_prod(bbox2[..., 2:] - bbox2[..., :2], -1)
 
@@ -78,16 +68,16 @@ def normalize_bbox(w, h, bbox):
     bbox[..., [1,3]] /= h
     return bbox
 
-def bbox_iou_wh(wh1, wh2):
+def bbox_iou_wh(wh1, wh2, eps=EPS):
     inter_section = tf.minimum(wh1, wh2)
     inter_area = inter_section[..., 0] * inter_section[..., 1]
-    union_area = tf.maximum(wh1[..., 0] * wh1[..., 1] + wh2[..., 0] * wh2[..., 1] - inter_area, 1e-6)
+    union_area = tf.maximum(wh1[..., 0] * wh1[..., 1] + wh2[..., 0] * wh2[..., 1] - inter_area, eps)
     return inter_area / union_area
 
-def bbox_iou_wh_np(wh1, wh2):
+def bbox_iou_wh_np(wh1, wh2, eps=EPS):
     inter_section = np.minimum(wh1, wh2)
     inter_area = inter_section[..., 0] * inter_section[..., 1]
-    union_area = np.maximum(wh1[..., 0] * wh1[..., 1] + wh2[..., 0] * wh2[..., 1] - inter_area, 1e-6)
+    union_area = np.maximum(wh1[..., 0] * wh1[..., 1] + wh2[..., 0] * wh2[..., 1] - inter_area, eps)
     return inter_area / union_area
 
 def extract_real_labels(labels, xywh=True):

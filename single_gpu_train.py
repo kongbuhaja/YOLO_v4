@@ -6,13 +6,16 @@ from utils.preset import preset
 
 
 def main():
-    dataloader = data_utils.DataLoader()
+    model, start_epoch, max_mAP50, max_mAP, max_loss = train_utils.load_model(MODEL_TYPE, ANCHORS, NUM_CLASSES, STRIDES, IOU_THRESHOLD,
+                                                                              EPS, INF, KERNEL_INITIALIZER, LOAD_CHECKPOINTS, CHECKPOINTS)
+    dataloader = data_utils.DataLoader(DTYPE, LABELS, BATCH_SIZE, ANCHORS, NUM_CLASSES, 
+                                       model.input_size, model.strides, POSITIVE_IOU_THRESHOLD, MAX_BBOXES, 
+                                       CREATE_ANCHORS)
     train_dataset = dataloader('train')
     valid_dataset = dataloader('val', use_label=True)
     train_dataset_length = dataloader.length('train') // BATCH_SIZE
     valid_dataset_length = dataloader.length('val') // BATCH_SIZE
 
-    model, start_epoch, max_mAP50, max_mAP, max_loss = train_utils.get_model()
     train_max_loss = valid_max_loss = max_loss
     
     global_step = (start_epoch-1) * train_dataset_length + 1
@@ -26,9 +29,9 @@ def main():
     train_writer = tf.summary.create_file_writer(LOGDIR)
     val_writer = tf.summary.create_file_writer(LOGDIR)
     
-    anchors = list(map(lambda x: tf.reshape(x, [-1,4]), anchor_utils.get_anchors_xywh(ANCHORS, STRIDES, IMAGE_SIZE)))
+    anchors_xywh = list(map(lambda x: tf.reshape(x, [-1,4]), model.anchors_xywh))
 
-    eval = eval_utils.Eval()
+    eval = eval_utils.Eval(LABELS, EPS)
     @tf.function
     def train_step(batch_images, batch_grids):
         with tf.GradientTape() as train_tape:
@@ -44,13 +47,13 @@ def main():
         preds = model(batch_images)
         valid_loss = model.loss(batch_grids, preds, BATCH_SIZE)
         
-        batch_processed_preds = post_processing.prediction_to_bbox(preds, anchors)
+        batch_processed_preds = post_processing.prediction_to_bbox(preds, anchors_xywh, BATCH_SIZE, model.strides, NUM_CLASSES, model.input_size)
 
         return valid_loss, batch_processed_preds
     
     def update_stats_step(batch_processed_preds, batch_labels):
         for processed_preds, labels in zip(batch_processed_preds, batch_labels):
-            NMS_preds = post_processing.NMS(processed_preds).numpy()
+            NMS_preds = post_processing.NMS(processed_preds, SCORE_THRESHOLD, IOU_THRESHOLD, NMS_TYPE, SIGMA).numpy()
             labels = bbox_utils.extract_real_labels(labels).numpy()
             eval.update_stats(NMS_preds, labels)
 

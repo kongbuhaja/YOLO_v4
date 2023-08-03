@@ -1,5 +1,4 @@
 import tensorflow as tf
-from config import *
 
 def write_model_info(checkpoints, epoch, mAP50, mAP, loss):
     with open(checkpoints + '.info', 'w') as f:
@@ -12,9 +11,9 @@ def write_model_info(checkpoints, epoch, mAP50, mAP, loss):
                f'prob_loss:{loss[2]}\n'
         f.write(text)
         
-def read_model_info():
+def read_model_info(checkpoints):
     saved_parameter = {}
-    with open(CHECKPOINTS + '.info', 'r') as f:
+    with open(checkpoints + '.info', 'r') as f:
         lines = f.readlines()
         for line in lines:
             key, value = line[:-1].split(':')
@@ -55,7 +54,7 @@ def edit_config(pre_text, new_text):
     with open('config.py', 'w') as f:
         f.writelines(lines)
     
-def write_eval(text):
-    path = OUTPUT_DIR + 'evaluation.txt'
+def write_eval(text, output_dir):
+    path = output_dir + 'evaluation.txt'
     with open(path, 'w', encoding='utf-8') as f:
         f.write(text)

@@ -1,23 +1,25 @@
 import tensorflow as tf
-from config import *
 import numpy as np
 from utils import aug_utils, bbox_utils, anchor_utils
 
 class DataLoader():
-    def __init__(self, dtype=DTYPE, batch_size=GLOBAL_BATCH_SIZE, anchors=ANCHORS, num_classes=NUM_CLASSES,
-                 image_size=IMAGE_SIZE, strides=STRIDES, positive_iou_threshold=POSITIVE_IOU_THRESHOLD, max_bboxes=MAX_BBOXES):
-                 
+    def __init__(self, dtype, labels, batch_size, anchors, num_classes, 
+                 input_size, strides, positive_iou_threshold, max_bboxes, 
+                 create_anchors):
+        self.dtype = dtype
+        self.labels = labels
         self.batch_size = batch_size
         self.col_anchors = len(anchors[0])
-        self.raw_anchors = len(anchors)
+        self.row_anchors = len(anchors)
         self.num_classes = num_classes
-        self.image_size = image_size
+        self.input_size = input_size
         self.strides = np.array(strides)
-        self.scales = image_size//self.strides
-        self.anchors = anchor_utils.get_anchors_xywh(anchors, self.strides, self.image_size)
+        self.scales = (self.input_size // np.array(self.strides)).tolist()
+        self.anchors = anchors
+        self.anchors_xywh = anchor_utils.get_anchors_xywh(anchors, self.strides, self.input_size)
         self.positive_iou_threshold = positive_iou_threshold
         self.max_bboxes = max_bboxes
-        self.dtype = dtype
+        self.create_anchors = create_anchors
         self._length = {}
 
     def __call__(self, split, use_tfrecord=True, use_label=False):
@@ -29,7 +31,7 @@ class DataLoader():
             from datasets.custom_dataset import Dataset
         elif self.dtype == 'raw':
             from datasets.raw_dataset import Dataset
-        dataset = Dataset(split)
+        dataset = Dataset(split, self.dtype, self.anchors, self.labels, self.input_size, self.create_anchors)
 
         data = dataset.load(use_tfrecord)
         self._length[split] = dataset.length
@@ -46,8 +48,8 @@ class DataLoader():
             data = data.map(aug_utils.tf_augmentation, num_parallel_calls=-1)
             data = data.map(self.tf_minmax, num_parallel_calls=-1)
         
-        data = data.map(lambda image, labels, width, height: aug_utils.tf_resize_padding(image, labels, width, height, self.image_size), num_parallel_calls=-1)
-        data = data.padded_batch(self.batch_size, padded_shapes=get_padded_shapes(), padding_values=get_padding_values(), drop_remainder=True)
+        data = data.map(lambda image, labels, width, height: aug_utils.tf_resize_padding(image, labels, width, height, self.input_size), num_parallel_calls=-1)
+        data = data.padded_batch(self.batch_size, padded_shapes=self.get_padded_shapes(), padding_values=self.get_padding_values(), drop_remainder=True)
         
         # data = data.map(lambda x, y: self.py_labels_to_grids(x, y, use_label), num_parallel_calls=-1).prefetch(1)
         data = data.map(lambda image, labels: self.tf_encode(image, labels, use_label), num_parallel_calls=-1).prefetch(1)
@@ -57,7 +59,7 @@ class DataLoader():
         return self._length[split]
     
     def py_encode(self, image, labels, use_label):
-        grids = tf.py_function(self.encode, [labels], [tf.float32]*self.raw_anchors)
+        grids = tf.py_function(self.encode, [labels], [tf.float32]*self.row_anchors)
         if use_label:
             return image, *grids, labels
         return image, *grids
@@ -72,7 +74,7 @@ class DataLoader():
     
     @tf.function
     def tf_resize_padding(self, image, labels, width, height):
-        image, labels = aug_utils.tf_resize_padding(image, labels, width, height, self.image_size)
+        image, labels = aug_utils.tf_resize_padding(image, labels, width, height, self.input_size)
 
         return image, labels
     
@@ -98,10 +100,10 @@ class DataLoader():
         onehot = conf * self.onehot_label(labels[..., 5], smooth=True)
 
         grids = []
-        anchor_xy = [tf.reshape(anchor[..., :2], [-1,2]) for anchor in self.anchors]
-        anchor_wh = [tf.reshape(anchor[..., 2:], [-1,2]) for anchor in self.anchors]
+        anchor_xy = [tf.reshape(anchor[..., :2], [-1,2]) for anchor in self.anchors_xywh]
+        anchor_wh = [tf.reshape(anchor[..., 2:], [-1,2]) for anchor in self.anchors_xywh]
 
-        center_anchors = tf.concat([tf.concat([anchor_xy[i] + 0.5, anchor_wh[i]], -1) * self.strides[i] for i in range(self.raw_anchors)], 0)
+        center_anchors = tf.concat([tf.concat([anchor_xy[i] + 0.5, anchor_wh[i]], -1) * self.strides[i] for i in range(self.row_anchors)], 0)
 
         ious = bbox_utils.bbox_iou(center_anchors[:, None], labels[:, None, ..., :4])
 
@@ -118,9 +120,9 @@ class DataLoader():
 
         assigned_labels = tf.gather(tf.concat([labels[..., :5], onehot],-1), tf.argmax(joined_ious, -1), batch_dims=1) * joined_positive_mask
 
-        for i in range(self.raw_anchors):
+        for i in range(self.row_anchors):
             scale = self.scales[i]
-            start = 0 if i==0 else tf.reduce_sum((self.image_size//self.strides[:i])**2 * self.col_anchors)
+            start = 0 if i==0 else tf.reduce_sum((self.input_size//self.strides[:i])**2 * self.col_anchors)
             end = start + (scale)**2 * self.col_anchors
             grids += [tf.reshape(assigned_labels[:, start:end], [self.batch_size, scale, scale, self.col_anchors, -1])]
 
@@ -134,10 +136,10 @@ class DataLoader():
         onehot = conf * self.onehot_label(labels[..., 5], smooth=True)
 
         grids = []
-        anchor_xy = [tf.reshape(anchor[..., :2], [-1,2]) for anchor in self.anchors]
-        anchor_wh = [tf.reshape(anchor[..., 2:], [-1,2]) for anchor in self.anchors]
+        anchor_xy = [tf.reshape(anchor[..., :2], [-1,2]) for anchor in self.anchors_xywh]
+        anchor_wh = [tf.reshape(anchor[..., 2:], [-1,2]) for anchor in self.anchors_xywh]
 
-        center_anchors = tf.concat([tf.concat([anchor_xy[i] + 0.5, anchor_wh[i]], -1) * self.strides[i] for i in range(self.raw_anchors)], 0)
+        center_anchors = tf.concat([tf.concat([anchor_xy[i] + 0.5, anchor_wh[i]], -1) * self.strides[i] for i in range(self.row_anchors)], 0)
 
         ious = bbox_utils.bbox_iou(center_anchors[:, None], labels[:, None, ..., :4])
 
@@ -153,21 +155,23 @@ class DataLoader():
         joined_positive_mask = tf.cast(tf.reduce_any(tf.cast(joined_ious, tf.bool), -1, keepdims=True), tf.float32)
 
         assigned_labels = tf.gather(tf.concat([labels[..., :5], onehot],-1), tf.argmax(joined_ious, -1), batch_dims=1) * joined_positive_mask
-        grid_xy = tf.concat([anchor_xy[i] for i in range(self.raw_anchors)], 0)
+        grid_xy = tf.concat([anchor_xy[i] for i in range(self.row_anchors)], 0)
         tiled_strides = tf.cast(tf.concat([tf.tile(stride[None, None, None], [self.batch_size, scale**2*self.col_anchors, 1]) for stride, scale in zip(self.strides, self.scales)], 1), tf.float32)
         based_xy = (grid_xy[None] - tf.minimum(tf.maximum(grid_xy[None] - assigned_labels[..., :2] / tiled_strides, -1), 0)) * joined_positive_mask * tiled_strides
         assigned_labels = tf.concat([based_xy, assigned_labels[..., 2:]], -1)
 
-        for i in range(self.raw_anchors):
+        for i in range(self.row_anchors):
             scale = self.scales[i]
-            start = 0 if i==0 else tf.reduce_sum((self.image_size//self.strides[:i])**2 * self.col_anchors)
+            start = 0 if i==0 else tf.reduce_sum((self.input_size//self.strides[:i])**2 * self.col_anchors)
             end = start + (scale)**2 * self.col_anchors
             grids += [tf.reshape(assigned_labels[:, start:end], [self.batch_size, scale, scale, self.col_anchors, -1])]
 
         return grids
     
-def get_padded_shapes():
-    return [None, None, None], [MAX_BBOXES, None]
+    @tf.function
+    def get_padded_shapes(self):
+        return [None, None, None], [self.max_bboxes, None]
 
-def get_padding_values():
-    return tf.constant(0, tf.float32), tf.constant(0, tf.float32)
+    @tf.function
+    def get_padding_values(self):
+        return tf.constant(0, tf.float32), tf.constant(0, tf.float32)

@@ -1,9 +1,8 @@
 import numpy as np
 from utils.bbox_utils import bbox_iou
-from config import *
 
 class Eval:
-    def __init__(self, labels=LABELS, eps=EPS):
+    def __init__(self, labels, eps):
         self.labels=labels
         self.eps = eps
         self.num_of_ious = 10
@@ -86,7 +85,7 @@ class Eval:
 
     def get_result(self):
         text = ''
-        class_max_length = np.max(list(map(lambda x: len(x), LABELS)))
+        class_max_length = np.max(list(map(lambda x: len(x), self.labels)))
         block_max_length = 51 - class_max_length
 
         for label_id, label in enumerate(self.labels):

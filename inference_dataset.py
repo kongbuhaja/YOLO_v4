@@ -43,13 +43,13 @@ def main():
                 pred = draw_utils.draw_labels(image.copy(), NMS_preds, xywh=False)
                 origin = draw_utils.draw_labels(image.copy(), labels, xywh=False)
                 output = np.concatenate([origin, pred], 1)
-                draw_utils.show_and_save_image(output, just_save=True)
+                draw_utils.draw_image(output, model.input_size, OUTPUT_DIR just_save=True)
 
             eval.update_stats(NMS_preds, labels)
     eval.calculate_mAP()
     evaluation = eval.get_result()
     print(evaluation)
-    io_utils.write_eval(evaluation)   
+    io_utils.write_eval(evaluation, OUTPUT_DIR)   
     
     
 if __name__ == '__main__':

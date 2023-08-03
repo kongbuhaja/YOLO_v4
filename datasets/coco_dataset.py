@@ -1,13 +1,11 @@
 import numpy as np
 import os, json
-from config import *
 from utils import bbox_utils
 from datasets.common import Base_Dataset
 
 class Dataset(Base_Dataset):
-    def __init__(self, split, dtype=DTYPE, anchors=ANCHORS, labels=LABELS, image_size=IMAGE_SIZE,
-                 create_anchors=CREATE_ANCHORS):
-        super().__init__(split, dtype, anchors, labels, image_size, create_anchors)
+    def __init__(self, split, dtype, anchors, labels, input_size, create_anchors):
+        super().__init__(split, dtype, anchors, labels, input_size, create_anchors)
 
     def load(self, use_tfrecord=True):
         return super().load(use_tfrecord)
@@ -77,14 +75,6 @@ class Dataset(Base_Dataset):
 
         for anno in json_data['annotations']:
             bbox = bbox_utils.coco_to_xyxy(np.array(anno['bbox']))
-            data[anno['image_id']]['labels'] += [[*bbox, 1.,float(LABELS.index(categories[anno['category_id']]))]]
-                
-        # if self.create_anchors:
-        #     for value in data.values():
-        #         length = value['length']
-        #         labels_wh = np.array(value['labels'])[..., 2:4]/length
-        #         if(len(labels_wh)!=0):
-        #             normalized_wh = np.concatenate([normalized_wh, labels_wh], 0)
-        #     return data, normalized_wh
+            data[anno['image_id']]['labels'] += [[*bbox, 1.,float(self.labels.index(categories[anno['category_id']]))]]
 
         return data

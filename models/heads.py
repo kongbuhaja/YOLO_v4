@@ -3,9 +3,9 @@ import numpy as np
 from tensorflow.keras.layers import Layer
 from tensorflow.keras.initializers import GlorotUniform as glorot
 from tensorflow.keras.initializers import HeUniform as he
-from models.blocks import HeadBlock
+from models.blocks import YoloHeadBlock
 
-class Head(Layer):
+class YoloHead(Layer):
     def __init__(self, unit, scales, col_anchors, num_classes, activate='Mish', kernel_initializer=glorot, **kwargs):
         super().__init__(**kwargs)
         self.unit = unit
@@ -17,7 +17,7 @@ class Head(Layer):
 
         self.layers = []
         for l in range(len(self.scales)):
-            self.layers += [HeadBlock(self.unit * min(l+1, 4), self.scales[l], self.col_anchors, self.num_classes,
+            self.layers += [YoloHeadBlock(self.unit * min(l+1, 4), self.scales[l], self.col_anchors, self.num_classes,
                                       activate=self.activate, kernel_initializer=self.kernel_initializer)]
 
     @tf.function
