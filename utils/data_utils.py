@@ -46,10 +46,11 @@ class DataLoader():
         if split == 'train':
             data = data.map(aug_utils.tf_augmentation, num_parallel_calls=-1)
             data = data.map(self.tf_minmax, num_parallel_calls=-1)
-        
-        data = data.map(lambda image, labels, width, height: aug_utils.tf_resize_padding(image, labels, width, height, self.input_size), num_parallel_calls=-1)
+            data = data.map(lambda image, labels, width, height: aug_utils.tf_resize_random_padding(image, labels, width, height, self.input_size), num_parallel_calls=-1)
+        else:
+            data = data.map(lambda image, labels, width, height: aug_utils.tf_resize_padding(image, labels, width, height, self.input_size), num_parallel_calls=-1)
         data = data.padded_batch(self.batch_size, padded_shapes=self.get_padded_shapes(), padding_values=self.get_padding_values(), drop_remainder=True)
-        
+
         # data = data.map(lambda x, y: self.py_labels_to_grids(x, y, use_label), num_parallel_calls=-1).prefetch(1)
         data = data.map(lambda image, labels: self.tf_encode(image, labels, use_label), num_parallel_calls=-1).prefetch(1)
         return data

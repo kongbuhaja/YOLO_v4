@@ -47,7 +47,7 @@ class YOLO(Model):
             activate = 'LeakyReLU'
             block_size = 2
             loss_metric = 'YOLOv4_Loss'
-            self.input_size = 416 # 512
+            self.input_size = 512
             self.strides = strides[:3]
         elif self.model_type == 'YOLOv4_tiny':
             backbone = 'CSPDarknet19'
