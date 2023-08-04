@@ -50,18 +50,20 @@ class DarknetOSA(Layer):
         self.kernel_initializer = kernel_initializer
 
         self.layers = [DarknetConv(self.unit//growth_rate, 3, activate=self.activate, kernel_initializer=self.kernel_initializer) for _ in range(self.growth_rate)]
-        self.features = []
 
         self.concat = Concatenate()
         self.transition = DarknetConv(self.unit, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
 
     def call(self, x, training=False):
+        branchs = []
         for l in range(self.growth_rate):
             x = self.layers[l](x, training)
-            self.features += [x]
+            branchs += [x]
         
-        x = self.concat(self.features)
+        x = self.concat(branchs)
         x = self.transition(x, training)
+        
+        return x
         
 class SplitLayer(Layer):
     def __init__(self, groups, group, **kwargs):

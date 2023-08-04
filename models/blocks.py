@@ -27,47 +27,30 @@ class DarknetBlock(Layer):
         return x
     
 class CSPOSABlock(Layer):
-    def __init__(self, unit, block_layer, size, branch_transition=True, block_pre_transition=True, block_post_transition=True, activate='Mish', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, growth_rate, activate='Mish', kernel_initializer=glorot, **kwargs):
         super().__init__(**kwargs)
         self.unit = unit
-        self.block_layers = [Identity()]
-        self.size = size
+        self.growth_rate = growth_rate
         self.activate = activate
-        self.branch_transition = Identity()
-        self.block_pre_transition = Identity()
-        self.block_post_transition = Identity()
+
         self.kernel_initializer = kernel_initializer
 
-        self.pre_conv = DarknetConv(self.unit//2, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)     
+        self.pre_conv = DarknetConv(self.unit//2, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.branch1_transition = DarknetConv(self.unit//4, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.branch2_transition = DarknetConv(self.unit//4, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)   
         
-        if branch_transition:
-            self.branch_transition = DarknetConv(self.unit//4, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
-
-        if block_pre_transition:
-            self.block_pre_transition = DarknetConv(self.unit//4, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        if block_layer == 'Conv':
-            self.block_layers = [DarknetConv(self.unit//4, 3, activate=self.activate, kernel_initializer=self.kernel_initializer) for _ in range(self.size)]
-        elif block_layer == 'Resnet':
-            self.block_layers = [DarknetResidual([self.unit//4, self.unit//4], activate=self.activate, kernel_initializer=self.kernel_initializer) for _ in range(self.size)]
-        if block_post_transition:
-            self.block_post_transition = DarknetConv(self.unit//2, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.osa_layer = DarknetOSA(self.unit//2, self.growth_rate, activate=self.activate, kernel_initializer=self.kernel_initializer)
     
         self.concat = Concatenate()
 
     def call(self, x, training=False):
         x = self.pre_conv(x, training)
-        branch1 = self.branch_transition(x, training)
+        branch1 = self.branch1_transition(x, training)
+        branch2 = self.branch2_transition(x, training)
+        
+        x = self.osa_layer(x, training)
     
-        branch2 = self.block_pre_transition(x, training)
-        x = branch2
-        branchs = []
-        for l in range(self.size):
-            x = self.block_layers[l](x, training)
-            branchs += [x]
-        x = self.concat(branchs)
-        x = self.block_post_transition(x, training)
-
-        x = self.concat([x, branch2, branch1])
+        x = self.concat([x, branch1, branch2])
 
         return x
     
