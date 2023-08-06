@@ -53,7 +53,7 @@ def main():
             preds = model(batch_images)
             valid_loss = model.loss(batch_grids, preds, GLOBAL_BATCH_SIZE)
 
-            batch_processed_preds = post_processing.prediction_to_bbox(preds, anchors_xywh, BATCH_SIZE, model.strides, NUM_CLASSES, model.input_size)
+            batch_processed_preds = post_processing.prediction_to_bbox(preds, anchors_xywh, GLOBAL_BATCH_SIZE, model.strides, NUM_CLASSES, model.input_size)
             
             return valid_loss, batch_processed_preds
         

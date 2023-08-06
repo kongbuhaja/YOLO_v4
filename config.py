@@ -3,7 +3,7 @@ GPUS = 1
 
 # model config
 # YOLOv3, YOLOv3_tiny, YOLOv4, YOLOv4_tiny, YOLOv4_csp, YOLOv4_P5-7
-MODEL_TYPE = 'YOLOv4'
+MODEL_TYPE = 'YOLOv4_csp'
 STRIDES = [8, 16, 32, 64, 128]
 KERNEL_INITIALIZER = 'glorot'
 
