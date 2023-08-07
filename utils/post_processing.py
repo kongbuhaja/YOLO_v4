@@ -54,5 +54,4 @@ def NMS(preds, score_threshold, iou_threshold, method, sigma):
         valid_mask = new_scores >= score_threshold
         targets = tf.concat([targets[:, :4], new_scores[:, None], targets[:, 5:]], -1)[valid_mask]
 
-    print(output.shape)
     return output

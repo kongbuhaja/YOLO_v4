@@ -15,7 +15,7 @@ POSITIVE_IOU_THRESHOLD = 0.5
 
 # train config
 EPOCHS = 2000
-BATCH_SIZE = 14
+BATCH_SIZE = 13
 GLOBAL_BATCH_SIZE = BATCH_SIZE * GPUS
 # cosine_annealing, poly, step
 LR_SCHEDULER = 'cosine_annealing'
