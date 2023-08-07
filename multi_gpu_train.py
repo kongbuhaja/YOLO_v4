@@ -71,7 +71,7 @@ def main():
 
             return test_loss, batch_processed_preds
         
-        def update_stats_step(batch_processed_preds, batch_labels):
+        def update_eval_step(batch_processed_preds, batch_labels):
             for gpu in range(GPUS):
                 for batch in range(BATCH_SIZE):
                     if GPUS==1:
@@ -133,7 +133,7 @@ def main():
 
                 valid_loss, batch_processed_preds = distributed_test_step(batch_images, batch_grids)
                 
-                mAP50, mAP = update_stats_step(batch_processed_preds, batch_labels)
+                mAP50, mAP = update_eval_step(batch_processed_preds, batch_labels)
                 
                 valid_loc_loss += valid_loss[0]
                 valid_conf_loss += valid_loss[1]

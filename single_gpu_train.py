@@ -10,6 +10,7 @@ def main():
                                                                               EPS, INF, KERNEL_INITIALIZER, LOAD_CHECKPOINTS, CHECKPOINTS)
     dataloader = data_utils.DataLoader(DTYPE, LABELS, BATCH_SIZE, ANCHORS, model.input_size, 
                                        model.strides, POSITIVE_IOU_THRESHOLD, MAX_BBOXES, CREATE_ANCHORS)
+    tf.random.set_seed(42)
     train_dataset = dataloader('train')
     valid_dataset = dataloader('val', use_label=True)
     train_dataset_length = dataloader.length('train') // BATCH_SIZE
@@ -51,7 +52,7 @@ def main():
 
         return valid_loss, batch_processed_preds
     
-    def update_stats_step(batch_processed_preds, batch_labels):
+    def update_eval_step(batch_processed_preds, batch_labels):
         for processed_preds, labels in zip(batch_processed_preds, batch_labels):
             NMS_preds = post_processing.NMS(processed_preds, SCORE_THRESHOLD, IOU_THRESHOLD, NMS_TYPE, SIGMA).numpy()
             labels = bbox_utils.extract_real_labels(labels).numpy()
@@ -108,9 +109,7 @@ def main():
                 
                 valid_loss, batch_processed_preds = test_step(batch_images, batch_grids)
 
-                mAP50, mAP = update_stats_step(batch_processed_preds, batch_labels)
-
-                mAP50, mAP = eval.calculate_mAP()
+                mAP50, mAP = update_eval_step(batch_processed_preds, batch_labels)
                 
                 valid_loc_loss += valid_loss[0]
                 valid_conf_loss += valid_loss[1]

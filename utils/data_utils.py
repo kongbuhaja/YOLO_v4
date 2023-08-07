@@ -38,7 +38,8 @@ class DataLoader():
         data = data.cache()
 
         if split == 'train':
-            data = data.shuffle(buffer_size = min(self.length(split) * 3, 200000))
+            tf.random.set_seed(42)
+            data = data.shuffle(buffer_size = min(self.length(split) * 3, 200000), seed=42)
             
         # if you have enough ram move this line before data.cache(), it will be faster
         data = data.map(self.tf_preprocessing, num_parallel_calls=-1) 

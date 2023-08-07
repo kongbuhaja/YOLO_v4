@@ -1,5 +1,6 @@
 import os
 import tensorflow as tf
+import numpy as np
 from config import *
 
 def os_preset(gpus):
@@ -12,7 +13,7 @@ def os_preset(gpus):
     os.environ['CUDA_VISIBLE_DEVICES'] = ''.join([str(i)+', ' for i in range(gpus)])
     os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
-def tf_preset():
+def hw_preset():
     gpus = tf.config.list_physical_devices('GPU')
     if gpus:
         try:
@@ -22,6 +23,10 @@ def tf_preset():
             print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
         except RuntimeError as error:
             print(error)
+
+def random_seed():
+    tf.random.set_seed(42)
+    np.random.seed(42)
 
 def checkpoint_preset():
     if not os.path.exists(TRAIN_CHECKPOINTS_DIR):
@@ -43,8 +48,9 @@ def output_preset():
         os.makedirs(OUTPUT_DIR + 'video/')
 
 def preset(gpus=GPUS):
+    random_seed()
     os_preset(gpus)
-    tf_preset()
+    hw_preset()
     checkpoint_preset()
     log_preset()
     output_preset()
