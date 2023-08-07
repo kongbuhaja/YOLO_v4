@@ -1,21 +1,21 @@
 # hardware config
-GPUS = 4
+GPUS = 1
 
 # model config
 # YOLOv3, YOLOv3_tiny, YOLOv4, YOLOv4_tiny, YOLOv4_csp, YOLOv4_P5-7
-MODEL_TYPE = 'YOLOv4_csp'
+MODEL_TYPE = 'YOLOv4'
 STRIDES = [8, 16, 32, 64, 128]
 KERNEL_INITIALIZER = 'glorot'
 
 # data config
-DTYPE = 'voc'
+DTYPE = 'coco'
 MAX_BBOXES = 100
 CREATE_ANCHORS = False
 POSITIVE_IOU_THRESHOLD = 0.5
 
 # train config
 EPOCHS = 2000
-BATCH_SIZE = 27
+BATCH_SIZE = 16
 GLOBAL_BATCH_SIZE = BATCH_SIZE * GPUS
 # cosine_annealing, poly, step
 LR_SCHEDULER = 'cosine_annealing'

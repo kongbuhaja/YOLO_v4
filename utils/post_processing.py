@@ -26,6 +26,7 @@ def prediction_to_bbox(grids, anchors, batch_size, strides, num_classes, input_s
     return tf.concat([bboxes, scores, classes], -1)
 
 def NMS(preds, score_threshold, iou_threshold, method, sigma):
+    output = tf.zeros((0, 6), tf.float32)
     valid_mask = preds[..., 4] >= score_threshold
     
     if not tf.reduce_any(valid_mask):
@@ -35,25 +36,23 @@ def NMS(preds, score_threshold, iou_threshold, method, sigma):
     targets = preds[valid_mask]
 
 
-    for idx in range(targets.shape[0]-1):
-        max_idx = tf.argmax(targets[..., 4][idx:], -1)
-        max_target = targets[max_idx]
+    while(targets.shape[0]):
+        max_idx = tf.argmax(targets[..., 4], -1)
+        max_target = targets[max_idx][None]
+        output = tf.concat([output, max_target], 0)
 
-        if max_target[4] < score_threshold:
-            break
+        targets = tf.concat([targets[:max_idx], targets[max_idx+1:]], 0)
+        ious = bbox_utils.bbox_iou(max_target[:, :4], targets[:, :4], xywh=False, iou_type='diou')
 
-        targets = tf.concat([targets[:idx], targets[max_idx:max_idx+1], targets[idx:max_idx], targets[max_idx+1:]], 0)
-        # extra_boxes = tf.concat([boxes[idx:max_idx], boxes[max_idx+1:]], 0)
-        ious = bbox_utils.bbox_iou(max_target[:4], targets[idx+1:, :4], xywh=False, iou_type='diou')
         if method == 'normal':
-            new_scores = tf.concat([targets[:idx+1, 4], max_target[4], tf.where(ious > iou_threshold, 0., targets[idx+1:, 4])], 0)
+            new_scores = tf.where(ious >= iou_threshold, 0., targets[:, 4])
         elif method == 'soft_normal':
-            new_scores = tf.concat([targets[:idx+1, 4], max_target[4], tf.where(ious >= iou_threshold, targets[..., 4] * (1 - ious), targets[..., 4])], 0)
+            new_scores = tf.where(ious >= iou_threshold, targets[..., 4] * (1 - ious), targets[..., 4])
         elif method == 'soft_gaussian':
-            new_scores = tf.concat([targets[:idx+1, 4], tf.exp(-(ious)**2/sigma) * targets[idx+1:, 4]], 0)
+            new_scores = tf.exp(-(ious)**2/sigma) * targets[:, 4]
 
-        targets = tf.concat([targets[:, :4], new_scores[:, None], targets[:, 5:]], -1)
-    
-    final_mask = targets[:, 4] >= score_threshold
+        valid_mask = new_scores >= score_threshold
+        targets = tf.concat([targets[:, :4], new_scores[:, None], targets[:, 5:]], -1)[valid_mask]
 
-    return targets[final_mask]
+    print(output.shape)
+    return output
