@@ -11,7 +11,7 @@ def main():
         model, start_epoch, max_mAP50, max_mAP, max_loss = train_utils.load_model(MODEL_TYPE, ANCHORS, NUM_CLASSES, STRIDES, IOU_THRESHOLD,
                                                                                   EPS, INF, KERNEL_INITIALIZER, LOAD_CHECKPOINTS, CHECKPOINTS)
     with strategy.scope():
-        dataloader = data_utils.DataLoader(DTYPE, LABELS, BATCH_SIZE, ANCHORS, model.input_size, 
+        dataloader = data_utils.DataLoader(DTYPE, LABELS, GLOBAL_BATCH_SIZE, ANCHORS, model.input_size, 
                                            model.strides, POSITIVE_IOU_THRESHOLD, MAX_BBOXES, CREATE_ANCHORS)
         train_dataset = strategy.experimental_distribute_dataset(dataloader('train'))
         valid_dataset = strategy.experimental_distribute_dataset(dataloader('val', use_label=True))
@@ -53,7 +53,7 @@ def main():
             preds = model(batch_images)
             valid_loss = model.loss(batch_grids, preds, GLOBAL_BATCH_SIZE)
 
-            batch_processed_preds = post_processing.prediction_to_bbox(preds, anchors_xywh, GLOBAL_BATCH_SIZE, model.strides, NUM_CLASSES, model.input_size)
+            batch_processed_preds = post_processing.prediction_to_bbox(preds, anchors_xywh, BATCH_SIZE, model.strides, NUM_CLASSES, model.input_size)
             
             return valid_loss, batch_processed_preds
         
