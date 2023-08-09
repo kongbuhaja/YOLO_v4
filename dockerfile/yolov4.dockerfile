@@ -1,8 +1,8 @@
-# sudo docker build --force-rm -f yolov3.dockerfile -t yolov3:1.0 .
+# sudo docker build --force-rm -f dockerfiles/yolov4.dockerfile -t yolov4:1.0 .
 # sudo apt-get install x11-xserver-utils
 # xhost +
-# sudo docker run --gpus all -it -v /tmp/.x11-unix:/tmp/.x11-unix -e DISPLAY=unix$DISPLAY --name yolov3 yolov3:1.0
-FROM nvidia/cuda:11.2.0-cudnn8-devel-ubuntu20.04
+# sudo docker run --gpus all -it -v /tmp/.x11-unix:/tmp/.x11-unix -v /home/hs/ML/YOLO_v4:/home/YOLO_v4 -e DISPLAY=unix$DISPLAY --name yolov4 yolov4:1.0
+FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
 
 ENV TZ=Asia/Seoul
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $>TZ > /etc/timezone
@@ -11,7 +11,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt update 
 
-RUN echo "== Install Basic Tools ==" && \
+RUN echo "== Install Basic Tools ==" &&\
     apt install -y --allow-unauthenticated \
     openssh-server vim nano htop tmux sudo git unzip build-essential\
     python3 python3-pip curl dpkg libgtk2.0-dev \
@@ -25,7 +25,8 @@ RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/lib
     echo "/usr/local/cuda/lib64/stubs" > /etc/ld.so.conf.d/z-cuda-stubs.conf && \
     ldconfig
 
-RUN pip3 install tensorflow==2.8 &&\
+RUN echo "== Install Dev Tolls ==" &&\
+    pip3 install tensorflow==2.8 &&\
     pip3 install opencv-python &&\
     pip3 install matplotlib &&\
     pip3 install pillow &&\
@@ -35,4 +36,4 @@ RUN pip3 install tensorflow==2.8 &&\
     pip3 install gdown
 
 RUN cd /home/ &&\
-    git clone https://github.com/kongbuhaja/YOLO_v3.git
+    git clone https://github.com/kongbuhaja/YOLO_v4.git

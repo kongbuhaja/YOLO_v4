@@ -8,7 +8,7 @@ STRIDES = [8, 16, 32, 64, 128]
 KERNEL_INITIALIZER = 'glorot'
 
 # data config
-DTYPE = 'coco'
+DTYPE = 'custom'
 MAX_BBOXES = 100
 CREATE_ANCHORS = False
 POSITIVE_IOU_THRESHOLD = 0.5
