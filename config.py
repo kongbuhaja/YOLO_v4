@@ -23,7 +23,7 @@ LR = 1e-3
 IOU_THRESHOLD = 0.5
 EPS = 1e-6
 INF = 1e+30
-EVAL_PER_EPOCHS = 1
+EVAL_PER_EPOCHS = 5
 WARMUP_EPOCHS = 10
 
 LOAD_CHECKPOINTS = False
@@ -41,7 +41,7 @@ NMS_TYPE = 'soft_gaussian'
 if 'soft' in NMS_TYPE:
     SCORE_THRESHOLD = 0.001
 else:
-    SCORE_THRESHOLD = 0.5
+    SCORE_THRESHOLD = 0.25
 SIGMA = 0.5
 OUTPUT_DIR = 'outputs/' + DTYPE + '/' + MODEL_TYPE + '/'
 
