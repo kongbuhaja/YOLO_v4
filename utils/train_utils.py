@@ -85,7 +85,7 @@ def load_model(model_type, anchors, num_classes, strides, iou_threshold, eps, in
     if load_checkpoints:
         try:
             model.load_weights(checkpoints)
-            saved = io_utils.read_model_info()
+            saved = io_utils.read_model_info(checkpoints)
             print(f"succeed to load model| epoch:{saved['epoch']} mAP50:{saved['mAP50']} mAP:{saved['mAP']} total_loss:{saved['total_loss']}")
             return model, saved['epoch'], saved['mAP50'], saved['mAP'], saved['total_loss']
         except:
