@@ -22,8 +22,8 @@ def tf_resize_padding(image, labels, width, height, image_size):
 @tf.function
 def tf_resize_random_padding(image, labels, width, height, image_size):
     scale = tf.minimum(image_size/width, image_size/height)
-    new_width, new_height = tf.floor(scale * width), tf.floor(scale * height)
-    random_w, random_h = tf.random.uniform((), minval=0, maxval=1), tf.random.uniform((), minval=0, maxval=1)
+    new_width, new_height = tf.round(scale * width), tf.round(scale * height)
+    random_w, random_h = tf.random.uniform((), 0, 1), tf.random.uniform((), 0, 1)
     pad_left, pad_top = (image_size - new_width) * random_w, (image_size - new_height) * random_h
     pad_right, pad_bottom = image_size - new_width - pad_left, image_size - new_height - pad_top
     resized_image = tf.image.resize(image, [new_height,new_width])
@@ -58,10 +58,9 @@ def randomly_apply(method, image, bboxes, width, height, image_size, prob_thresh
     return image, bboxes, width, height
 
 @tf.function
-def random_scale(image, bboxes, width, height, image_size, lower=0.7, upper=1.0):##
+def random_scale(image, bboxes, width, height, image_size, lower=0.7, upper=1.0):
     scaled_image_size = tf.random.uniform((), lower, upper) * image_size
-    length = tf.cast(tf.reduce_max([width, height]), tf.float32)
-    ratio = scaled_image_size / length
+    ratio = scaled_image_size / tf.reduce_max([width, height])
     scaled_width = tf.round(width * ratio)
     scaled_height = tf.round(height * ratio)
     scaled_image = tf.image.resize(image, [scaled_height, scaled_width])

@@ -25,9 +25,9 @@ def prediction_to_bbox(grids, anchors, batch_size, strides, num_classes, input_s
 
     return tf.concat([bboxes, scores, classes], -1)
 
-def NMS(preds, score_threshold, iou_threshold, method, sigma):
+def NMS(preds, default_score_threshold, minimum_score_threshold, iou_threshold, method, sigma):
     output = tf.zeros((0, 6), tf.float32)
-    valid_mask = preds[..., 4] >= score_threshold
+    valid_mask = preds[..., 4] >= default_score_threshold
     
     if not tf.reduce_any(valid_mask):
         #return empty
@@ -51,7 +51,7 @@ def NMS(preds, score_threshold, iou_threshold, method, sigma):
         elif method == 'soft_gaussian':
             new_scores = tf.exp(-(ious)**2/sigma) * targets[:, 4]
 
-        valid_mask = new_scores >= score_threshold
+        valid_mask = new_scores >= minimum_score_threshold
         targets = tf.concat([targets[:, :4], new_scores[:, None], targets[:, 5:]], -1)[valid_mask]
 
     return output

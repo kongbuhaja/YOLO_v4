@@ -39,7 +39,7 @@ def main():
         batch_labels = all_labels[i]
         batch_processed_preds = post_processing.prediction_to_bbox(batch_grids, anchors_xywh, BATCH_SIZE, model.strides, NUM_CLASSES, model.input_size)
         for image, processed_preds, labels in zip(batch_images, batch_processed_preds, batch_labels):
-            NMS_preds = post_processing.NMS(processed_preds, SCORE_THRESHOLD, IOU_THRESHOLD, NMS_TYPE, SIGMA).numpy()
+            NMS_preds = post_processing.NMS(processed_preds, DEFAULT_SCORE_THRESHOLD, MINIMUM_SCORE_THRESHOLD, IOU_THRESHOLD, NMS_TYPE, SIGMA).numpy()
             labels = bbox_utils.extract_real_labels(labels).numpy()
             if DRAW:
                 pred = draw_utils.draw_labels(image.copy(), NMS_preds, LABELS, xywh=False)

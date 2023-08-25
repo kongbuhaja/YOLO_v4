@@ -54,7 +54,7 @@ def main():
     
     def update_eval_step(batch_processed_preds, batch_labels):
         for processed_preds, labels in zip(batch_processed_preds, batch_labels):
-            NMS_preds = post_processing.NMS(processed_preds, SCORE_THRESHOLD, IOU_THRESHOLD, NMS_TYPE, SIGMA).numpy()
+            NMS_preds = post_processing.NMS(processed_preds, DEFAULT_SCORE_THRESHOLD, MINIMUM_SCORE_THRESHOLD, IOU_THRESHOLD, NMS_TYPE, SIGMA).numpy()
             labels = bbox_utils.extract_real_labels(labels).numpy()
             eval.update_stats(NMS_preds, labels)
 
@@ -77,6 +77,9 @@ def main():
             train_conf_loss += train_loss[1]
             train_prob_loss += train_loss[2]
             train_total_loss += train_loss[3]
+
+            if tf.math.is_nan(train_total_loss):
+                print(batch_grids)
 
             global_step += 1
             train_iter += 1

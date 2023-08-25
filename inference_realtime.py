@@ -39,7 +39,7 @@ def main():
             grids = model(tf.cast(resized_frame[None], tf.float32)/255.)
 
             processed_preds = post_processing.prediction_to_bbox(grids, anchors_xywh, 1, model.strides, NUM_CLASSES, model.input_size)
-            NMS_preds = post_processing.NMS(processed_preds, SCORE_THRESHOLD, IOU_THRESHOLD, NMS_TYPE, SIGMA)
+            NMS_preds = post_processing.NMS(processed_preds, DEFAULT_SCORE_THRESHOLD, MINIMUM_SCORE_THRESHOLD, IOU_THRESHOLD, NMS_TYPE, SIGMA)
 
             NMS_bboxes = (NMS_preds[..., :4] - pad[..., :4])/ratio
             

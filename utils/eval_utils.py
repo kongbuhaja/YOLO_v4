@@ -44,6 +44,8 @@ class Eval:
         self.stats += [[correct, pred[..., 4], pred[..., 5], gt[..., 5]]]
 
     def calculate_mAP(self):
+        if len(self.stats) == 0:
+            return 0., 0.
         tp, conf, pred_classes, gt_classes = [np.concatenate(x, 0) for x in zip(*self.stats)]
         idx = np.argsort(-conf)
         tp, conf, pred_classes = tp[idx], conf[idx], pred_classes[idx]
