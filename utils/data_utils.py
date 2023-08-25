@@ -45,7 +45,7 @@ class DataLoader():
         data = data.map(self.tf_preprocessing, num_parallel_calls=-1) 
 
         if split == 'train':
-            data = data.map(aug_utils.tf_augmentation, num_parallel_calls=-1)
+            data = data.map(lambda image, labels, width, height: aug_utils.tf_augmentation(image, labels, width, height, self.input_size), num_parallel_calls=-1)
             data = data.map(self.tf_minmax, num_parallel_calls=-1)
             data = data.map(lambda image, labels, width, height: aug_utils.tf_resize_random_padding(image, labels, width, height, self.input_size), num_parallel_calls=-1)
         else:

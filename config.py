@@ -1,9 +1,9 @@
 # hardware config
-GPUS = 4
+GPUS = 1
 
 # model config
 # YOLOv3, YOLOv3_tiny, YOLOv4, YOLOv4_tiny, YOLOv4_csp, YOLOv4_P5-7
-MODEL_TYPE = 'YOLOv4_csp'
+MODEL_TYPE = 'YOLOv4_P5'
 STRIDES = [8, 16, 32, 64, 128]
 KERNEL_INITIALIZER = 'glorot'
 
@@ -15,7 +15,7 @@ POSITIVE_IOU_THRESHOLD = 0.5
 
 # train config
 EPOCHS = 2000
-BATCH_SIZE = 12
+BATCH_SIZE = 4
 GLOBAL_BATCH_SIZE = BATCH_SIZE * GPUS
 # cosine_annealing, poly, step
 LR_SCHEDULER = 'cosine_annealing'
@@ -26,7 +26,7 @@ INF = 1e+30
 EVAL_PER_EPOCHS = 5
 WARMUP_EPOCHS = 10
 
-LOAD_CHECKPOINTS = True
+LOAD_CHECKPOINTS = False
 CHECKPOINTS_DIR = 'checkpoints/' + DTYPE + '/' + MODEL_TYPE + '/'
 TRAIN_CHECKPOINTS_DIR = CHECKPOINTS_DIR + 'train_loss/'
 LOSS_CHECKPOINTS_DIR = CHECKPOINTS_DIR + 'val_loss/'
