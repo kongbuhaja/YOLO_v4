@@ -29,6 +29,7 @@
 ## Result   
 ### COCO  
 |Model|Image Size|mAP|  
+|-----|--------|-----|
 |YOLOv4_P7|1536x1536|-|  
 |YOLOv4_P6|1280x1280|-|  
 |YOLOv4_P5|896x896|-|  
