@@ -34,26 +34,26 @@
 |YOLOv4_P6|1280x1280|-|  
 |YOLOv4_P5|896x896|-|  
 |YOLOv4_csp|512x512|0.1013| 
-|YOLOv4|512x512|0.092| 
-|YOLOv3|512x512|0.025|  
-|YOLOv4_tiny|512x512|  
-|YOLOv3_tiny|416x416|  
+|YOLOv4|512x512|0.0924| 
+|YOLOv3|512x512|0.0254|  
+|YOLOv4_tiny|512x512|-|
+|YOLOv3_tiny|416x416|-|
 
 ### VOC  
 |Model|Image Size|mAP|  
-|-----|----------|-----|
+|:-----|:----------|:-----:|
 |YOLOv4_P7|1536x1536|-|  
 |YOLOv4_P6|1280x1280|-| 
 |YOLOv4_P5|896x896|-|  
-|YOLOv4_csp|512x512|0.1013|  
-|YOLOv4|512x512|0.092|  
-|YOLOv3|512x512|0.025|  
-|YOLOv4_tiny|512x512|  
-|YOLOv3_tiny|416x416|  
+|YOLOv4_csp|512x512|-|  
+|YOLOv4|512x512|-|  
+|YOLOv3|512x512|-|  
+|YOLOv4_tiny|512x512|-|
+|YOLOv3_tiny|416x416|-|
 
 ### Custom  
 |Model|Image Size|mAP|  
-|-----|----------|-----|
+|:-----|:----------|:-----:|
 |YOLOv4_P7|1536x1536|-|  
 |YOLOv4_P6|1280x1280|0.3877|  
 |YOLOv4_P5|896x896|0.4994|  
