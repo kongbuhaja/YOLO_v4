@@ -45,7 +45,7 @@
 |YOLOv4_P7|1536x1536|-|  
 |YOLOv4_P6|1280x1280|-| 
 |YOLOv4_P5|896x896|-|  
-|YOLOv4_csp|512x512|-|  
+|YOLOv4_csp|512x512|0.1098|  
 |YOLOv4|512x512|-|  
 |YOLOv3|512x512|-|  
 |YOLOv4_tiny|512x512|-|
