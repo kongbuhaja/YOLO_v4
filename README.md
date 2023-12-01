@@ -18,7 +18,7 @@
 - [x] Self-Adversarial Training(SAT)  
 - [x] Eliminate grid sensityivity  
 - [x] multiple anchors for single ground truth
-- [ ] Cosine annealing scheduler
+- [x] Cosine annealing scheduler
 ### Bos for detector  
 - [x] Mish activation  
 - [x] Spatial Pyramid Pooling(SPP)  
