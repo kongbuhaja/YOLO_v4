@@ -3,17 +3,17 @@ import tensorflow as tf
 from utils.bbox_utils import bbox_iou_wh_np
 
 def get_anchors_xywh(anchors, strides, image_size):
-    anchors = tf.constant(anchors) * image_size
+    anchors = tf.constant(anchors) * image_size[None, None]
     grid_anchors = []
     for i in range(len(strides)):
         scale = image_size // strides[i]
-        scale_range = tf.range(scale, dtype=tf.float32)
-        x, y = tf.meshgrid(scale_range, scale_range)
+        scale_range = [tf.range(s, dtype=tf.float32) for s in scale]
+        x, y = tf.meshgrid(*scale_range)
         xy = tf.concat([x[..., None], y[..., None]], -1)
 
         wh = tf.constant(anchors[i], dtype=tf.float32) / strides[i]
         xy = tf.tile(xy[:,:,None], (1, 1, len(anchors[i]), 1))
-        wh = tf.tile(wh[None, None], (scale, scale, 1, 1))
+        wh = tf.tile(wh[None, None], (*scale.astype(np.int32), 1, 1))
         grid_anchors.append(tf.concat([xy,wh], -1))
     
     return grid_anchors
