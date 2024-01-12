@@ -7,6 +7,9 @@ class v4_loss(loss):
         super().__init__(anchors, input_size, strides, num_classes, method)
         self.conf_ratio = 1.0
         self.balance = [4.0, 1.0, 0.4]
+        self.reg_ratio = 0.05
+        self.obj_ratio = 0.7
+        self.cls_ratio = 0.3
 
     @tf.function
     def __call__(self, labels, preds):
@@ -40,6 +43,10 @@ class v4_loss(loss):
             one_hot = self.onehot_label(gt_cls[l])
             pred_cls = tf.sigmoid(positive[..., 5:])
             cls_loss += tf.reduce_mean(self.BCE(one_hot, pred_cls))
+
+        reg_loss *= self.reg_ratio
+        obj_loss *= self.obj_ratio
+        cls_loss *= self.cls_ratio
 
         return reg_loss, obj_loss, cls_loss
     
