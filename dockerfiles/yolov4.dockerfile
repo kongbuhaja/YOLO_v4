@@ -33,7 +33,10 @@ RUN echo "== Install Dev Tolls ==" &&\
     pip3 install protobuf==3.20.* &&\
     pip3 install tqdm &&\
     pip3 install tensorflow_datasets &&\
-    pip3 install gdown
+    pip3 install gdown &&\
+    pip3 install pyyaml &&\
+    pip3 install numpy &&\
+    pip3 install scipy
 
 RUN cd /home/ &&\
     git clone https://github.com/kongbuhaja/YOLO_v4.git

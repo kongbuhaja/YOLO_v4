@@ -1,17 +1,28 @@
 import numpy as np
-import os
+import os, shutil
 import xml.etree.ElementTree as ET
 from datasets.common import Base_Dataset
+import tensorflow_datasets as tfds
 
 class Dataset(Base_Dataset):
-    def __init__(self, split, dtype, anchors, labels, input_size, create_anchors):
-        super().__init__(split, dtype, anchors, labels, input_size, create_anchors)
+    def __init__(self, split, anchors, labels):
+        super().__init__(split, 'voc', anchors, labels)
 
-    def load(self, use_tfrecord=True):
-        return super().load(use_tfrecord)
-    
+    def download_dataset(self):
+        out_dir = './data/voc'
+        if not os.path.exists(out_dir):
+            os.makedirs(out_dir)
+            try:
+                tfds.load('voc2012', data_dir=out_dir)
+                if os.path.exists(f'{out_dir}/voc'):
+                    shutil.rmtree(f'{out_dir}/voc')
+                for file in os.listdir(f'{out_dir}/downloads/'):
+                    if file.endswith('.tar') or file.endswith('zip') or file.endswith('.INFO'):
+                        os.remove(f'{out_dir}/downloads/{file}')
+            except:
+                self.download_from_server()
+
     def read_files(self):
-        normalized_wh = np.zeros((0,2))
         print('Reading local_files...  ', end='', flush=True)
         
         anno_dir, image_dir = self.load_directory(self.split)
@@ -24,9 +35,9 @@ class Dataset(Base_Dataset):
         
         if self.split != 'test':
             for anno_file in anno_files:
-                image_file, labels, width, height = self.parse_annotation(anno_dir + anno_file)
+                image_file, labels = self.parse_annotation(anno_dir + anno_file)
                 if self.split != 'test':
-                    self.data += [[image_dir + image_file, labels, width, height]]
+                    self.data += [[image_dir + image_file, labels]]
         else:
             image_files = os.listdir(image_dir)
             for image_file in image_files:
@@ -35,10 +46,8 @@ class Dataset(Base_Dataset):
         np.random.shuffle(self.data)
         print('Done!')
         
-        return normalized_wh
-
     def load_directory(self, split):
-        extracted_dir = './data/' + self.dtype + '/downloads/extracted/'
+        extracted_dir = './data/voc/downloads/extracted/'
         for dir in os.listdir(extracted_dir):
             if split == 'test' and split in dir:
                 break
@@ -56,10 +65,6 @@ class Dataset(Base_Dataset):
         for elem in tree.iter():
             if 'filename' in elem.tag:
                 filename = elem.text
-            elif 'width' in elem.tag:
-                width = float(elem.text)
-            elif 'height' in elem.tag:
-                height = float(elem.text)
             elif 'object' in elem.tag:
                 for attr in list(elem):
                     if 'name' in attr.tag:
@@ -74,6 +79,6 @@ class Dataset(Base_Dataset):
                                 xmax = float(dim.text)
                             elif 'ymax' in dim.tag:
                                 ymax = float(dim.text)
-                        labels.append([xmin, ymin, xmax, ymax, 1., label])
+                        labels.append([xmin, ymin, xmax, ymax, label])
             
-        return filename, labels, width, height
+        return filename, labels

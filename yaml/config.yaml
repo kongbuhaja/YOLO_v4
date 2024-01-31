@@ -1,0 +1,46 @@
+model:
+  # YOLOv3, YOLOv3_tiny, YOLOv4, YOLOv4_tiny, YOLOv4_csp, YOLOv4_P5-7
+  name: YOLOv4_csp
+  strides: [8, 16, 32, 64, 128]
+  kernel_init: glorot_uniform
+  load: False
+  dir: checkpoints
+  checkpoint: map_checkpoint
+
+# custom, voc, coco
+data: custom
+
+train:
+  epochs: 5000
+  # cosine_annealing, poly, step
+  lr_scheduler: cosine_annealing
+  lr: 0.001
+  warmup_epochs: 10
+  assign:
+    method: ratio
+    ratio_th: 4.0
+    iou_th: 0.5
+  eval_per_epoch: 1
+  
+eval:
+  nms:
+    # normal, soft_normal, soft_gaussian
+    type: soft_gaussian
+    iou_th: 0.3
+    score_th: 0.01
+    sigma: 0.5
+  dir: outputs
+  video: 0
+  # dataset
+  # abc: a=show, b:save, c:pred or gt & pred
+  # 10c can save image press 's' key
+  # ex) 0: only eval, 11: save gt & pred
+  # video: 0=save, 1=save & show
+  draw: 11
+
+log:
+  dir: logs
+
+batch_size: 14
+seed: 42
+gpus: 0

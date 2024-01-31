@@ -18,6 +18,7 @@ class DarknetBlock(Layer):
         elif block_layer == 'Resnet':
             self.layers += [DarknetResidual([self.unit//2, self.unit], activate=self.activate, kernel_initializer=self.kernel_initializer) for _ in range(self.size)]
 
+    @tf.function
     def call(self, x, training=False):
         x = x
 
@@ -43,6 +44,7 @@ class CSPOSABlock(Layer):
     
         self.concat = Concatenate()
 
+    @tf.function
     def call(self, x, training=False):
         x = self.pre_conv(x, training)
         branch1 = self.branch1_transition(x, training)
@@ -82,6 +84,7 @@ class CSPDarknetBlock(Layer):
     
         self.concat = Concatenate()
 
+    @tf.function
     def call(self, x, training=False):
         x = self.pre_conv(x, training)
         branch = self.branch_transition(x, training)
@@ -114,6 +117,7 @@ class DarknetTinyBlock(Layer):
         self.concat = Concatenate()
         self.transition = DarknetConv(self.unit, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
 
+    @tf.function
     def call(self, x, training):
         x = self.split(x)
         x = self.pre_conv(x, training)
@@ -142,6 +146,7 @@ class ReverseDarknetBlock(Layer):
             self.layers += [DarknetConv(self.unit * 2, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)]
         self.layers += [DarknetConv(self.unit, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)]
 
+    @tf.function
     def call(self, x, training=False):
         x = x
         for l in range(len(self.layers)):
@@ -171,6 +176,7 @@ class ReverseCSPDarknetBlock(Layer):
 
         self.concat = Concatenate()
 
+    @tf.function
     def call(self, x, training=False):
         branch = self.branch_transition(x, training)
 
@@ -200,6 +206,7 @@ class CSPDarknetUpsampleBlock(Layer):
         
         self.concat = Concatenate()
 
+    @tf.function
     def call(self, branch1, branch2, training=False):
         branch1 = self.upsample(branch1, training)
         branch2 = self.branch_transition(branch2, training)
@@ -221,6 +228,7 @@ class CSPDarknetDownsampleBlock(Layer):
     
         self.concat = Concatenate()
 
+    @tf.function
     def call(self, branch1, branch2, training=False):
         branch1 = self.downsample(branch1, training)
         x = self.concat([branch1, branch2])
@@ -245,6 +253,7 @@ class DarknetUpsampleBlock(Layer):
         
         self.concat = Concatenate()
 
+    @tf.function
     def call(self, branch1, branch2, training=False):
         branch1 = self.upsample(branch1, training)
         branch2 = self.branch_transition(branch2, training)
@@ -266,6 +275,7 @@ class DarknetDownsampleBlock(Layer):
     
         self.concat = Concatenate()
 
+    @tf.function
     def call(self, branch1, branch2, training=False):
         branch1 = self.downsample(branch1, training)
         x = self.concat([branch1, branch2])
@@ -282,11 +292,11 @@ class YoloHeadBlock(Layer):
         self.col_anchors = col_anchors
         self.activate = activate
         self.kernel_initializer = kernel_initializer
-
         self.conv1 = DarknetConv(self.unit, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
         self.conv2 = DarknetConv(self.col_anchors * (self.num_classes + 5), 1, activate=False, bn=False, kernel_initializer=self.kernel_initializer)
-        self.reshape = Reshape((self.scale, self.scale, self.col_anchors, self.num_classes + 5))
+        self.reshape = Reshape((*self.scale[::-1], self.col_anchors, self.num_classes + 5))
         
+    @tf.function
     def call(self, x, training=False):
         x = self.conv1(x, training)
         x = self.conv2(x, training)

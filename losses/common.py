@@ -2,13 +2,13 @@ import tensorflow as tf
 from utils import bbox_utils
 
 class loss():
-    def __init__(self, input_size, anchors, strides, num_classes, method='ratio'):
+    def __init__(self, input_size, anchors, strides, num_classes, assign):
         self.input_size = tf.constant(input_size, tf.float32)
-        self.anchors = tf.constant(anchors, tf.float32) * self.input_size[None, None]
+        self.anchors = tf.constant(anchors, tf.float32)
         self.row_anchors, self.col_anchors = self.anchors.shape[:2]
         self.strides = tf.constant(strides, tf.float32)
         self.scales = (self.input_size[None] // self.strides[:, None])
-        self.assign_method, self.assign_th = (self.ratio_assign, 4.) if method=='ratio' else (self.iou_assign, 0.2)
+        self.assign_method, self.assign_th = (self.ratio_assign, assign['ratio_th']) if assign['method']=='ratio' else (self.iou_assign, assign['iou_th'])
         self.num_classes = num_classes
 
     @staticmethod
@@ -20,7 +20,7 @@ class loss():
     @tf.function
     def BCE(label, pred, eps=1e-7):
         pred = tf.minimum(tf.maximum(pred, eps), 1-eps)
-        return -(label*tf.math.log(pred) + (1.-label)*tf.math.log(1.-pred))
+        return -(label*tf.math.log(pred) + (1. - label)*tf.math.log(1. - pred))
 
     @tf.function
     def onehot_label(self, label, smooth=True, alpha=0.1):
@@ -45,9 +45,9 @@ class loss():
         indices, tbox, tcls, anchs = [], [], [], []
         nt = len(labels)
         ai = tf.tile(tf.range(self.col_anchors, dtype=tf.float32)[:, None], [1, nt])
-        targets = tf.concat([tf.tile(labels[None], [self.row_anchors, 1, 1]), ai[..., None]], -1)
+        targets = tf.concat([tf.tile(labels[None], [self.col_anchors, 1, 1]), ai[..., None]], -1)
         off = tf.constant([[0, 0], [1, 0], [0, 1], [-1, 0], [0, -1]], tf.float32) * bias
-        
+
         for r in range(self.row_anchors):
             anchors = self.anchors[r]
             stride = tf.stack([1., self.strides[r], self.strides[r], self.strides[r], self.strides[r], 1., 1.])
@@ -59,7 +59,7 @@ class loss():
 
                 # offsets
                 xy = scaled_targets[..., 1:3]
-                xyi = self.scales[r][::-1] - xy
+                xyi = self.scales[r] - xy
                 c_xy = tf.logical_and(xy % 1. < bias, xy > 1.)
                 c_xyi = tf.logical_and(xyi % 1. < bias, xyi > 1.)
                 offset_mask = tf.stack([tf.ones_like(c_xy[:, 0]), c_xy[:, 0], c_xy[:, 1], c_xyi[:, 0], c_xyi[:, 1]], 0)
@@ -69,19 +69,17 @@ class loss():
                 scaled_targets = targets[0]
                 offsets = 0.
 
-            b = tf.cast(scaled_targets[:, 0:1], tf.int32)
+            b = tf.cast(scaled_targets[:, 0], tf.int32)
             xy = scaled_targets[:, 1:3]
             wh = scaled_targets[:, 3:5]
             c = tf.cast(scaled_targets[:, 5], tf.int32)
-            # c = self.onehot_label(scaled_targets[:, 5])
-            ij = tf.floor(xy - offsets)
-            i, j = tf.clip_by_value(ij[:, 0:1], 0, self.scales[r, 1]-1), tf.clip_by_value(ij[:, 1:2], 0, self.scales[r, 0]-1)
-            a = tf.cast(scaled_targets[:, 6:7], tf.int32)
-            xy = xy - tf.concat([i, j], -1)
-            # a = tf.gather(anchors, tf.cast(scaled_targets[:, 6], tf.int32))
-            # positive_samples += [tf.concat([b, j, i, xy, wh, c, a], -1)]
-            indices.append((b, tf.cast(j, tf.int32), tf.cast(i, tf.int32), a))
+            ij = tf.cast(tf.cast((xy - offsets), tf.int32), tf.float32)
+            i = tf.cast(tf.clip_by_value(ij[:, 0], 0, self.scales[r, 0] - 1), tf.int32)
+            j = tf.cast(tf.clip_by_value(ij[:, 1], 0, self.scales[r, 1] - 1), tf.int32)
+            a = tf.cast(scaled_targets[:, 6], tf.int32)
+
+            indices.append(tf.stack([b, j, i, a], -1))
             tbox.append(tf.concat([xy - ij, wh], -1))
             tcls.append(c)
-            anchs.append(tf.gather(anchors, tf.cast(scaled_targets[:, 6], tf.int32)))
+            anchs.append(tf.gather(anchors/self.strides[r], a))
         return indices, tbox, tcls, anchs

@@ -24,6 +24,7 @@ class CSPP(Layer):
         if size > 6:
             self.csp_blocks += [CSPDarknetBlock(1024, 'Resnet', 7, activate=self.activate, kernel_initializer=self.kernel_initializer)]
 
+    @tf.function
     def call(self, x, training=False):
         x = self.conv(x, training)
 
@@ -36,14 +37,14 @@ class CSPP(Layer):
         return branch
 
 class CSPDarknet53(Layer):
-    def __init__(self, activate='Mish', scaled=True, kernel_initializer=glorot, **kwargs):
+    def __init__(self, activate='Mish', csp=True, kernel_initializer=glorot, **kwargs):
         super().__init__(**kwargs)
         self.activate = activate
         self.kernel_initializer = kernel_initializer
 
         self.conv = DarknetConv(32, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
 
-        if scaled:
+        if csp:
             self.csp_block1 = DarknetBlock(64, 'Resnet', 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
         else:
             self.csp_block1 = CSPDarknetBlock(64, 'Resnet', 1, div=1, activate=self.activate, kernel_initializer=self.kernel_initializer)
@@ -52,6 +53,7 @@ class CSPDarknet53(Layer):
         self.csp_block4 = CSPDarknetBlock(512, 'Resnet', 8, activate=self.activate, kernel_initializer=self.kernel_initializer)
         self.csp_block5 = CSPDarknetBlock(1024, 'Resnet', 4, activate=self.activate, kernel_initializer=self.kernel_initializer)
 
+    @tf.function
     def call(self, x, training=False):
         x = self.conv(x, training)
         x = self.csp_block1(x, training)
@@ -77,6 +79,7 @@ class Darknet53(Layer):
         self.block4 = DarknetBlock(512, 'Resnet', 8, activate=self.activate, kernel_initializer=self.kernel_initializer)
         self.block5 = DarknetBlock(1024, 'Resnet', 4, activate=self.activate, kernel_initializer=self.kernel_initializer)
 
+    @tf.function
     def call(self, x, training=False):
         x = self.conv(x, training)
         x = self.block1(x, training)
@@ -111,7 +114,8 @@ class CSPDarknet19(Layer):
         self.conv3 = DarknetConv(512, 3, activate=self.activate, kernel_initializer=self.kernel_initialier)
         self.conv4 = DarknetConv(256, 1, activate=self.activate, kernel_initializer=self.kernel_initialier)
         self.concat = Concatenate()
-
+    
+    @tf.function
     def call(self, x, training=False):
         x = self.conv1(x, training)
         x = self.conv2(x, training)
@@ -157,7 +161,8 @@ class Darknet19(Layer):
 
         self.conv7 = DarknetConv(1024, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
         self.conv8 = DarknetConv(256, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
-
+    
+    @tf.function
     def call(self, x, training=False):
         x = self.conv1(x, training)
         x = self.maxpool2_2(x)

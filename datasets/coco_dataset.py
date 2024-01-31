@@ -1,14 +1,27 @@
 import numpy as np
-import os, json
+import os, json, shutil
 from utils import bbox_utils
 from datasets.common import Base_Dataset
+import tensorflow_datasets as tfds
+
 
 class Dataset(Base_Dataset):
-    def __init__(self, split, dtype, anchors, labels, input_size, create_anchors):
-        super().__init__(split, dtype, anchors, labels, input_size, create_anchors)
+    def __init__(self, split, anchors, labels):
+        super().__init__(split, 'coco', anchors, labels)
 
-    def load(self, use_tfrecord=True):
-        return super().load(use_tfrecord)
+    def download_dataset(self):
+        out_dir = './data/coco'
+        if not os.path.exists(out_dir):
+            os.makedirs(out_dir)
+            try:
+                tfds.load('coco2017', data_dir=out_dir)
+                if os.path.exists(f'{out_dir}/coco'):
+                    shutil.rmtree(f'{out_dir}/coco')
+                for file in os.listdir(f'{out_dir}/downloads/'):
+                    if file.endswith('.tar') or file.endswith('zip') or file.endswith('.INFO'):
+                        os.remove(f'{out_dir}/downloads/{file}')
+            except:
+                self.download_from_server()
     
     def read_files(self):
         print('Reading local_files...  ', end='', flush=True)
@@ -34,12 +47,12 @@ class Dataset(Base_Dataset):
             else:
                 labels = value['labels']
             
-            self.data += [[image_dir + file_name, labels, value['width'], value['height']]]
+            self.data += [[image_dir + file_name, labels]]
         np.random.shuffle(self.data)
         print('Done!')
 
     def load_directory(self, split):
-        extracted_dir = './data/' + self.dtype + '/downloads/extracted/'
+        extracted_dir = './data/coco/downloads/extracted/'
         for dir in os.listdir(extracted_dir):
             if 'anno' in dir:
                 if split=='train' and 'train' in dir:
@@ -69,12 +82,10 @@ class Dataset(Base_Dataset):
             
         for image in json_data['images']:
             data[image['id']] = {'file_name': image['file_name'],
-                                 'labels': [],
-                                 'width': float(image['width']),
-                                 'height': float(image['height'])}        
+                                 'labels': []}        
 
         for anno in json_data['annotations']:
             bbox = bbox_utils.coco_to_xyxy(np.array(anno['bbox']))
-            data[anno['image_id']]['labels'] += [[*bbox, 1.,float(self.labels.index(categories[anno['category_id']]))]]
+            data[anno['image_id']]['labels'] += [[*bbox ,float(self.labels.index(categories[anno['category_id']]))]]
 
         return data

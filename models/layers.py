@@ -8,6 +8,7 @@ class Mish(Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+    @tf.function
     def call(self, x):
         return x * tf.math.tanh(tf.math.softplus(x))
 
@@ -34,6 +35,7 @@ class DarknetConv(Layer):
         elif activate == 'LeakyReLU':
             self.activate = LeakyReLU(alpha=0.1)
 
+    @tf.function
     def call(self, x, training=False):
         x = self.conv(x)
         x = self.bn(x, training)
@@ -54,6 +56,7 @@ class DarknetOSA(Layer):
         self.concat = Concatenate()
         self.transition = DarknetConv(self.unit, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
 
+    @tf.function
     def call(self, x, training=False):
         branchs = []
         for l in range(self.growth_rate):
@@ -71,6 +74,7 @@ class SplitLayer(Layer):
         self.groups = groups
         self.group = group
     
+    @tf.function
     def call(self, x):
         return tf.split(x, self.groups, -1)[self.group]
     
@@ -85,6 +89,7 @@ class DarknetResidual(Layer):
         self.conv2 = DarknetConv(self.units[1], 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
         self.add = Add()
     
+    @tf.function
     def call(self, x, training=False):
         branch = x
         x = self.conv1(x, training)
@@ -105,6 +110,7 @@ class SPP(Layer):
         self.concat = Concatenate()        
         self.conv = DarknetConv(self.unit, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
 
+    @tf.function
     def call(self, x, training=False):
         pool1 = self.maxpool1(x)
         pool2 = self.maxpool2(x)
@@ -122,6 +128,7 @@ class DarknetUpsample(Layer):
         self.kernel_initializer = kernel_initializer
         self.conv = DarknetConv(self.unit, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
 
+    @tf.function
     def call(self, x, training=False):
         x = self.conv(x, training)
         x = tf.image.resize(x, (x.shape[1]*2, x.shape[2]*2), method='nearest')
@@ -135,6 +142,7 @@ class DarknetDownsample(Layer):
         self.kernel_initializer = kernel_initializer
         self.conv = DarknetConv(self.unit, 3, 2, activate=self.activate, kernel_initializer=self.kernel_initializer)
 
+    @tf.function
     def call(self, x, training=False):
         x = self.conv(x, training)
         return x
@@ -143,5 +151,6 @@ class Identity(Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+    @tf.function
     def call(self, x, training=False):
         return x

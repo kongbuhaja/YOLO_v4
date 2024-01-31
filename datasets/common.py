@@ -1,68 +1,43 @@
-from utils import anchor_utils, io_utils
 import numpy as np
-import sys, os, cv2, gdown, zipfile, shutil
+import os, cv2, gdown, zipfile, shutil, tqdm, urllib.request, tarfile
 import tensorflow as tf
 import tensorflow_datasets as tfds
-import tqdm
 
 class Base_Dataset():
-    def __init__(self, split, dtype, anchors, labels, input_size, create_anchors):
+    def __init__(self, split, dtype, anchors, labels):
         self.split = split
         self.dtype = dtype
         self.anchors = np.array(anchors)
         self.labels = labels
-        self.input_size = input_size
-        self.create_anchors = create_anchors
         self.data = []
         self.length = 0
         print(f'Dataset: {self.dtype} {self.split}')
     
-    def load(self, use_tfrecord):
-        assert self.split in ['train', 'val', 'test'], 'Check your dataset type and split.'
-        self.download_dataset()
- 
-        if self.create_anchors:
-            self.read_files()
-            self.make_new_anchors()
-            print('Anchors are edited. Please restart train!')
-            sys.exit()# config 종속관계 확인해서 지워주기
+    def load(self):
+        assert self.split in ['train', 'val'], 'Check your dataset type and split.'
+        
+        filepath = f'./data/{self.dtype}/{self.split}.tfrecord'
+        infopath = f'./data/{self.dtype}/{self.split}.info'
 
-        if use_tfrecord:
-            filepath = f'./data/{self.dtype}/{self.split}.tfrecord'
-            infopath = f'./data/{self.dtype}/{self.split}.info'
-            if os.path.exists(filepath):
-                print(f'{filepath} is exist')
-            else:
-                if not self.create_anchors:
-                    self.read_files()
-                self.make_tfrecord(filepath, infopath)                
-            data = self.read_tfrecord(filepath)
-            del self.data
+        if os.path.exists(filepath):
+            print(f'{filepath} is exist')
         else:
-            if not self.create_anchors:
-                self.read_files()
-            data = tf.data.Dataset.from_generator(self.generator, 
-                                                  output_types=(tf.uint8, tf.float32, tf.float32, tf.float32),
-                                                  output_shapes=((None, None, 3), (None, 6), (), ()))
-        self.length = self.len(use_tfrecord)
+            self.download_dataset()
+            self.read_files()
+            self.make_tfrecord(filepath, infopath)      
+            
+        del self.data
 
-        return data
+        return self.read_tfrecord(filepath, infopath)
 
-    def read_files(self):
-        # empty super method
-        pass
-
-    def read_tfrecord(self, filepath):
+    def read_tfrecord(self, filepath, infopath):
         dataset =  tf.data.TFRecordDataset(filepath, num_parallel_reads=-1) \
                         .map(parse_tfrecord_fn)
-        return dataset
-    
-    def generator(self):
-        for image_file, labels, width, height in self.data:
-            image = self.read_image(image_file)
-            labels = tf.constant([[0, 0, 0, 0, 0, 0]], tf.float32) if len(labels)==0 else labels
-            height, width = image.shape[:2]
-            yield image, labels, float(width), float(height)
+        
+        with open(infopath, 'r') as f:
+            lines = f.readlines()
+
+        return dataset, int(lines[0])
     
     def make_tfrecord(self, filepath, infopath):    
         with open(infopath, 'w') as f:
@@ -70,90 +45,49 @@ class Base_Dataset():
 
         print(f'Start make {filepath}......      ', end='', flush=True)
         with tf.io.TFRecordWriter(filepath) as writer:
-            for image_file, labels, width, height in tqdm.tqdm(self.data):
+            for image_file, labels in tqdm.tqdm(self.data):
                 image = self.read_image(image_file)
-                height, width = image.shape[:2]
-                writer.write(_data_features(image, labels, float(width), float(height)))
+                writer.write(_data_features(image, labels))
         print('Done!')
 
-    def download_dataset(self):
-        if self.dtype in ['voc', 'coco']:
-            out_dir = './data/' + self.dtype
-            if not os.path.exists(out_dir):
-                os.makedirs(out_dir)
-                if self.dtype == 'voc':
-                    year = '/2012'
-                elif self.dtype == 'coco':
-                    year = '/2017'
-                tfds.load(self.dtype + year, data_dir=out_dir)
-                if os.path.exists(out_dir + '/' + self.dtype):
-                    shutil.rmtree(out_dir + '/' + self.dtype)
-                for file in os.listdir(out_dir + '/downloads/'):
-                    if file.endswith('.tar') or file.endswith('zip') or file.endswith('.INFO'):
-                        os.remove(out_dir + '/downloads/' + file)
-        
-        elif self.dtype == 'custom':
-            path = 'https://drive.google.com/uc?id='
-            file = '15G2fgzBd8uXPr8yLgcJFhOYfpZlzd294'
-            out_dir = './data/' + self.dtype + '/'
-            
-            if not os.path.exists(out_dir):
-                os.makedirs(out_dir)
-            
-                gdown.download(path + file, out_dir + self.dtype + '.zip')
-            
-                with zipfile.ZipFile(out_dir + self.dtype + '.zip', 'r') as zip:
-                    zip.extractall(out_dir)
-                
-                os.remove(out_dir + self.dtype + '.zip')
-
-    def extract_normalized_wh(self):
-        normalized_wh = np.zeros((0, 2))
-        for image_file, labels, width, height in self.data:
-            # print(np.array(labels).shape)
-            if len(labels)==0:
-                continue
-            labels = np.array(labels)
-            wh = labels[..., 2:4] - labels[..., :2]
-            normalized_wh = np.concatenate([normalized_wh, wh / max(width, height)], 0)
-
-        return normalized_wh
-
-    def make_new_anchors(self):
-        print(f'Start make anchors...   ', end='\n', flush=True)
-        normalized_wh = self.extract_normalized_wh()
-
-        new_anchors, acc = anchor_utils.generate_anchors(normalized_wh, np.prod(self.anchors.shape[:-1]))
-        io_utils.edit_config(str(self.anchors.tolist()), str(new_anchors.reshape(self.anchors.shape).tolist()))
-        print('Done!')
-        print("Average accuracy: {:.2f}%".format(acc*100))
-        print("Anchors")
-        print(new_anchors)
+    def download_from_server(self):
+        print('Download dataset from server')
+        download_from_server(self.dtype, path='data')
+        extract(self.dtype, path='data')
+        os.remove(f'data/{self.dtype}.tar.gz')
         
     def read_image(self, image_file):
         image = cv2.imread(image_file)
         return image[..., ::-1]
     
-    def len(self, use_tfrecord):
-        if use_tfrecord:
-            infopath = f'./data/{self.dtype}/{self.split}.info'
-            with open(infopath, 'r') as f:
-                lines = f.readlines()
-            return int(lines[0])
-        return len(self.data)
+    # Overwrite in subclass
+    def download_dataset(self):
+        pass
+    def read_files(self):
+        pass
+    def load_directory(self, split):
+        pass
+    def parse_annotation(self, anno_path):
+        pass
+
+def download_from_server(data_name, path, ip_address='166.104.144.76', port=8000):
+    url = f'http://{ip_address}:{port}/Object_Detection/{data_name}.tar.gz'
+    urllib.request.urlretrieve(url, f'{path}/{data_name}.tar.gz')
+
+def extract(data_name, path):
+    with tarfile.open(f'{path}/{data_name}.tar.gz', 'r:gz') as tar:
+        tar.extractall(f'data/')
 
 def parse_tfrecord_fn(example):
     feature_description={
         'image': tf.io.FixedLenFeature([], tf.string),
         'labels': tf.io.VarLenFeature(tf.float32),
-        'width': tf.io.FixedLenFeature([], tf.float32),
-        'height': tf.io.FixedLenFeature([], tf.float32)
     }
     example = tf.io.parse_single_example(example, feature_description)
     example['image'] = tf.io.decode_jpeg(example['image'], channels=3)
-    example['labels'] = tf.reshape(tf.sparse.to_dense(example['labels']), [-1, 6])
+    example['labels'] = tf.reshape(tf.sparse.to_dense(example['labels']), [-1, 5])
 
-    return example['image'], example['labels'], example['width'], example['height']
+    return example['image'], example['labels']
         
 def _image_feature(value):
     return _bytes_feature(tf.io.encode_jpeg(value).numpy())
@@ -175,17 +109,13 @@ def _int64_feature(value):
     if type(value) == int:
         value=[value]
     return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
-def _data_features(image, labels, width, height):
+def _data_features(image, labels):
     image_feature = _image_feature(image)
     labels_feature = _array_feature(np.array(labels))
-    width_feature = _float_feature(width)
-    height_feature = _float_feature(height)
     
     objects_features = {
         'image': image_feature,
         'labels': labels_feature,
-        'width': width_feature,
-        'height': height_feature
     }      
     example=tf.train.Example(features=tf.train.Features(feature=objects_features))
     return example.SerializeToString()

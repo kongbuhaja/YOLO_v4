@@ -79,24 +79,3 @@ class LR_scheduler():
         if warmup_step < self.warmup_max_step:
             lr = self.warmup_lr_scheduler(warmup_step)
         return lr
-
-def load_model(model_type, anchors, num_classes, strides, iou_threshold, eps, inf, kernel_initializer, load_checkpoints, checkpoints):
-    model = YOLO(model_type, anchors, num_classes, strides, iou_threshold, eps, inf, kernel_initializer)
-    if load_checkpoints:
-        try:
-            model.load_weights(checkpoints)
-            saved = io_utils.read_model_info(checkpoints)
-            print(f"succeed to load model| epoch:{saved['epoch']} mAP50:{saved['mAP50']} mAP:{saved['mAP']} total_loss:{saved['total_loss']}")
-            return model, saved['epoch'], saved['mAP50'], saved['mAP'], saved['total_loss']
-        except:
-            print('checkpoints is not exist.')
-    print('make new model')
-    return model, 1, -1, -1., inf
-
-def save_model(model, epoch, mAP50, mAP, loss, dir_path):
-    checkpoints = dir_path + model.model_type
-
-    model.save_weights(checkpoints)
-    io_utils.write_model_info(checkpoints, epoch, mAP50, mAP, loss)
-    if 'train' not in dir_path:
-        print(f'{dir_path} epoch:{epoch}, mAP50:{mAP50:.7f}, mAP:{mAP:.7f} best_model is saved')

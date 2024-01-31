@@ -2,13 +2,18 @@ import numpy as np
 from utils.bbox_utils import bbox_iou
 
 class Eval:
-    def __init__(self, labels, eps):
-        self.labels=labels
+    def __init__(self, cfg, eps=1e-6):
+        self.labels=cfg['data']['labels']['name']
+        self.eval_per_epoch = cfg['train']['eval_per_epoch']
+        self.result_dir = cfg['eval']['dir']
         self.eps = eps
         self.num_of_ious = 10
         self.iou_thresholds = 0.5 + (0.5) / self.num_of_ious * np.arange(self.num_of_ious)
         self.stats = []
         self.ap = np.zeros((len(self.labels), self.num_of_ious))
+
+    def check(self, epoch):
+        return epoch % self.eval_per_epoch == 0
 
     def init_stat(self):
         self.stats = []
@@ -24,11 +29,11 @@ class Eval:
         if gt.shape[0]:
             detected = []
 
-            for gt_unique_class in np.unique(gt[..., 5]):
-                ti = (gt_unique_class == gt[..., 5]).nonzero()[0]
+            for gt_unique_class in np.unique(gt[..., 4]):
+                ti = (gt_unique_class == gt[..., 4]).nonzero()[0]
                 pi = (gt_unique_class == pred[..., 5]).nonzero()[0]
                 if pi.shape[0]:
-                    ious = bbox_iou(pred[pi, :4][:, None], gt[ti, :4][None], xywh=False).numpy()
+                    ious = bbox_iou(pred[pi, :4][:, None], gt[ti, :4][None]).numpy()
                     best_id = np.argmax(ious, -1)
                     best_iou = np.max(ious, -1)
                     detected_set = set()
@@ -41,7 +46,7 @@ class Eval:
                             if len(detected) == gt.shape[0]:
                                 break
     
-        self.stats += [[correct, pred[..., 4], pred[..., 5], gt[..., 5]]]
+        self.stats += [[correct, pred[..., 4], pred[..., 5], gt[..., 4]]]
 
     def calculate_mAP(self):
         if len(self.stats) == 0:
@@ -66,7 +71,7 @@ class Eval:
 
             recall = tpc / (n_g + self.eps)
             precision = tpc / (tpc + fpc)
-
+ 
             for j in range(self.num_of_ious):
                 ap[c, j] = self.compute_ap(recall[:, j], precision[:, j])
             
@@ -99,3 +104,8 @@ class Eval:
         mAP50, mAP = np.mean(self.ap[:, 0]), np.mean(self.ap)
         text += f'mAP50: {mAP50:.4f}, mAP: {mAP:.4f}'
         return text
+    
+    def write_eval(self, text):
+        path = f'{self.result_dir}/evaluation.txt'
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(text)

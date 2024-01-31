@@ -25,3 +25,4 @@
 - [x] Modified Spatical Attention Module(SAM)
 - [x] Modified Path Aggregation Network(PAN)
 - [x] DIoU_NMS
+
