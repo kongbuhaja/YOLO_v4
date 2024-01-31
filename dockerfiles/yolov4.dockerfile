@@ -1,7 +1,7 @@
-# sudo docker build --force-rm -f dockerfiles/yolov4.dockerfile -t yolov4:1.0 .
+# sudo docker build --force-rm -f dockerfiles/yolov4.dockerfile -t yolov4:latest .
 # sudo apt-get install x11-xserver-utils
 # xhost +
-# sudo docker run --gpus all -it -v /tmp/.x11-unix:/tmp/.x11-unix -v /home/hs/ML/YOLO_v4:/home/YOLO_v4 -e DISPLAY=unix$DISPLAY --name yolov4 yolov4:1.0
+# sudo docker run --gpus all -it -v /tmp/.x11-unix:/tmp/.x11-unix -v /home/hs/ML/YOLO_v4:/home/YOLO_v4 -p 6006:6006 -e DISPLAY=unix$DISPLAY --name yolov4 yolov4:latest
 FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
 
 ENV TZ=Asia/Seoul
