@@ -26,3 +26,6 @@
 - [x] Modified Path Aggregation Network(PAN)
 - [x] DIoU_NMS
 
+SPPBlock, CSPSPPBlock, PlainBlock, UpsampleBlock, ResidualBlock 완료
+Downsample까지 만들고 FPN, PAN 이상없는지 대충확인하고
+CSPBlock 활용처 확인

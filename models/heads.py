@@ -1,31 +1,24 @@
 import tensorflow as tf
 import numpy as np
-from tensorflow.keras.layers import Layer
+from tensorflow.keras.layers import Layer, Reshape
 from tensorflow.keras.initializers import GlorotUniform as glorot
 from tensorflow.keras.initializers import HeUniform as he
-from models.blocks import YoloHeadBlock
+from models.blocks import ConvLayer
 
-class YoloHead(Layer):
-    def __init__(self, unit, decode, scales, row_anchors, col_anchors, num_classes, activate='Mish', kernel_initializer=glorot, **kwargs):
-        super().__init__(**kwargs)
-        self.unit = unit
+class Detect(Layer):
+    def __init__(self, decode, scales, row_anchors, col_anchors, num_classes, kernel_initializer=glorot):
+        super().__init__()
         self.decode = decode
-        self.scales = scales
-        self.row_anchors = row_anchors
-        self.col_anchors = col_anchors
-        self.num_classes = num_classes
-        self.activate = activate
-        self.kernel_initializer = kernel_initializer
-
-        self.layers = []
-        for l in range(self.row_anchors):
-            self.layers += [YoloHeadBlock(self.unit * min(l+1, 4), self.scales[l], self.col_anchors, self.num_classes,
-                                      activate=self.activate, kernel_initializer=self.kernel_initializer)]
+        self.detects = []
+        for l in range(row_anchors):
+            self.detects += [[ConvLayer(col_anchors * (num_classes + 5), 1, activate=False, bn=False, kernel_initializer=kernel_initializer),
+                              Reshape((*scales[l][::-1], col_anchors, num_classes + 5))]]
 
     @tf.function
     def call(self, x, training=False):
-        branchs = []
-        for l in range(self.row_anchors):
-            branchs += [self.decode(self.layers[l](x[l], training))]
+        branch = []
+        for l, (detect, reshape) in enumerate(self.detects):
+            r = reshape(detect(x[l], training))
+            branch += [self.decode(r)]
 
-        return branchs
+        return branch

@@ -6,145 +6,180 @@ from tensorflow.keras.initializers import HeUniform as he
 from models.blocks import *
 
 class CSPPANSPP(Layer):
-    def __init__(self, unit, layer_size, block_size, branch_transition=True, activate='Mish', kernel_initializer=glorot, **kwargs):
-        super().__init__(**kwargs)
-        self.unit = unit
-        self.layer_size = layer_size
-        self.block_size = block_size
-        self.branch_transition = branch_transition
-        self.activate = activate
-        self.kernel_initializer = kernel_initializer
-
-        self.up_layers = [ReverseCSPDarknetBlock(self.unit, size=2, block_layer='SPP',
-                                               activate=self.activate, kernel_initializer=self.kernel_initializer)]
-        for l in range(self.layer_size - 3):
-            self.up_layers += [CSPDarknetUpsampleBlock(self.unit, size=self.block_size, branch_transition=self.branch_transition,
-                                                       activate=self.activate, kernel_initializer=self.kernel_initializer)]
-        for l in range(2):
-            self.up_layers += [CSPDarknetUpsampleBlock(self.unit//2**(l+1), size=self.block_size,branch_transition=self.branch_transition,
-                                                       activate=self.activate, kernel_initializer=self.kernel_initializer)]
+    def __init__(self, unit, row_anchors, block_size, activate='Mish', kernel_initializer=glorot):
+        super().__init__()
+        self.sppblock = CSPSPPBlock(unit*2**4, activate=activate, kernel_initializer=kernel_initializer)        
+        self.upsamples = []
+        for l in range(1, row_anchors):
+            u = unit*2**min(row_anchors + 1 - l , 4)
+            self.upsamples += [[UpsampleLayer(u, activate=activate, kernel_initializer=kernel_initializer),
+                                ConvLayer(u, 1, activate=activate, kernel_initializer=kernel_initializer),
+                                CSPBlockB(u, 'Bottle', block_size, activate=activate, kernel_initializer=kernel_initializer)]]
             
-        self.down_layers = [CSPDarknetDownsampleBlock(self.unit//2, size=self.block_size,
-                                                      activate=self.activate, kernel_initializer=self.kernel_initializer)]
-        for l in range(self.layer_size - 2):
-            self.down_layers += [CSPDarknetDownsampleBlock(self.unit, size=self.block_size,
-                                                           activate=self.activate, kernel_initializer=self.kernel_initializer)]
+        self.downsamples = []
+        for l in range(1, row_anchors):
+            u = unit*2**min(2 + l, 4)
+            self.downsamples += [[ConvLayer(u, 3, 2, activate=activate, kernel_initializer=kernel_initializer),
+                                  CSPBlockB(u, 'Bottle', block_size, activate=activate, kernel_initializer=kernel_initializer)]]
 
-    @tf.function
-    def call(self, x, training):
-        branchs = [self.up_layers[0](x[-1], training)]
-        
-        for l in range(1, self.layer_size):
-            branchs += [self.up_layers[l](branchs[-1], x[-l-1], training)]
-        
-        out_branchs = [branchs[-1]]
-        for l in range(self.layer_size - 1):
-            out_branchs += [self.down_layers[l](out_branchs[-1], branchs[-l-2], training)]
-
-        return out_branchs
-    
-class PANSPP(Layer):
-    def __init__(self, unit, layer_size, block_size, branch_transition=True, activate='Mish', kernel_initializer=glorot, **kwargs):
-        super().__init__(**kwargs)
-        self.unit = unit
-        self.layer_size = layer_size
-        self.block_size = block_size
-        self.branch_transition = branch_transition
-        self.activate = activate
-        self.kernel_initializer = kernel_initializer
-        
-        self.up_layers = [ReverseDarknetBlock(self.unit, size=2, block_layer='SPP',
-                                              activate=self.activate, kernel_initializer=self.kernel_initializer)]
-        for l in range(self.layer_size - 3):
-            self.up_layers += [DarknetUpsampleBlock(self.unit, self.block_size, branch_transition=self.branch_transition,
-                                                    activate=self.activate, kernel_initializer=self.kernel_initializer)]
-        for u in range(2):
-            self.up_layers += [DarknetUpsampleBlock(self.unit//2**(u+1), size=self.block_size,branch_transition=self.branch_transition,
-                                                    activate=self.activate, kernel_initializer=self.kernel_initializer)]
-        
-        self.down_layers = [DarknetDownsampleBlock(self.unit//2, size=self.block_size,
-                                                      activate=self.activate, kernel_initializer=self.kernel_initializer)]
-        for l in range(self.layer_size - 2):
-            self.down_layers += [DarknetDownsampleBlock(self.unit, size=self.block_size,
-                                                           activate=self.activate, kernel_initializer=self.kernel_initializer)]
-    
-    @tf.function
-    def call(self, x, training):
-        branchs = [self.up_layers[0](x[-1], training)]
-        
-        for l in range(1, self.layer_size):
-            branchs += [self.up_layers[l](branchs[-1], x[-l-1], training)]
-        
-        out_branchs = [branchs[-1]]
-        for l in range(self.layer_size - 1):
-            out_branchs += [self.down_layers[l](out_branchs[-1], branchs[-l-2], training)]
-
-        return out_branchs
-
-class CSPFPNSPP(Layer):
-    def __init__(self, unit, layer_size, block_size, branch_transition=True, activate='Mish', kernel_initializer=glorot, **kwargs):
-        super().__init__(**kwargs)
-        self.unit = unit
-        self.layer_size = layer_size
-        self.block_size = block_size
-        self.branch_transition = branch_transition
-        self.activate = activate
-        self.kernel_initializer = kernel_initializer
-
-        self.layers = []
-        for l in range(self.layer_size - 1):
-            self.layers += [CSPDarknetUpsampleBlock(self.unit//(l+1), self.block_size, branch_transition=self.branch_transition,
-                                                    activate=self.activate, kernel_initializer=self.kernel_initializer)]
-            
-    @tf.function
-    def call(self, x, training):
-        branchs = [x[-1]]
-
-        for l in range(self.layer_size - 1):
-            branchs += [self.layers[l](branchs[-1], x[-l-2], training)]
-
-        return branchs[::-1]
-
-class FPNSPP(Layer):
-    def __init__(self, unit, layer_size, block_size, branch_transition=True, activate='Mish', kernel_initializer=glorot, **kwargs):
-        super().__init__(**kwargs)
-        self.unit = unit
-        self.layer_size = layer_size
-        self.block_size = block_size
-        self.branch_transition = branch_transition
-        self.activate = activate
-        self.kernel_initializer = kernel_initializer
-
-        self.layers = []
-        for l in range(self.layer_size - 1):
-            self.layers += [DarknetUpsampleBlock(self.unit//(l+1), self.block_size, branch_transition=self.branch_transition,
-                                                 activate=self.activate, kernel_initializer=self.kernel_initializer)]
-    
-    @tf.function
-    def call(self, x, training):
-        branchs = [x[-1]]
-        
-        for l in range(self.layer_size - 1):
-            branchs += [self.layers[l](branchs[-1], x[-l-2], training)]
-
-        return branchs[::-1]
-
-class tinyFPN(Layer):
-    def __init__(self, unit, activate='Mish', kernel_initializer=glorot, **kwargs):
-        super().__init__(**kwargs)
-        self.unit = unit
-        self.activate = activate
-        self.kernel_initializer = kernel_initializer
-
-        self.medium_upsample_layer = DarknetUpsample(self.unit//2, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.convs = []
+        for l in range(row_anchors):
+            self.convs += [ConvLayer(unit*2**min(3+l, 5), 3, activate=activate, kernel_initializer=kernel_initializer)]
 
         self.concat = Concatenate()
 
     @tf.function
     def call(self, x, training):
-        branchs = [x[-1]]
+        up_branch = [self.sppblock(x[-1], training)]
+        for l, (upsample, transition, block) in enumerate(self.upsamples):
+            u = upsample(up_branch[-1], training)
+            b = transition(x[-l-2], training)
+            c = self.concat([u, b])
+            up_branch += [block(c, training)]
 
-        upsampled_medium_branch = self.medium_upsample_layer(branchs[-1], training)
-        branchs += [self.concat([upsampled_medium_branch, x[0]])]
+        down_branch = [up_branch[-1]]
+        for l, (downsample, block) in enumerate(self.downsamples):
+            d = downsample(down_branch[-1], training)
+            c = self.concat([d, up_branch[-l-2]])
+            down_branch += [block(c, training)]
 
-        return branchs[::-1]
+        branch = []
+        for l, conv in enumerate(self.convs):
+            branch += [conv(down_branch[l], training)]
+            
+        return branch
+    
+class PANSPP(Layer):
+    def __init__(self, unit, row_anchors, block_size, activate='Mish', kernel_initializer=glorot):
+        super().__init__()
+        self.sppblock = SPPBlock(unit*2**4, activate=activate, kernel_initializer=kernel_initializer)        
+        self.upsamples = []
+        for l in range(1, row_anchors):
+            u = unit*2**min(row_anchors + 1 - l , 4)
+            self.upsamples += [[UpsampleLayer(u, activate=activate, kernel_initializer=kernel_initializer),
+                                ConvLayer(u, 1, activate=activate, kernel_initializer=kernel_initializer),
+                                PlainBlockB(u, 'Bottle', block_size, activate=activate, kernel_initializer=kernel_initializer)]]
+            
+        self.downsamples = []
+        for l in range(1, row_anchors):
+            u = unit*2**min(2 + l, 4)
+            self.downsamples += [[ConvLayer(u, 3, 2, activate=activate, kernel_initializer=kernel_initializer),
+                                  PlainBlockB(u, 'Bottle', block_size, activate=activate, kernel_initializer=kernel_initializer)]]
+        
+        self.convs = []
+        for l in range(row_anchors):
+            self.convs += [ConvLayer(unit*2**min(3+l, 5), 3, activate=activate, kernel_initializer=kernel_initializer)]
+
+        self.concat = Concatenate()
+
+    @tf.function
+    def call(self, x, training):
+        up_branch = [self.sppblock(x[-1], training)]
+        for l, (upsample, transition, block) in enumerate(self.upsamples):
+            u = upsample(up_branch[-1], training)
+            b = transition(x[-l-2], training)
+            c = self.concat([u, b])
+            up_branch += [block(c, training)]
+
+        down_branch = [up_branch[-1]]
+        for l, (downsample, block) in enumerate(self.downsamples):
+            d = downsample(down_branch[-1], training)
+            c = self.concat([d, up_branch[-l-2]])
+            down_branch += [block(c, training)]
+
+        branch = []
+        for l, conv in enumerate(self.convs):
+            branch += [conv(down_branch[l], training)]
+            
+        return branch
+
+class CSPFPN(Layer):
+    def __init__(self, unit, row_anchors, block_size, activate='Mish', kernel_initializer=glorot):
+        super().__init__()
+        self.block = PlainBlockB(unit*2**4, 'Bottle', block_size, activate=activate, kernel_initializer=kernel_initializer)
+        self.upsamples = []
+        for l in range(1, row_anchors):
+            u = unit*2**min(row_anchors + 1 - l , 4)
+            self.upsamples += [[UpsampleLayer(u, activate=activate, kernel_initializer=kernel_initializer),
+                                ConvLayer(u, activate=activate, kernel_initializer=kernel_initializer),
+                                CSPBlockB(u, 'Bottle', block_size, activate=activate, kernel_initializer=kernel_initializer)]]
+
+        self.convs = []
+        for l in range(row_anchors):
+            self.convs += [ConvLayer(unit*2**min(3+l, 5), 3, activate=activate, kernel_initializer=kernel_initializer)]
+        
+        self.concat = Concatenate()
+
+    @tf.function
+    def call(self, x, training):
+        up_branch = [self.block(x[-1], training)]
+        for l, (upsample, transition, block) in enumerate(self.upsamples):
+            u = upsample(up_branch[-1], training)
+            b = transition(x[-l-2], training)
+            c = self.concat([u, b])
+            up_branch += [block(c, training)]
+
+        branch = []
+        for l, conv in enumerate(self.convs):
+            branch += [conv(up_branch[-l-1], training)]
+
+        return branch
+
+class FPN(Layer):
+    def __init__(self, unit, row_anchors, block_size, activate='Mish', kernel_initializer=glorot):
+        super().__init__()
+        self.block = PlainBlockB(unit*2**4, 'Bottle', block_size, activate=activate, kernel_initializer=kernel_initializer)
+        self.upsamples = []
+        for l in range(1, row_anchors):
+            u = unit*2**min(row_anchors + 1 - l , 4)
+            self.upsamples += [[UpsampleLayer(u, activate=activate, kernel_initializer=kernel_initializer),
+                                PlainBlockB(u, 'Bottle', block_size, activate=activate, kernel_initializer=kernel_initializer)]]
+
+        self.convs = []
+        for l in range(row_anchors):
+            self.convs += [ConvLayer(unit*2**min(3+l, 5), 3, activate=activate, kernel_initializer=kernel_initializer)]
+        
+        self.concat = Concatenate()
+
+    @tf.function
+    def call(self, x, training):
+        up_branch = [self.block(x[-1], training)]
+        for l, (upsample, block) in enumerate(self.upsamples):
+            u = upsample(up_branch[-1], training)
+            c = self.concat([u, x[-l-2]])
+            up_branch += [block(c, training)]
+
+        branch = []
+        for l, conv in enumerate(self.convs):
+            branch += [conv(up_branch[-l-1], training)]
+
+        return branch
+
+class tinyFPN(Layer):
+    def __init__(self, unit, row_anchors, activate='Mish', kernel_initializer=glorot):
+        super().__init__()
+        self.conv = ConvLayer(unit*2**3, 3, activate=activate, kernel_initializer=kernel_initializer)
+        
+        self.upsamples = []
+        for l in range(1, row_anchors):
+            self.upsamples += [UpsampleLayer(unit*2**min(row_anchors + 1 - l, 4), activate=activate, kernel_initializer=kernel_initializer)]
+
+        self.convs = []
+        for l in range(row_anchors):
+            self.convs += [ConvLayer(unit*2**min(3+l, 5), 3, activate=activate, kernel_initializer=kernel_initializer)]
+        
+        self.concat = Concatenate()
+
+    @tf.function
+    def call(self, x, training):
+        up_branch = [self.conv(x[-1], training)]
+
+        for l in range(len(self.upsamples)):
+            u = self.upsamples[l](up_branch[-1], training)
+            up_branch += [self.concat([u, x[-l-2]])]
+
+        branch = []
+        for l, conv in enumerate(self.convs):
+            branch += [conv(up_branch[-l-1], training)]
+
+        return branch

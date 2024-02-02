@@ -10,8 +10,8 @@ from utils.io_utils import read_model_info, write_model_info
 from losses import yolov3, yolov4
 
 class YOLO(Model):
-    def __init__(self, cfg, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, cfg):
+        super().__init__()
         self.model_name = cfg['model']['name']
         self.num_classes = cfg['data']['labels']['count']
         self.nms = cfg['eval']['nms']['type']
@@ -20,83 +20,6 @@ class YOLO(Model):
         self.sigma = cfg['eval']['nms']['sigma']
         self.seed = cfg['seed']
 
-        if 'YOLOv3' in self.model_name:
-            decode = self.v3_decode
-            loss = 'YOLOv3_Loss'
-            if self.model_name == 'YOLOv3':
-                backbone = 'Darknet53'
-                neck = 'FPNSPP'
-                head = 'Yolo'
-                backbone_activate = 'LeakyReLU'
-                activate = 'LeakyReLU'
-                block_size = 2
-                self.input_size = (512, 512)
-                self.strides = cfg['model']['strides'][:3]
-            elif self.model_name == 'YOLOv3_tiny':
-                backbone = 'Darknet19'
-                neck = 'tinyFPN'
-                head = 'Yolo'
-                backbone_activate = 'LeakyReLU'
-                activate = 'LeakyReLU'
-                self.input_size = (416, 416)
-                self.strides = cfg['model']['strides'][1:3]
-        elif 'YOLOv4' in self.model_name:
-            decode = self.v4_decode
-            loss = 'YOLOv4_Loss'
-            if self.model_name == 'YOLOv4':
-                backbone = 'CSPDarknet53'
-                neck = 'PANSPP'
-                head = 'Yolo'
-                csp = False
-                backbone_activate = 'Mish'
-                activate = 'LeakyReLU'
-                block_size = 2
-                self.input_size = (512, 512)
-                self.strides = cfg['model']['strides'][:3]
-            elif self.model_name == 'YOLOv4_tiny':
-                backbone = 'CSPDarknet19'
-                neck = 'tinyFPN'
-                head = 'Yolo'
-                backbone_activate = 'LeakyReLU'
-                activate = 'LeakyReLU'
-                self.input_size = (416, 416)
-                self.strides = cfg['model']['strides'][1:3]
-            elif self.model_name == 'YOLOv4_csp':
-                backbone = 'CSPDarknet53'
-                neck = 'CSPPANSPP'
-                head = 'Yolo'
-                csp = True
-                backbone_activate = 'Mish'
-                activate = 'Mish'
-                block_size = 2
-                self.input_size = (512, 512)
-                self.strides = cfg['model']['strides'][:3]
-            elif 'YOLOv4_P' in self.model_name:
-                backbone = 'CSPP'
-                neck = 'CSPPANSPP'
-                head = 'Yolo'
-                backbone_activate = 'Mish'
-                activate = 'Mish'
-                block_size = 3
-                size = int(self.model_name[-1])
-                self.strides = cfg['model']['strides'][:size-2]
-                if size==5:
-                    self.input_size = (896, 896)
-                elif size==6:
-                    self.input_size = (1280, 1280)
-                elif size==7:
-                    self.input_size = (1536, 1536)
-
-        self.input_size = np.array(self.input_size, np.int32)
-        self.anchors = np.array(cfg['model']['anchors']) * self.input_size
-        self.strides = np.array(self.strides, np.int32)
-        self.row_anchors, self.col_anchors = self.anchors.shape[:2]
-        self.scales = (self.input_size[None] // self.strides[:, None])
-        self.anchors_grid = list(map(lambda x: tf.reshape(x, [-1,4]), get_anchors_grid(self.anchors, self.strides, self.input_size)))
-
-        cfg['model']['input_size'] = self.input_size
-        cfg['model']['anchors'] = self.anchors
-        cfg['model']['strides'] = self.strides
 
         if cfg['model']['kernel_init'] == 'glorot_uniform':
             self.kernel_initializer = GlorotUniform(seed=self.seed)
@@ -109,40 +32,137 @@ class YOLO(Model):
         else:
             self.kernel_initializer = Zeros()
 
+        if 'YOLOv2' in self.model_name:
+            decode = self.old_decode
+            loss = 'YOLOv2_Loss'
+            if self.model_name == 'YOLOv2':
+                pass
+
+        elif 'YOLOv3' in self.model_name:
+            decode = self.old_decode
+            loss = 'YOLOv3_Loss'
+            if self.model_name == 'YOLOv3':
+                unit = 32
+                backbone = 'Darknet53'
+                backbone_unit = unit
+                backbone_activate = 'LeakyReLU'
+                neck = 'FPN'
+                neck_unit = unit
+                neck_block_size = 2
+                neck_activate = 'LeakyReLU'
+                head = 'Detect'
+                self.input_size = (512, 512)
+                self.strides = cfg['model']['strides'][:3]
+            elif self.model_name == 'YOLOv3_tiny':
+                unit = 16
+                backbone = 'Darknet19'
+                backbone_unit = unit
+                backbone_activate = 'LeakyReLU'
+                neck = 'tinyFPN'
+                neck_unit = unit * 2
+                neck_activate = 'LeakyReLU'
+                head = 'Detect'
+                self.input_size = (416, 416)
+                self.strides = cfg['model']['strides'][1:3]
+        elif 'YOLOv4' in self.model_name:
+            decode = self.decode
+            loss = 'YOLOv4_Loss'
+            if self.model_name == 'YOLOv4':
+                unit = 32
+                csp = False
+                backbone = 'CSPDarknet53'
+                backbone_unit = unit
+                backbone_activate = 'Mish'
+                neck = 'PANSPP'
+                neck_unit = unit
+                neck_block_size = 2
+                neck_activate = 'LeakyReLU'
+                head = 'Detect'
+                self.input_size = (512, 512)
+                self.strides = cfg['model']['strides'][:3]
+            elif self.model_name == 'YOLOv4_tiny':
+                unit = 32
+                backbone = 'CSPDarknet19'
+                backbone_unit = unit
+                backbone_activate = 'LeakyReLU'
+                neck = 'tinyFPN'
+                neck_unit = unit
+                neck_activate = 'LeakyReLU'
+                head = 'Detect'
+                self.input_size = (416, 416)
+                self.strides = cfg['model']['strides'][1:3]
+            elif self.model_name == 'YOLOv4_csp':
+                unit = 32
+                csp = True
+                backbone = 'CSPDarknet53'
+                backbone_unit = unit
+                backbone_activate = 'Mish'
+                neck = 'CSPPANSPP'
+                neck_unit = unit
+                neck_block_size = 2
+                neck_activate = 'Mish'
+                head = 'Detect'
+                self.input_size = (512, 512)
+                self.strides = cfg['model']['strides'][:3]
+            elif 'YOLOv4_P' in self.model_name:
+                unit = 32
+                backbone = 'CSPP'
+                backbone_unit = unit
+                backbone_activate = 'Mish'
+                neck = 'CSPPANSPP'
+                neck_unit = unit
+                neck_block_size = 3
+                neck_activate = 'Mish'
+                head = 'Detect'
+                size = int(self.model_name[-1])
+                self.strides = cfg['model']['strides'][:size-2]
+                if size==5:
+                    self.input_size = (896, 896)
+                elif size==6:
+                    self.input_size = (1280, 1280)
+                elif size==7:
+                    self.input_size = (1536, 1536)
+
+        self.input_size = np.array(self.input_size, np.int32)
+        self.anchors = np.array(cfg['model']['anchors']) * self.input_size
+        self.row_anchors, self.col_anchors = self.anchors.shape[:2]
+        self.strides = np.array(self.strides, np.int32)
+        self.scales = (self.input_size[None] // self.strides[:, None])
+        self.anchors_grid = list(map(lambda x: tf.reshape(x, [-1,4]), get_anchors_grid(self.anchors, self.strides, self.input_size)))
+
+        cfg['model']['input_size'] = self.input_size
+        cfg['model']['anchors'] = self.anchors
+        cfg['model']['strides'] = self.strides
+
         if loss == 'YOLOv3_Loss':
             self.loss = yolov3.loss(self.input_size, self.anchors, self.strides, self.num_classes, cfg['train']['assign'])
         elif loss == 'YOLOv4_Loss':
             self.loss = yolov4.loss(self.input_size, self.anchors, self.strides, self.num_classes, cfg['train']['assign'])
 
         if backbone == 'Darknet53':
-            self.backbone = Darknet53(activate=backbone_activate, kernel_initializer=self.kernel_initializer)
+            self.backbone = Darknet53(backbone_unit, activate=backbone_activate, kernel_initializer=self.kernel_initializer)
         elif backbone == 'Darknet19':
-            self.backbone = Darknet19(activate=backbone_activate, kernel_initializer=self.kernel_initializer)
+            self.backbone = Darknet19(backbone_unit, activate=backbone_activate, kernel_initializer=self.kernel_initializer)
         elif backbone == 'CSPDarknet53':
-            self.backbone = CSPDarknet53(activate=backbone_activate, csp=csp, kernel_initializer=self.kernel_initializer)
+            self.backbone = CSPDarknet53(backbone_unit, activate=backbone_activate, csp=csp, kernel_initializer=self.kernel_initializer)
         elif backbone == 'CSPDarknet19':
-            self.backbone = CSPDarknet19(activate=backbone_activate, kernel_initializer=self.kernel_initializer)
+            self.backbone = CSPDarknet19(backbone_unit, activate=backbone_activate, kernel_initializer=self.kernel_initializer)
         elif backbone == 'CSPP':
-            self.backbone = CSPP(size=size, activate=backbone_activate, kernel_initializer=self.kernel_initializer)
+            self.backbone = CSPP(backbone_unit, size, activate=backbone_activate, kernel_initializer=self.kernel_initializer)
 
-        if neck == 'FPNSPP':
-            self.neck = FPNSPP(512, layer_size=self.row_anchors, block_size=block_size, branch_transition=False,
-                               activate=activate, kernel_initializer=self.kernel_initializer)
+        if neck == 'FPN':
+            self.neck = FPN(neck_unit, self.row_anchors, neck_block_size, activate=neck_activate, kernel_initializer=self.kernel_initializer)
         elif neck == 'PANSPP':
-            self.neck = PANSPP(512, layer_size=self.row_anchors, block_size=block_size, branch_transition=True,
-                               activate=activate, kernel_initializer=self.kernel_initializer)
-        elif neck == 'tinyFPN':
-            self.neck = tinyFPN(256, activate=activate, kernel_initializer=self.kernel_initializer)
-        elif neck == 'CSPFPNSPP':
-            self.neck = CSPFPNSPP(512, layer_size=self.row_anchors, block_size=block_size, branch_transition=True,
-                                  activate=activate, kernel_initializer=self.kernel_initializer)
+            self.neck = PANSPP(neck_unit, self.row_anchors, neck_block_size, activate=neck_activate, kernel_initializer=self.kernel_initializer)
+        elif neck == 'CSPFPN':
+            self.neck = CSPFPN(neck_unit, self.row_anchors, neck_block_size, activate=neck_activate, kernel_initializer=self.kernel_initializer)
         elif neck == 'CSPPANSPP':
-            self.neck = CSPPANSPP(512, layer_size=self.row_anchors, block_size=block_size, branch_transition=True,
-                                  activate=activate, kernel_initializer=self.kernel_initializer)
+            self.neck = CSPPANSPP(neck_unit, self.row_anchors, neck_block_size, activate=neck_activate, kernel_initializer=self.kernel_initializer)
+        elif neck == 'tinyFPN':
+            self.neck = tinyFPN(neck_unit, self.row_anchors, activate=neck_activate, kernel_initializer=self.kernel_initializer)
             
-        if head == 'Yolo':
-            self.head = YoloHead(256, decode, self.scales, self.row_anchors, self.col_anchors, self.num_classes,
-                                 activate=activate, kernel_initializer=self.kernel_initializer)
+        if head == 'Detect':
+            self.head = Detect(decode, self.scales, self.row_anchors, self.col_anchors, self.num_classes, kernel_initializer=self.kernel_initializer)
             
         print(f'Model: {self.model_name}')
         print(f'Backbone: {backbone}')
@@ -160,7 +180,7 @@ class YOLO(Model):
         return head
     
     @tf.function
-    def v3_decode(self, pred):
+    def old_decode(self, pred):
         xy = tf.sigmoid(pred[..., :2])
         wh = tf.exp(pred[..., 2:4])
         obj = tf.sigmoid(pred[..., 4:5])
@@ -169,7 +189,7 @@ class YOLO(Model):
         return tf.concat([xy, wh, obj, cls], -1)
     
     @tf.function
-    def v4_decode(self, pred):
+    def decode(self, pred):
         xy = tf.sigmoid(pred[..., :2]) * 2. - 0.5
         wh = tf.square(tf.sigmoid(pred[..., 2:4])*2)
         obj = tf.sigmoid(pred[..., 4:5])

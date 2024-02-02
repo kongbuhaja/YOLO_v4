@@ -5,114 +5,143 @@ from models.blocks import *
 from models.layers import *
 
 class CSPP(Layer):
-    def __init__(self, size, activate='Mish', kernel_initializer=glorot, **kwargs):
-        super().__init__(**kwargs)
-        self.activate = activate
-        self.kernel_initializer = kernel_initializer
+    def __init__(self, unit, size, activate='Mish', kernel_initializer=glorot):
+        super().__init__()
+        units = [unit*2, unit*2**2, unit*2**3, unit*2**4, unit*2**5, unit*2**5, unit*2**5]
+        block_sizes = [1, 3, 15, 15, 7, 7, 7]
 
-        self.conv = DarknetConv(32, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.conv = ConvLayer(unit, 3, activate=activate, kernel_initializer=kernel_initializer)
 
-        self.csp_blocks = [
-            CSPDarknetBlock(64, 'Resnet', 1, activate=self.activate, kernel_initializer=self.kernel_initializer),
-            CSPDarknetBlock(128, 'Resnet', 3, activate=self.activate, kernel_initializer=self.kernel_initializer),
-            CSPDarknetBlock(256, 'Resnet', 15, activate=self.activate, kernel_initializer=self.kernel_initializer),
-            CSPDarknetBlock(512, 'Resnet', 15, activate=self.activate, kernel_initializer=self.kernel_initializer),
-            CSPDarknetBlock(1024, 'Resnet', 7, activate=self.activate, kernel_initializer=self.kernel_initializer)]
-
-        if size > 5:
-            self.csp_blocks += [CSPDarknetBlock(1024, 'Resnet', 7, activate=self.activate, kernel_initializer=self.kernel_initializer)]
-        if size > 6:
-            self.csp_blocks += [CSPDarknetBlock(1024, 'Resnet', 7, activate=self.activate, kernel_initializer=self.kernel_initializer)]
+        self.blocks = []
+        for s in range(size):
+            self.blocks += [[ConvLayer(units[s], 3, 2, activate=activate, kernel_initializer=kernel_initializer),
+                             CSPBlockA(units[s], 'CSPResidual', block_sizes[s], activate=activate, kernel_initializer=kernel_initializer)]]
 
     @tf.function
     def call(self, x, training=False):
         x = self.conv(x, training)
 
         branch = []
-        for b in range(len(self.csp_blocks)):
-            x = self.csp_blocks[b](x, training)
+        for b, (downsample, block) in enumerate(self.blocks):
+            x = downsample(x, training)
+            x = block(x, training)
             if b > 1:
                 branch += [x]
             
         return branch
 
 class CSPDarknet53(Layer):
-    def __init__(self, activate='Mish', csp=True, kernel_initializer=glorot, **kwargs):
-        super().__init__(**kwargs)
-        self.activate = activate
-        self.kernel_initializer = kernel_initializer
-
-        self.conv = DarknetConv(32, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
-
-        if csp:
-            self.csp_block1 = DarknetBlock(64, 'Resnet', 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        else:
-            self.csp_block1 = CSPDarknetBlock(64, 'Resnet', 1, div=1, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        self.csp_block2 = CSPDarknetBlock(128, 'Resnet', 2, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        self.csp_block3 = CSPDarknetBlock(256, 'Resnet', 8, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        self.csp_block4 = CSPDarknetBlock(512, 'Resnet', 8, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        self.csp_block5 = CSPDarknetBlock(1024, 'Resnet', 4, activate=self.activate, kernel_initializer=self.kernel_initializer)
-
-    @tf.function
-    def call(self, x, training=False):
-        x = self.conv(x, training)
-        x = self.csp_block1(x, training)
-        x = self.csp_block2(x, training)
-
-        small_branch = self.csp_block3(x, training)
-        medium_branch = self.csp_block4(small_branch, training)
-        large_branch = self.csp_block5(medium_branch, training)
-
-        return small_branch, medium_branch, large_branch
-
-class Darknet53(Layer):
-    def __init__(self, activate='LeakyReLU', kernel_initializer=glorot, **kwargs):
-        super().__init__(**kwargs)
-        self.activate = activate
-        self.kernel_initializer = kernel_initializer
-        
-        self.conv = DarknetConv(32, 3, kernel_initializer=self.kernel_initializer)
+    def __init__(self, unit, csp=True, activate='Mish', kernel_initializer=glorot):
+        super().__init__()        
+        self.conv = ConvLayer(unit, 3, activate=activate, kernel_initializer=kernel_initializer)
     
-        self.block1 = DarknetBlock(64, 'Resnet', 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        self.block2 = DarknetBlock(128, 'Resnet', 2, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        self.block3 = DarknetBlock(256, 'Resnet', 8, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        self.block4 = DarknetBlock(512, 'Resnet', 8, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        self.block5 = DarknetBlock(1024, 'Resnet', 4, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.downsample1 = ConvLayer(unit*2, 3, 2, activate=activate, kernel_initializer=kernel_initializer)
+        self.block1 = PlainBlockA(unit*2, 'Residual', 1, activate=activate, kernel_initializer=kernel_initializer) if csp else \
+                      CSPBlockC(unit*2, 'Residual', 1, activate=activate, kernel_initializer=kernel_initializer)
+
+        self.downsample2 = ConvLayer(unit*2**2, 3, 2, activate=activate, kernel_initializer=kernel_initializer)
+        self.block2 = CSPBlockA(unit*2**2, 'CSPResidual', 2, activate=activate, kernel_initializer=kernel_initializer)
+
+        self.downsample3 = ConvLayer(unit*2**3, 3, 2, activate=activate, kernel_initializer=kernel_initializer)
+        self.block3 = CSPBlockA(unit*2**3, 'CSPResidual', 8, activate=activate, kernel_initializer=kernel_initializer)
+
+        self.downsample4 = ConvLayer(unit*2**4, 3, 2, activate=activate, kernel_initializer=kernel_initializer)
+        self.block4 = CSPBlockA(unit*2**4, 'CSPResidual', 8, activate=activate, kernel_initializer=kernel_initializer)
+
+        self.downsample5 = ConvLayer(unit*2**5, 3, 2, activate=activate, kernel_initializer=kernel_initializer)
+        self.block5 = CSPBlockA(unit*2**5, 'CSPResidual', 4, activate=activate, kernel_initializer=kernel_initializer)
 
     @tf.function
     def call(self, x, training=False):
         x = self.conv(x, training)
+
+        x = self.downsample1(x, training)
         x = self.block1(x, training)
+
+        x = self.downsample2(x, training)
         x = self.block2(x, training)
 
+        x = self.downsample3(x, training)
         small_branch = self.block3(x, training)
-        medium_branch = self.block4(small_branch, training)
-        large_branch = self.block5(medium_branch, training)
+
+        x = self.downsample4(small_branch, training)
+        medium_branch = self.block4(x, training)
+
+        x = self.downsample5(medium_branch, training)
+        large_branch = self.block5(x, training)
+
+        return small_branch, medium_branch, large_branch
+    
+class Darknet53_old(Layer):
+    def __init__(self, activate='LeakyReLU', kernel_initializer=glorot):
+        super().__init__()
+        self.activate = activate
+        self.kernel_initializer = kernel_initializer
+
+        
+
+class Darknet53(Layer):
+    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=glorot):
+        super().__init__()        
+        self.conv = ConvLayer(unit, 3, activate=activate, kernel_initializer=kernel_initializer)
+    
+        self.downsample1 = ConvLayer(unit*2, 3, 2, activate=activate, kernel_initializer=kernel_initializer)
+        self.block1 = PlainBlockA(unit*2, 'Residual', 1, activate=activate, kernel_initializer=kernel_initializer)
+
+        self.downsample2 = ConvLayer(unit*2**2, 3, 2, activate=activate, kernel_initializer=kernel_initializer)
+        self.block2 = PlainBlockA(unit*2**2, 'Residual', 2, activate=activate, kernel_initializer=kernel_initializer)
+
+        self.downsample3 = ConvLayer(unit*2**3, 3, 2, activate=activate, kernel_initializer=kernel_initializer)
+        self.block3 = PlainBlockA(unit*2**3, 'Residual', 8, activate=activate, kernel_initializer=kernel_initializer)
+
+        self.downsample4 = ConvLayer(unit*2**4, 3, 2, activate=activate, kernel_initializer=kernel_initializer)
+        self.block4 = PlainBlockA(unit*2**4, 'Residual', 8, activate=activate, kernel_initializer=kernel_initializer)
+
+        self.downsample5 = ConvLayer(unit*2**5, 3, 2, activate=activate, kernel_initializer=kernel_initializer)
+        self.block5 = PlainBlockA(unit*2**5, 'Residual', 4, activate=activate, kernel_initializer=kernel_initializer)
+
+    @tf.function
+    def call(self, x, training=False):
+        x = self.conv(x, training)
+
+        x = self.downsample1(x, training)
+        x = self.block1(x, training)
+
+        x = self.downsample2(x, training)
+        x = self.block2(x, training)
+
+        x = self.downsample3(x, training)
+        small_branch = self.block3(x, training)
+
+        x = self.downsample4(small_branch, training)
+        medium_branch = self.block4(x, training)
+
+        x = self.downsample5(medium_branch, training)
+        large_branch = self.block5(x, training)
 
         return small_branch, medium_branch, large_branch
     
 class CSPDarknet19(Layer):
-    def __init__(self, activate='Mish', kernel_initializer=glorot, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, unit, activate='Mish', kernel_initializer=glorot):
+        super().__init__()
         self.activate = activate
         self.kernel_initialier = kernel_initializer
 
-        self.conv1 = DarknetConv(32, 3, 2, activate=self.activate, kernel_initializer=self.kernel_initialier)
-        self.conv2 = DarknetConv(64, 3, 2, activate=self.activate, kernel_initializer=self.kernel_initialier)
+        self.conv1 = ConvLayer(unit, 3, 2, activate=self.activate, kernel_initializer=self.kernel_initialier)
+        self.conv2 = ConvLayer(unit*2, 3, 2, activate=self.activate, kernel_initializer=self.kernel_initialier)
         
-        self.pre_conv1 = DarknetConv(64, 3, activate=self.activate, kernel_initializer=self.kernel_initialier)
-        self.tiny_conv1 = DarknetTinyBlock(64, 'Conv', 1, activate=self.activate, kernel_initializer=self.kernel_initialier)
+        self.pre_conv1 = ConvLayer(unit*2, 3, activate=self.activate, kernel_initializer=self.kernel_initialier)
+        self.tiny_conv1 = TinyBlock(unit*2, 'Conv', 1, activate=self.activate, kernel_initializer=self.kernel_initialier)
         
-        self.pre_conv2 = DarknetConv(128, 3, activate=self.activate, kernel_initializer=self.kernel_initialier)
-        self.tiny_conv2 = DarknetTinyBlock(128, 'Conv', 1, activate=self.activate, kernel_initializer=self.kernel_initialier)
+        self.pre_conv2 = ConvLayer(unit*2**2, 3, activate=self.activate, kernel_initializer=self.kernel_initialier)
+        self.tiny_conv2 = TinyBlock(unit*2**2, 'Conv', 1, activate=self.activate, kernel_initializer=self.kernel_initialier)
         
-        self.pre_conv3 = DarknetConv(256, 3, activate=self.activate, kernel_initializer=self.kernel_initialier)
-        self.tiny_conv3 = DarknetTinyBlock(256, 'Conv', 1, activate=self.activate, kernel_initializer=self.kernel_initialier)
+        self.pre_conv3 = ConvLayer(unit*2**3, 3, activate=self.activate, kernel_initializer=self.kernel_initialier)
+        self.tiny_conv3 = TinyBlock(unit*2**3, 'Conv', 1, activate=self.activate, kernel_initializer=self.kernel_initialier)
+
+        self.conv3 = ConvLayer(unit*2**4, 3, activate=self.activate, kernel_initializer=self.kernel_initialier)
 
         self.maxpool = MaxPool2D(2, 2)
-        
-        self.conv3 = DarknetConv(512, 3, activate=self.activate, kernel_initializer=self.kernel_initialier)
-        self.conv4 = DarknetConv(256, 1, activate=self.activate, kernel_initializer=self.kernel_initialier)
         self.concat = Concatenate()
     
     @tf.function
@@ -138,51 +167,48 @@ class CSPDarknet19(Layer):
         medium_branch = x
         x = self.concat([x, branch])
         x = self.maxpool(x)
-        x = self.conv3(x, training)
-        large_branch = self.conv4(x, training)
+        large_branch = self.conv3(x, training)
 
         return medium_branch, large_branch
     
 class Darknet19(Layer):
-    def __init__(self, activate='LeakyReLU', kernel_initializer=glorot, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=glorot):
+        super().__init__()
         self.activate = activate
         self.kernel_initializer = kernel_initializer
 
-        self.conv1 = DarknetConv(16, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        self.conv2 = DarknetConv(32, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        self.conv3 = DarknetConv(64, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        self.conv4 = DarknetConv(128, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        self.conv5 = DarknetConv(256, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        self.conv6 = DarknetConv(512, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        
+        self.conv1 = ConvLayer(unit, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.conv2 = ConvLayer(unit*2, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.conv3 = ConvLayer(unit*2**2, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.conv4 = ConvLayer(unit*2**3, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.conv5 = ConvLayer(unit*2**4, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.conv6 = ConvLayer(unit*2**5, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
+        self.conv7 = ConvLayer(unit*2**6, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
+    
         self.maxpool2_2 = MaxPool2D(2, 2)
         self.maxpool2_1 = MaxPool2D(2, 1, 'same')
 
-        self.conv7 = DarknetConv(1024, 3, activate=self.activate, kernel_initializer=self.kernel_initializer)
-        self.conv8 = DarknetConv(256, 1, activate=self.activate, kernel_initializer=self.kernel_initializer)
-    
     @tf.function
     def call(self, x, training=False):
         x = self.conv1(x, training)
-        x = self.maxpool2_2(x)
 
+        x = self.maxpool2_2(x)
         x = self.conv2(x, training)
-        x = self.maxpool2_2(x)
 
+        x = self.maxpool2_2(x)
         x = self.conv3(x, training)
-        x = self.maxpool2_2(x)
 
+        x = self.maxpool2_2(x)
         x = self.conv4(x, training)
-        x = self.maxpool2_2(x)
 
+        x = self.maxpool2_2(x)
         x = self.conv5(x, training)
         medium_branch = x
-        x = self.maxpool2_2(x)
 
+        x = self.maxpool2_2(x)
         x = self.conv6(x, training)
+
         x = self.maxpool2_1(x)
-        x = self.conv7(x, training)
-        large_branch = self.conv8(x, training)
+        large_branch = self.conv7(x, training)
         
         return medium_branch, large_branch
