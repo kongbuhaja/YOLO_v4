@@ -16,8 +16,8 @@ class Eval:
         return epoch % self.eval_per_epoch == 0
 
     def init_stat(self):
+        del self.stats
         self.stats = []
-        self.ap = np.zeros((len(self.labels), self.num_of_ious))
 
     def update_stats(self, pred, gt):
         if pred.shape[0] == 0:

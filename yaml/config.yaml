@@ -8,7 +8,7 @@ model:
   checkpoint: map_checkpoint
 
 # custom, voc, coco
-data: coco
+data: custom
 
 train:
   epochs: 5000
@@ -20,7 +20,7 @@ train:
     method: ratio
     ratio_th: 4.0
     iou_th: 0.5
-  eval_per_epoch: 5
+  eval_per_epoch: 1
   
 eval:
   nms:
@@ -41,6 +41,6 @@ eval:
 log:
   dir: logs
 
-batch_size: 20
+batch_size: 14
 seed: 42
-gpus: 0,1,2,3
+gpus: 0

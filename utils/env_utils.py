@@ -41,8 +41,5 @@ def env_set(cfg):
     random_seed_set(cfg['seed'])
     os_set(cfg['gpus'])
     hw_set()
-    dir_check(cfg['model']['train_checkpoint'])
-    dir_check(cfg['model']['loss_checkpoint'])
-    dir_check(cfg['model']['map_checkpoint'])
     dir_check(cfg['eval']['image_dir'])
     dir_check(cfg['eval']['video_dir'])

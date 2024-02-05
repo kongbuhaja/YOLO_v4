@@ -41,9 +41,9 @@ def read_cfg():
         cfg['model']['anchors'] = cfg['data']['anchors']['5x4']
     cfg['model']['anchors'] = np.array(cfg['model']['anchors'])
     cfg['model']['dir'] = f"{cfg['model']['dir']}/{cfg['data']['name']}/{cfg['model']['name']}"
-    cfg['model']['train_checkpoint'] = f"{cfg['model']['dir']}/train_loss/"
-    cfg['model']['loss_checkpoint'] = f"{cfg['model']['dir']}/val_loss/"
-    cfg['model']['map_checkpoint'] = f"{cfg['model']['dir']}/map_loss/"
+    cfg['model']['train_checkpoint'] = f"{cfg['model']['dir']}/train_loss/{cfg['model']['name']}"
+    cfg['model']['loss_checkpoint'] = f"{cfg['model']['dir']}/val_loss/{cfg['model']['name']}"
+    cfg['model']['map_checkpoint'] = f"{cfg['model']['dir']}/map_loss/{cfg['model']['name']}"
     cfg['model']['checkpoint'] = cfg['model'][cfg['model']['checkpoint']]
 
     cfg['eval']['dir'] = f"{cfg['eval']['dir']}/{cfg['data']['name']}/{cfg['model']['name']}"

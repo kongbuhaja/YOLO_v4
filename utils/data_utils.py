@@ -35,7 +35,7 @@ class DataLoader():
         data = data.map(self.normalization, num_parallel_calls=-1) 
 
         data = data.cache() if cache else data
-        data = data.shuffle(buffer_size = min(self.length[split] * 3, 20000), seed=self.seed) if shuffle else data
+        data = data.shuffle(buffer_size = min(self.length[split], 10000), seed=self.seed, reshuffle_each_iteration=True) if shuffle else data
         data = data.map(lambda image, labels: random_augmentation(image, labels, self.input_size), num_parallel_calls=-1) if augmentation else data
         data = data.map(lambda image, labels: resize_padding(image, labels, self.input_size, augmentation), num_parallel_calls=-1) if resize else data
 

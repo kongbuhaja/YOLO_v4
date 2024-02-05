@@ -225,14 +225,14 @@ class YOLO(Model):
         output = tf.zeros((0, 6), tf.float32)
         valid_mask = preds[..., 4] >= self.score_th
         
-        if not tf.reduce_any(valid_mask):
-            #return empty
-            return tf.zeros((0, 6))
+        # if not tf.reduce_any(valid_mask):
+        #     #return empty
+        #     return tf.zeros((0, 6))
 
         targets = preds[valid_mask]
 
-
-        while(targets.shape[0]):
+        while(tf.shape(targets)[0] > 0):
+        # while(targets.shape[0]):
             max_idx = tf.argmax(targets[..., 4], -1)
             max_target = targets[max_idx][None]
             output = tf.concat([output, max_target], 0)
