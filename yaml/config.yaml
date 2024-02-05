@@ -1,6 +1,6 @@
 model:
   # YOLOv3, YOLOv3_tiny, YOLOv4, YOLOv4_tiny, YOLOv4_csp, YOLOv4_P5-7
-  name: YOLOv4_P7
+  name: YOLOv4_csp
   strides: [8, 16, 32, 64, 128]
   kernel_init: glorot_uniform
   load: False
@@ -8,7 +8,7 @@ model:
   checkpoint: map_checkpoint
 
 # custom, voc, coco
-data: custom
+data: coco
 
 train:
   epochs: 5000
@@ -20,7 +20,7 @@ train:
     method: ratio
     ratio_th: 4.0
     iou_th: 0.5
-  eval_per_epoch: 1
+  eval_per_epoch: 5
   
 eval:
   nms:
@@ -41,6 +41,6 @@ eval:
 log:
   dir: logs
 
-batch_size: 1
+batch_size: 20
 seed: 42
-gpus: 0
+gpus: 0,1,2,3

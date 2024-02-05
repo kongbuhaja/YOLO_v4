@@ -15,7 +15,7 @@ def main():
     loss_checkpoint = cfg['model']['loss_checkpoint']
     map_checkpoint = cfg['model']['map_checkpoint']
     gpus = len(cfg['gpus'].split(','))
-    cfg['batch_size'] *= gpus
+    cfg['batch_size'] *= gpus  
 
     strategy = tf.distribute.MirroredStrategy()
 

@@ -22,7 +22,7 @@ class Eval:
     def update_stats(self, pred, gt):
         if pred.shape[0] == 0:
             if gt.shape[0] == 0:
-                self.stats += [[np.zeros((0, self.num_of_ious), dtype=bool), [], [], gt[..., 5]]]
+                self.stats += [[np.zeros((0, self.num_of_ious), dtype=bool), [], [], gt[..., 4]]]
             return
 
         correct = np.zeros((pred.shape[0], self.num_of_ious), dtype=bool)
