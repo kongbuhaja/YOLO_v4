@@ -27,15 +27,15 @@ class DataLoader():
         elif cfg['data']['name'] == 'custom':
             self.Dataset = custom_dataset
     
-    def __call__(self, split, shuffle=True, augmentation=True, resize=True, cache=False):
+    def __call__(self, split, shuffle=True, augmentation=False, resize=True, cache=True):
         dataset = self.Dataset(split, self.anchors, self.labels)
 
         data, self.length[split] = dataset.load()
-
-        data = data.map(self.normalization, num_parallel_calls=-1) 
-
         data = data.cache() if cache else data
-        data = data.shuffle(buffer_size = min(self.length[split], 10000), seed=self.seed, reshuffle_each_iteration=True) if shuffle else data
+        data = data.shuffle(buffer_size = self.length[split], seed=self.seed, reshuffle_each_iteration=True) if shuffle else data
+
+        data = data.map(self.read_image, num_parallel_calls=-1)
+        data = data.map(self.normalization, num_parallel_calls=-1) 
         data = data.map(lambda image, labels: random_augmentation(image, labels, self.input_size), num_parallel_calls=-1) if augmentation else data
         data = data.map(lambda image, labels: resize_padding(image, labels, self.input_size, augmentation), num_parallel_calls=-1) if resize else data
 
@@ -44,6 +44,12 @@ class DataLoader():
         data = data.map(lambda image, labels: self.squeeze(image, labels), num_parallel_calls=-1).prefetch(1)
 
         return data
+    
+    @tf.function
+    def read_image(self, file, labels):
+        image_raw = tf.io.read_file(file)
+        image = tf.image.decode_jpeg(image_raw, channels=3)
+        return tf.cast(image, tf.float32), labels
 
     @tf.function
     def normalization(self, image, labels):

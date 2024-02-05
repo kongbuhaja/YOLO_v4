@@ -23,8 +23,8 @@ def main():
         model, start_epoch, max_mAP50, max_mAP, max_loss = load_model(cfg)
         dataloader = DataLoader(cfg)
 
-        train_dataset = strategy.experimental_distribute_dataset(dataloader('train'))
-        valid_dataset = strategy.experimental_distribute_dataset(dataloader('val', augmentation=False))
+        train_dataset = strategy.experimental_distribute_dataset(dataloader('train', augmentation=True))
+        valid_dataset = strategy.experimental_distribute_dataset(dataloader('val'))
     
     eval = Eval(cfg)
     logger = Logger(cfg)
