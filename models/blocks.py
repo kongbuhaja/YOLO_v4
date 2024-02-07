@@ -233,8 +233,9 @@ class CSPSPPBlock(Layer):
         self.conv2 = ConvLayer(unit, 3, activate=activate, kernel_initializer=kernel_initializer)
         self.conv3 = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
         self.spp = SPPLayer(unit, activate=activate, kernel_initializer=kernel_initializer)
-        self.conv4 = ConvLayer(unit, 3, activate=activate, kernel_initializer=kernel_initializer)
-    
+        self.conv4 = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
+        self.conv5 = ConvLayer(unit, 3, activate=activate, kernel_initializer=kernel_initializer)
+
         self.concat = Concatenate()
         self.concat_transition = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
 
@@ -246,9 +247,11 @@ class CSPSPPBlock(Layer):
         x = self.conv2(x, training)
         x = self.conv3(x, training)
         x = self.spp(x, training)
+        x = self.conv4(x, training)
+        x = self.conv5(x, training)
 
         x = self.concat([x, branch])
-        x = self.conv4(x, training)
+        x = self.concat_transition(x, training)
 
         return x
 

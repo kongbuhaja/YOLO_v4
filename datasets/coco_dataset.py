@@ -13,15 +13,15 @@ class Dataset(Base_Dataset):
         out_dir = './data/coco'
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
-            try:
-                tfds.load('coco2017', data_dir=out_dir)
-                if os.path.exists(f'{out_dir}/coco'):
-                    shutil.rmtree(f'{out_dir}/coco')
-                for file in os.listdir(f'{out_dir}/downloads/'):
-                    if file.endswith('.tar') or file.endswith('zip') or file.endswith('.INFO'):
-                        os.remove(f'{out_dir}/downloads/{file}')
-            except:
-                self.download_from_server()
+            # try:
+            tfds.load('coco/2017', data_dir=out_dir)
+            if os.path.exists(f'{out_dir}/coco'):
+                shutil.rmtree(f'{out_dir}/coco')
+            for file in os.listdir(f'{out_dir}/downloads/'):
+                if file.endswith('.tar') or file.endswith('zip') or file.endswith('.INFO'):
+                    os.remove(f'{out_dir}/downloads/{file}')
+            # except:
+            #     self.download_from_server()
     
     def read_files(self):
         print('Reading local_files...  ', end='', flush=True)

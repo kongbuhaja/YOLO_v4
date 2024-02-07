@@ -29,7 +29,9 @@ def read_cfg():
     with open(f"yaml/data/{cfg['data']}.yaml") as f:
         cfg.update(yaml.load(f, Loader=yaml.FullLoader))
 
-    if cfg['model']['name'] in ['YOLOv3_tiny', 'YOLOv4_tiny']:
+    if cfg['model']['name'] in ['YOLOv2', 'YOLOv2_tiny']:
+        cfg['model']['anchors'] = cfg['data']['anchors']['1x5']
+    elif cfg['model']['name'] in ['YOLOv3_tiny', 'YOLOv4_tiny']:
         cfg['model']['anchors'] = cfg['data']['anchors']['2x3']
     elif cfg['model']['name'] in ['YOLOv3', 'YOLOv4', 'YOLOv4_csp']:
         cfg['model']['anchors'] = cfg['data']['anchors']['3x3']
