@@ -2,7 +2,7 @@
 # sudo apt-get install x11-xserver-utils
 # xhost +
 # sudo docker run --gpus all --cpuset-cpus=0-23 -m 250g --shm-size=32g -it -v /tmp/.x11-unix:/tmp/.x11-unix -v /home/dblab/ML/YOLO_v4:/home/YOLO_v4 -p 6006:6006 -e DISPLAY=unix$DISPLAY --name yolov4 yolov4:latest
-FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04l
+FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
 
 ENV TZ=Asia/Seoul
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $>TZ > /etc/timezone
