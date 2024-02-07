@@ -35,8 +35,7 @@ class OSALayer(Layer):
         super().__init__()
         self.layers = [ConvLayer(unit//growth_rate, 3, activate=activate, kernel_initializer=kernel_initializer)] * growth_rate
 
-        self.concat = Concatenate()
-        self.transition = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
+        self.concat = ConcatLayer(unit, activate=activate, kernel_initializer=kernel_initializer)
 
     @tf.function
     def call(self, x, training=False):
@@ -45,8 +44,7 @@ class OSALayer(Layer):
             x = self.layers[l](x, training)
             branchs += [x]
         
-        x = self.concat(branchs)
-        x = self.transition(x, training)
+        x = self.concat(branchs, training)
         
         return x
         
@@ -106,6 +104,18 @@ class IdentityLayer(Layer):
 
     @tf.function
     def call(self, x, training=False):
+        return x
+
+class ConcatLayer(Layer):
+    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=glorot, **kwargs):
+        super().__init__()
+        self.concat = Concatenate()
+        self.transition = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
+
+    @tf.function
+    def call(self, x, training=False):
+        x = self.concat(x)
+        x = self.transition(x, training)
         return x
 
 def get_activate(activate):

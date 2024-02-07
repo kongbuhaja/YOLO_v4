@@ -191,7 +191,7 @@ class YOLO(Model):
             self.neck = tinyFPN(neck_unit, self.row_anchors, activate=neck_activate, kernel_initializer=self.kernel_initializer)
             
         if head == 'Detect':
-            self.head = Detect(decode, self.scales, self.row_anchors, self.col_anchors, self.num_classes, kernel_initializer=self.kernel_initializer)
+            self.head = Detect(decode, self.row_anchors, self.col_anchors, self.num_classes, kernel_initializer=self.kernel_initializer)
             
         print(f'Model: {self.model_name}')
         print(f'Backbone: {backbone}')
