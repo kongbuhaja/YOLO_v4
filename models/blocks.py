@@ -282,7 +282,7 @@ class TinyCSPBlock(Layer):
         
         self.pre_transition = ConvLayer(unit//2, 3, activate=activate, kernel_initializer=kernel_initializer)
         block = get_block(block)
-        self.block = [block(unit//2, kernel_size=3, activate=activate, kernel_initializer=kernel_initializer) for b in range(block_size)]
+        self.blocks = [block(unit//2, kernel_size=3, activate=activate, kernel_initializer=kernel_initializer) for b in range(block_size)]
 
         self.concat = ConcatLayer(unit, activate=activate, kernel_initializer=kernel_initializer)
 
@@ -292,8 +292,8 @@ class TinyCSPBlock(Layer):
 
         x = self.pre_transition(x, training)
         branch = x
-        for l in range(len(self.layers)):
-            x = self.layers[l](x, training)
+        for l in range(len(self.blocks)):
+            x = self.blocks[l](x, training)
         x = self.concat([x, branch], training)
         
         return x
