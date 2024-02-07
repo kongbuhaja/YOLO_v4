@@ -7,7 +7,7 @@ from models.necks import *
 from models.heads import *
 from utils.bbox_utils import bbox_iou
 from utils.io_utils import read_model_info, write_model_info
-from losses import yolov3, yolov4
+from losses import yolov3, yolov4, yolov2
 
 class YOLO(Model):
     def __init__(self, cfg):
@@ -33,13 +33,31 @@ class YOLO(Model):
             self.kernel_initializer = Zeros()
 
         if 'YOLOv2' in self.model_name:
-            decode = self.old_decode
+            decode = self.v2_decode
             loss = 'YOLOv2_Loss'
             if self.model_name == 'YOLOv2':
-                pass
-
+                unit = 32
+                backbone = 'Darknet19_v2'
+                backbone_unit = unit
+                backbone_activate = 'LeakyReLU'
+                neck = 'reOrg'
+                neck_unit = unit
+                neck_activate = 'LeakyReLU'
+                head = 'Detect'
+                self.input_size = (416, 416)
+                self.strides = cfg['model']['strides'][2:3]
+            elif self.model_name == 'YOLOv2_tiny':
+                unit = 16
+                backbone = 'Darknet19'
+                backbone_unit = unit
+                neck = 'Conv'
+                neck_unit = unit*2**5
+                neck_activate = 'LeakyReLU'
+                head = 'Detect'
+                self.input_size = (416, 416)
+                self.strides = cfg['model']['strides'][2:3]
         elif 'YOLOv3' in self.model_name:
-            decode = self.old_decode
+            decode = self.v2_decode
             loss = 'YOLOv3_Loss'
             if self.model_name == 'YOLOv3':
                 unit = 32
@@ -65,7 +83,7 @@ class YOLO(Model):
                 self.input_size = (416, 416)
                 self.strides = cfg['model']['strides'][1:3]
         elif 'YOLOv4' in self.model_name:
-            decode = self.decode
+            decode = self.v4_decode
             loss = 'YOLOv4_Loss'
             if self.model_name == 'YOLOv4':
                 unit = 32
@@ -134,12 +152,18 @@ class YOLO(Model):
         cfg['model']['anchors'] = self.anchors
         cfg['model']['strides'] = self.strides
 
+        if loss == 'YOLOv2_Loss':
+            self.loss = yolov2.loss(self.input_size, self.anchors, self.strides, self.num_classes, cfg['train']['assign'])
         if loss == 'YOLOv3_Loss':
             self.loss = yolov3.loss(self.input_size, self.anchors, self.strides, self.num_classes, cfg['train']['assign'])
         elif loss == 'YOLOv4_Loss':
             self.loss = yolov4.loss(self.input_size, self.anchors, self.strides, self.num_classes, cfg['train']['assign'])
 
-        if backbone == 'Darknet53':
+        if backbone == 'Darknet19_v2':
+            self.backbone = Darknet19_v2(backbone_unit, activate=backbone_activate, kernel_initializer=self.kernel_initializer)
+        elif backbone == 'Darknet19':
+            self.backbone = Darknet19(backbone_unit, activate=backbone_unit, kernel_initializer=self.kernel_initializer)
+        elif backbone == 'Darknet53':
             self.backbone = Darknet53(backbone_unit, activate=backbone_activate, kernel_initializer=self.kernel_initializer)
         elif backbone == 'Darknet19':
             self.backbone = Darknet19(backbone_unit, activate=backbone_activate, kernel_initializer=self.kernel_initializer)
@@ -150,7 +174,12 @@ class YOLO(Model):
         elif backbone == 'CSPP':
             self.backbone = CSPP(backbone_unit, size, activate=backbone_activate, kernel_initializer=self.kernel_initializer)
 
-        if neck == 'FPN':
+
+        if neck == 'reOrg':
+            self.neck = reOrg(neck_unit, activate=neck_activate, kernel_initializer=self.kernel_initializer)
+        elif neck == 'Conv':
+            self.neck = ConvLayer(neck_unit, 3, activate=neck_activate, kernel_initializer=self.kernel_initializer)
+        elif neck == 'FPN':
             self.neck = FPN(neck_unit, self.row_anchors, neck_block_size, activate=neck_activate, kernel_initializer=self.kernel_initializer)
         elif neck == 'PANSPP':
             self.neck = PANSPP(neck_unit, self.row_anchors, neck_block_size, activate=neck_activate, kernel_initializer=self.kernel_initializer)
@@ -180,7 +209,7 @@ class YOLO(Model):
         return head
     
     @tf.function
-    def old_decode(self, pred):
+    def v2_decode(self, pred):
         xy = tf.sigmoid(pred[..., :2])
         wh = tf.exp(pred[..., 2:4])
         obj = tf.sigmoid(pred[..., 4:5])
@@ -189,7 +218,7 @@ class YOLO(Model):
         return tf.concat([xy, wh, obj, cls], -1)
     
     @tf.function
-    def decode(self, pred):
+    def v4_decode(self, pred):
         xy = tf.sigmoid(pred[..., :2]) * 2. - 0.5
         wh = tf.square(tf.sigmoid(pred[..., 2:4])*2)
         obj = tf.sigmoid(pred[..., 4:5])

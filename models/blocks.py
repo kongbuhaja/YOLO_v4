@@ -103,9 +103,9 @@ class PlainBlockA(Layer):
         self.blocks = [block(unit, activate=activate, kernel_initializer=kernel_initializer) for b in range(block_size)]
 
     @tf.function
-    def call(self, x, training):        
-        for block in self.blocks:
-            x = block(x, training)
+    def call(self, x, training=False):        
+        for l in range(len(self.blocks)):
+            x = self.blocks[l](x, training)
 
         return x
     
@@ -118,8 +118,8 @@ class PlainBlockB(Layer):
 
     @tf.function
     def call(self, x, training):
-        for block in self.blocks:
-            x = block(x, training)
+        for l in range(len(self.blocks)):
+            x = self.blocks[l](x, training)
         x = self.conv(x)
 
         return x
@@ -142,8 +142,8 @@ class CSPBlockA(Layer):
         branch = self.branch_transition(x, training)
         
         x = self.block_pre_transition(x, training)
-        for block in self.blocks:
-            x = block(x, training)
+        for l in range(len(self.blocks)):
+            x = self.blocks[l](x, training)
         x = self.block_post_transition(x, training)
         
         x = self.concat([x, branch])
@@ -169,8 +169,8 @@ class CSPBlockB(Layer):
         x = self.transition(x, training)
         branch = self.branch_transition(x, training)
         
-        for block in self.blocks:
-            x = block(x, training)
+        for l in range(len(self.blocks)):
+            x = self.blocks[l](x, training)
         
         x = self.concat([x, branch])
         x = self.concat_transition(x, training)
@@ -195,8 +195,8 @@ class CSPBlockC(Layer):
         branch = self.branch_transition(x, training)
         
         x = self.block_pre_transition(x, training)
-        for block in self.blocks:
-            x = block(x, training)
+        for l in range(len(self.blocks)):
+            x = self.blocks[l](x, training)
         x = self.block_post_transition(x, training)
         
         x = self.concat([x, branch])

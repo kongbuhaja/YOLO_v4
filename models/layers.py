@@ -107,7 +107,7 @@ class IdentityLayer(Layer):
     @tf.function
     def call(self, x, training=False):
         return x
-    
+
 def get_activate(activate):
         if activate == 'Mish':
             return Mish()

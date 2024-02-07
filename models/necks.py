@@ -31,21 +31,21 @@ class CSPPANSPP(Layer):
     @tf.function
     def call(self, x, training):
         up_branch = [self.sppblock(x[-1], training)]
-        for l, (upsample, transition, block) in enumerate(self.upsamples):
-            u = upsample(up_branch[-1], training)
-            b = transition(x[-l-2], training)
+        for l in range(len(self.upsamples)):
+            u = self.upsamples[l][0](up_branch[-1], training)
+            b = self.upsamples[l][1](x[-l-2], training)
             c = self.concat([u, b])
-            up_branch += [block(c, training)]
+            up_branch += [self.upsamples[l][2](c, training)]
 
         down_branch = [up_branch[-1]]
-        for l, (downsample, block) in enumerate(self.downsamples):
-            d = downsample(down_branch[-1], training)
+        for l in range(len(self.downsamples)):
+            d = self.downsamples[l][0](down_branch[-1], training)
             c = self.concat([d, up_branch[-l-2]])
-            down_branch += [block(c, training)]
+            down_branch += [self.downsamples[l][1](c, training)]
 
         branch = []
-        for l, conv in enumerate(self.convs):
-            branch += [conv(down_branch[l], training)]
+        for l in range(len(self.convs)):
+            branch += [self.convs[l](down_branch[l], training)]
             
         return branch
     
@@ -183,3 +183,28 @@ class tinyFPN(Layer):
             branch += [conv(up_branch[-l-1], training)]
 
         return branch
+
+class reOrg(Layer):
+    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=glorot):
+        super().__init__()
+        self.convm = ConvLayer(unit*2, 3, activate=activate, kernel_initializer=kernel_initializer)
+        
+        self.convl_1 = ConvLayer(unit*2**5, 3, activate=activate, kernel_initializer=kernel_initializer)
+        self.convl_2 = ConvLayer(unit*2**5, 3, activate=activate, kernel_initializer=kernel_initializer)
+
+        self.conv = ConvLayer(unit*2**5, 3, activate=activate, kernel_initializer=kernel_initializer)
+
+        self.concat = Concatenate()
+
+    @tf.function
+    def call(self, x, training):
+        x0 = self.convm(x[0], training)
+        medium_branch = self.concat([x0[:, ::2, ::2], x0[:, 1::2, ::2], x0[:, ::2, 1::2], x0[:, 1::2, 1::2]], -1)
+
+        x1 = self.convl_1(x[1], training)
+        large_branch = self.convl_2(x1, training)
+        x = self.concat([large_branch, medium_branch], -1)
+        x = self.conv(x, training)
+
+        return x
+    

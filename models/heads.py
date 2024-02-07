@@ -17,8 +17,8 @@ class Detect(Layer):
     @tf.function
     def call(self, x, training=False):
         branch = []
-        for l, (detect, reshape) in enumerate(self.detects):
-            r = reshape(detect(x[l], training))
+        for l in range(len(self.detects)):
+            r = self.detects[l][1](self.detects[l][0](x[l], training))
             branch += [self.decode(r)]
 
         return branch

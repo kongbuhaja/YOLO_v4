@@ -29,8 +29,9 @@ class loss(loss):
                 reg_loss += tf.reduce_mean(tf.square(gt_box[l] - pred_box))
             
                 # objectness
-                gt_obj = tf.tensor_scatter_nd_update(gt_obj, indices[l], tf.ones(len(indices[l])))
-
+                iou = bbox_iou(gt_box[l], pred_box, iou_type='iou')
+                gt_obj = tf.tensor_scatter_nd_update(gt_obj, indices[l], tf.maximum(iou, 0.))
+                
                 # classification
                 one_hot = self.onehot_label(gt_cls[l])
                 pred_cls = positive[..., 5:]

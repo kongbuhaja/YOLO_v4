@@ -70,15 +70,7 @@ class CSPDarknet53(Layer):
         x = self.downsample5(medium_branch, training)
         large_branch = self.block5(x, training)
 
-        return small_branch, medium_branch, large_branch
-    
-class Darknet53_old(Layer):
-    def __init__(self, activate='LeakyReLU', kernel_initializer=glorot):
-        super().__init__()
-        self.activate = activate
-        self.kernel_initializer = kernel_initializer
-
-        
+        return small_branch, medium_branch, large_branch       
 
 class Darknet53(Layer):
     def __init__(self, unit, activate='LeakyReLU', kernel_initializer=glorot):
@@ -212,3 +204,53 @@ class Darknet19(Layer):
         large_branch = self.conv7(x, training)
         
         return medium_branch, large_branch
+    
+class Darknet19_v2(Layer):
+    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=glorot):
+        super().__init__()
+        self.activate = activate
+        self.kernel_initializer = kernel_initializer
+
+        self.conv1 = ConvLayer(unit, 3, activate=activate, kernel_initializer=kernel_initializer)
+        
+        self.conv2 = ConvLayer(unit*2, 3, activate=activate, kernel_initializer=kernel_initializer)
+        
+        self.conv3_1 = ConvLayer(unit*2**2, 3, activate=activate, kernel_initializer=kernel_initializer)
+        self.conv3_2 = PlainBlockA(unit*2, 'Bottle', 1, activate=activate, kernel_initializer=kernel_initializer)
+        
+        self.conv4_1 = ConvLayer(unit*2**3, 3, activate=activate, kernel_initializer=kernel_initializer)
+        self.conv4_2 = PlainBlockA(unit*2**2, 'Bottle', 1, activate=activate, kernel_initializer=kernel_initializer)
+        
+        self.conv5_1 = ConvLayer(unit*2**4, 3, activate=activate, kernel_initializer=kernel_initializer)
+        self.conv5_2 = PlainBlockA(unit*2**3, 'Bottle', 2, activate=activate, kernel_initializer=kernel_initializer)
+        
+        self.conv6_1 = ConvLayer(unit*2**4, 3, activate=activate, kernel_initializer=kernel_initializer)
+        self.conv6_2 = PlainBlockA(unit*2**3, 'Bottle', 2, activate=activate, kernel_initializer=kernel_initializer)        
+        
+        self.maxpool2_2 = MaxPool2D(2, 2)
+
+    @tf.function
+    def call(self, x, training=False):
+        x = self.conv1(x, training)
+
+        x = self.maxpool2_2(x)
+        x = self.conv2(x, training)
+
+        x = self.maxpool2_2(x)
+        x = self.conv3_1(x, training)
+        x = self.conv3_2(x, training)
+
+        x = self.maxpool2_2(x)
+        x = self.conv4_1(x, training)
+        x = self.conv4_2(x, training)
+
+        x = self.maxpool2_2(x)
+        x = self.conv5_1(x, training)
+        medium_branch = self.conv5_2(x, training)
+
+        x = self.maxpool2_2(x)
+        x = self.conv6_1(x, training)
+        large_branch = self.conv6_2(x, training)
+        
+        return medium_branch, large_branch
+    
