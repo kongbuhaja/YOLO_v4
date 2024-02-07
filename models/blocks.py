@@ -148,6 +148,31 @@ class CSPBlockA(Layer):
         x = self.concat([x, branch], training)
 
         return x
+
+class CSPBlockA2(Layer):
+    def __init__(self, unit, block, block_size, activate='Mish', kernel_initializer=glorot, **kwargs):
+        super().__init__()
+        self.branch_transition = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
+
+        self.block_pre_transition = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
+        block = get_block(block)
+        self.blocks = [block(unit, activate=activate, kernel_initializer=kernel_initializer) for b in range(block_size)]
+        self.block_post_transition = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
+
+        self.concat = ConcatLayer(unit, activate=activate, kernel_initializer=kernel_initializer)
+
+    @tf.function
+    def call(self, x, training):
+        branch = self.branch_transition(x, training)
+        
+        x = self.block_pre_transition(x, training)
+        for l in range(len(self.blocks)):
+            x = self.blocks[l](x, training)
+        x = self.block_post_transition(x, training)
+        
+        x = self.concat([x, branch], training)
+
+        return x
     
 class CSPBlockB(Layer):
     def __init__(self, unit, block, block_size, activate='Mish', kernel_initializer=glorot, **kwargs):
@@ -173,31 +198,6 @@ class CSPBlockB(Layer):
 
         return x
     
-class CSPBlockC(Layer):
-    def __init__(self, unit, block, block_size, activate='Mish', kernel_initializer=glorot, **kwargs):
-        super().__init__()
-        self.branch_transition = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
-
-        self.block_pre_transition = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
-        block = get_block(block)
-        self.blocks = [block(unit, activate=activate, kernel_initializer=kernel_initializer) for b in range(block_size)]
-        self.block_post_transition = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
-
-        self.concat = ConcatLayer(unit, activate=activate, kernel_initializer=kernel_initializer)
-
-    @tf.function
-    def call(self, x, training):
-        branch = self.branch_transition(x, training)
-        
-        x = self.block_pre_transition(x, training)
-        for l in range(len(self.blocks)):
-            x = self.blocks[l](x, training)
-        x = self.block_post_transition(x, training)
-        
-        x = self.concat([x, branch], training)
-
-        return x
-
 class SPPBlock(Layer):
     def __init__(self, unit, activate='Mish', kernel_initializer=glorot, **kwargs):
         super().__init__()
@@ -275,21 +275,16 @@ class CSPOSABlock(Layer):
 
         return x
     
-    
-class TinyBlock(Layer):
-    def __init__(self, unit, block_layer, size, activate='Mish', kernel_initializer=glorot, **kwargs):
+class TinyCSPBlock(Layer):
+    def __init__(self, unit, block, block_size, activate='Mish', kernel_initializer=glorot, **kwargs):
         super().__init__()
         self.split = SplitLayer(2, 1)
         
         self.pre_transition = ConvLayer(unit//2, 3, activate=activate, kernel_initializer=kernel_initializer)
-        if block_layer == 'Conv':
-            self.layers = [ConvLayer(unit//2, 3, activate=activate, kernel_initializer=kernel_initializer) for _ in range(size)]
-        elif block_layer == 'Resnet':
-            self.layers = [ResidualBlock(unit//2, activate=activate, kernel_initializer=kernel_initializer) for _ in range(size)]
-        
-        self.concat_transition = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
+        block = get_block(block)
+        self.block = [block(unit//2, kernel_size=3, activate=activate, kernel_initializer=kernel_initializer) for b in range(block_size)]
 
-        self.concat = Concatenate()
+        self.concat = ConcatLayer(unit, activate=activate, kernel_initializer=kernel_initializer)
 
     @tf.function
     def call(self, x, training):
@@ -299,8 +294,7 @@ class TinyBlock(Layer):
         branch = x
         for l in range(len(self.layers)):
             x = self.layers[l](x, training)
-        x = self.concat([x, branch])
-        x = self.concat_transition(x, training)
+        x = self.concat([x, branch], training)
         
         return x
     

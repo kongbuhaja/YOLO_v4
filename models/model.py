@@ -48,8 +48,9 @@ class YOLO(Model):
                 self.strides = cfg['model']['strides'][2:3]
             elif self.model_name == 'YOLOv2_tiny':
                 unit = 16
-                backbone = 'Darknet19'
+                backbone = 'Darknet19_v2_tiny'
                 backbone_unit = unit
+                backbone_activate = 'LeakyReLU'
                 neck = 'Conv'
                 neck_unit = unit*2**5
                 neck_activate = 'LeakyReLU'
@@ -161,6 +162,8 @@ class YOLO(Model):
 
         if backbone == 'Darknet19_v2':
             self.backbone = Darknet19_v2(backbone_unit, activate=backbone_activate, kernel_initializer=self.kernel_initializer)
+        elif backbone == 'Darknet19_v2_tiny':
+            self.backbone = Darknet19_v2_tiny(backbone_unit, activate=backbone_activate, kernel_initializer=self.kernel_initializer)
         elif backbone == 'Darknet19':
             self.backbone = Darknet19(backbone_unit, activate=backbone_unit, kernel_initializer=self.kernel_initializer)
         elif backbone == 'Darknet53':

@@ -77,8 +77,8 @@ class PANSPP(Layer):
         up_branch = [self.sppblock(x[-1], training)]
         for l, (upsample, transition, block) in enumerate(self.upsamples):
             u = upsample(up_branch[-1], training)
-            b = transition(x[-l-2], training)
-            c = self.concat([u, b])
+            br = transition(x[-l-2], training)
+            c = self.concat([u, br])
             up_branch += [block(c, training)]
 
         down_branch = [up_branch[-1]]
@@ -137,7 +137,7 @@ class FPN(Layer):
 
         self.convs = []
         for l in range(row_anchors):
-            self.convs += [ConvLayer(unit*2**min(3+l, 5), 3, activate=activate, kernel_initializer=kernel_initializer)]
+            self.convs += [ConvLayer(unit*2**min(row_anchors + 2 - l, 5), 3, activate=activate, kernel_initializer=kernel_initializer)]
         
         self.concat = Concatenate()
 
@@ -166,7 +166,7 @@ class tinyFPN(Layer):
 
         self.convs = []
         for l in range(row_anchors):
-            self.convs += [ConvLayer(unit*2**min(3+l, 5), 3, activate=activate, kernel_initializer=kernel_initializer)]
+            self.convs += [ConvLayer(unit*2**min(4-l, 5), 3, activate=activate, kernel_initializer=kernel_initializer)]
         
         self.concat = Concatenate()
 
@@ -198,11 +198,11 @@ class reOrg(Layer):
 
     @tf.function
     def call(self, x, training):
-        x0 = self.convm(x[0], training)
-        medium_branch = self.concat([x0[:, ::2, ::2], x0[:, 1::2, ::2], x0[:, ::2, 1::2], x0[:, 1::2, 1::2]], -1)
+        m = self.convm(x[0], training)
+        medium_branch = self.concat([m[:, ::2, ::2], m[:, 1::2, ::2], m[:, ::2, 1::2], m[:, 1::2, 1::2]], -1)
 
-        x1 = self.convl_1(x[1], training)
-        large_branch = self.convl_2(x1, training)
+        l = self.convl_1(x[1], training)
+        large_branch = self.convl_2(l, training)
         x = self.concat([large_branch, medium_branch], -1)
         x = self.conv(x, training)
 
