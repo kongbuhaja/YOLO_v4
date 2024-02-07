@@ -131,7 +131,7 @@ class CSPBlockA(Layer):
 
         self.block_pre_transition = ConvLayer(unit//2, 1, activate=activate, kernel_initializer=kernel_initializer)
         block = get_block(block)
-        self.blocks = [block(unit//2, activate=activate, kernel_initializer=kernel_initializer)] * block_size
+        self.blocks = [block(unit//2, activate=activate, kernel_initializer=kernel_initializer) for b in range(block_size)]
         self.block_post_transition = ConvLayer(unit//2, 1, activate=activate, kernel_initializer=kernel_initializer)
 
         self.concat = ConcatLayer(unit, activate=activate, kernel_initializer=kernel_initializer)
@@ -212,8 +212,8 @@ class SPPBlock(Layer):
     def call(self, x, training):
         x = self.conv1(x, training)
         x = self.conv2(x, training)
-        x = self.conv3(x, training)
         x = self.spp(x, training)
+        x = self.conv3(x, training)
         x = self.conv4(x, training)
         x = self.conv5(x, training)
 

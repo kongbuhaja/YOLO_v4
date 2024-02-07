@@ -146,7 +146,6 @@ class YOLO(Model):
         self.anchors = np.array(cfg['model']['anchors']) * self.input_size
         self.row_anchors, self.col_anchors = self.anchors.shape[:2]
         self.strides = np.array(self.strides, np.int32)
-        self.scales = (self.input_size[None] // self.strides[:, None])
         self.anchors_grid = list(map(lambda x: tf.reshape(x, [-1,4]), get_anchors_grid(self.anchors, self.strides, self.input_size)))
 
         cfg['model']['input_size'] = self.input_size
