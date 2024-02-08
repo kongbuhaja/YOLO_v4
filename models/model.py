@@ -19,7 +19,8 @@ class YOLO(Model):
         self.iou_th = cfg['eval']['nms']['iou_th']
         self.sigma = cfg['eval']['nms']['sigma']
         self.seed = cfg['seed']
-
+        self.assign = cfg['train']['assign']
+        self.focal = cfg['train']['focal']
 
         if cfg['model']['kernel_init'] == 'glorot_uniform':
             self.kernel_initializer = GlorotUniform(seed=self.seed)
@@ -44,8 +45,8 @@ class YOLO(Model):
                 neck_unit = unit
                 neck_activate = 'LeakyReLU'
                 head = 'Detect'
-                self.input_size = (416, 416)
-                self.strides = cfg['model']['strides'][2:3]
+                input_size = (416, 416)
+                strides = cfg['model']['strides'][2:3]
             elif self.model_name == 'YOLOv2_tiny':
                 unit = 16
                 backbone = 'Darknet19_v2_tiny'
@@ -55,8 +56,8 @@ class YOLO(Model):
                 neck_unit = unit*2**5
                 neck_activate = 'LeakyReLU'
                 head = 'Detect'
-                self.input_size = (416, 416)
-                self.strides = cfg['model']['strides'][2:3]
+                input_size = (416, 416)
+                strides = cfg['model']['strides'][2:3]
         elif 'YOLOv3' in self.model_name:
             decode = self.v2_decode
             loss = 'YOLOv3_Loss'
@@ -70,8 +71,8 @@ class YOLO(Model):
                 neck_block_size = 2
                 neck_activate = 'LeakyReLU'
                 head = 'Detect'
-                self.input_size = (512, 512)
-                self.strides = cfg['model']['strides'][:3]
+                input_size = (512, 512)
+                strides = cfg['model']['strides'][:3]
             elif self.model_name == 'YOLOv3_tiny':
                 unit = 16
                 backbone = 'Darknet19'
@@ -81,8 +82,8 @@ class YOLO(Model):
                 neck_unit = unit * 2
                 neck_activate = 'LeakyReLU'
                 head = 'Detect'
-                self.input_size = (416, 416)
-                self.strides = cfg['model']['strides'][1:3]
+                input_size = (416, 416)
+                strides = cfg['model']['strides'][1:3]
         elif 'YOLOv4' in self.model_name:
             decode = self.v4_decode
             loss = 'YOLOv4_Loss'
@@ -97,8 +98,8 @@ class YOLO(Model):
                 neck_block_size = 2
                 neck_activate = 'LeakyReLU'
                 head = 'Detect'
-                self.input_size = (512, 512)
-                self.strides = cfg['model']['strides'][:3]
+                input_size = (512, 512)
+                strides = cfg['model']['strides'][:3]
             elif self.model_name == 'YOLOv4_tiny':
                 unit = 32
                 backbone = 'CSPDarknet19'
@@ -108,8 +109,8 @@ class YOLO(Model):
                 neck_unit = unit
                 neck_activate = 'LeakyReLU'
                 head = 'Detect'
-                self.input_size = (416, 416)
-                self.strides = cfg['model']['strides'][1:3]
+                input_size = (416, 416)
+                strides = cfg['model']['strides'][1:3]
             elif self.model_name == 'YOLOv4_csp':
                 unit = 32
                 csp = True
@@ -121,8 +122,8 @@ class YOLO(Model):
                 neck_block_size = 2
                 neck_activate = 'Mish'
                 head = 'Detect'
-                self.input_size = (512, 512)
-                self.strides = cfg['model']['strides'][:3]
+                input_size = (512, 512)
+                strides = cfg['model']['strides'][:3]
             elif 'YOLOv4_P' in self.model_name:
                 unit = 32
                 backbone = 'CSPP'
@@ -134,18 +135,18 @@ class YOLO(Model):
                 neck_activate = 'Mish'
                 head = 'Detect'
                 size = int(self.model_name[-1])
-                self.strides = cfg['model']['strides'][:size-2]
+                strides = cfg['model']['strides'][:size-2]
                 if size==5:
-                    self.input_size = (896, 896)
+                    input_size = (896, 896)
                 elif size==6:
-                    self.input_size = (1280, 1280)
+                    input_size = (1280, 1280)
                 elif size==7:
-                    self.input_size = (1536, 1536)
+                    input_size = (1536, 1536)
 
-        self.input_size = np.array(self.input_size, np.int32)
-        self.anchors = np.array(cfg['model']['anchors']) * self.input_size
+        self.input_size = np.array(input_size, np.int32)
+        self.anchors = np.array(cfg['model']['anchors']).astype(np.float32) * self.input_size
         self.row_anchors, self.col_anchors = self.anchors.shape[:2]
-        self.strides = np.array(self.strides, np.int32)
+        self.strides = np.array(strides, np.int32)
         self.anchors_grid = list(map(lambda x: tf.reshape(x, [-1,4]), get_anchors_grid(self.anchors, self.strides, self.input_size)))
 
         cfg['model']['input_size'] = self.input_size
@@ -153,11 +154,11 @@ class YOLO(Model):
         cfg['model']['strides'] = self.strides
 
         if loss == 'YOLOv2_Loss':
-            self.loss = yolov2.loss(self.input_size, self.anchors, self.strides, self.num_classes, cfg['train']['assign'])
+            self.loss = yolov2.loss(self.input_size, self.anchors, self.strides, self.num_classes, self.assign, self.focal)
         if loss == 'YOLOv3_Loss':
-            self.loss = yolov3.loss(self.input_size, self.anchors, self.strides, self.num_classes, cfg['train']['assign'])
+            self.loss = yolov3.loss(self.input_size, self.anchors, self.strides, self.num_classes, self.assign, self.focal)
         elif loss == 'YOLOv4_Loss':
-            self.loss = yolov4.loss(self.input_size, self.anchors, self.strides, self.num_classes, cfg['train']['assign'])
+            self.loss = yolov4.loss(self.input_size, self.anchors, self.strides, self.num_classes, self.assign, self.focal)
 
         if backbone == 'Darknet19_v2':
             self.backbone = Darknet19_v2(backbone_unit, activate=backbone_activate, kernel_initializer=self.kernel_initializer)
@@ -252,19 +253,17 @@ class YOLO(Model):
 
         return tf.concat([bboxes, scores, classes], -1)
     
-    def NMS(self, preds):
+    def NMS(self, targets):
         output = tf.zeros((0, 6), tf.float32)
-        valid_mask = preds[..., 4] >= self.score_th
-        
-        # if not tf.reduce_any(valid_mask):
-        #     #return empty
-        #     return tf.zeros((0, 6))
 
-        targets = preds[valid_mask]
+        while(True):
+            mask = targets[:, 4] >= self.score_th
+            targets = targets[mask]
 
-        while(tf.shape(targets)[0] > 0):
-        # while(targets.shape[0]):
-            max_idx = tf.argmax(targets[..., 4], -1)
+            if tf.shape(targets)[0] == 0:
+                return output
+            
+            max_idx = tf.argmax(targets[:, 4], -1)
             max_target = targets[max_idx][None]
             output = tf.concat([output, max_target], 0)
 
@@ -274,14 +273,11 @@ class YOLO(Model):
             if self.nms == 'normal':
                 new_scores = tf.where(ious >= self.iou_th, 0., targets[:, 4])
             elif self.nms == 'soft_normal':
-                new_scores = tf.where(ious >= self.iou_th, targets[..., 4] * (1 - ious), targets[..., 4])
+                new_scores = tf.where(ious >= self.iou_th, targets[:, 4] * (1 - ious), targets[:, 4])
             elif self.nms == 'soft_gaussian':
                 new_scores = tf.exp(-(ious)**2/self.sigma) * targets[:, 4]
 
-            valid_mask = new_scores >= self.score_th
-            targets = tf.concat([targets[:, :4], new_scores[:, None], targets[:, 5:]], -1)[valid_mask]
-
-        return output
+            targets = tf.concat([targets[:, :4], new_scores[:, None], targets[:, 5:]], -1)
     
 def load_model(cfg):
     model = YOLO(cfg)

@@ -2,18 +2,21 @@ import tensorflow as tf
 from losses.common import *
 from utils.bbox_utils import *
 
-class loss(loss):
-    def __init__(self, input_size, anchors, strides, num_classes, assign):
-        super().__init__(input_size, anchors, strides, num_classes, assign)
+class loss(base_loss):
+    def __init__(self, input_size, anchors, strides, num_classes, assign, focal):
+        super().__init__(num_classes)
+        self.sampler = Sampler(input_size, anchors, strides, assign)
         self.balance = [4.0, 1.0, 0.4]
         self.coord = 5
         self.noobj = 0.5
+        self.obj_loss = Focal_loss(self.BCE, focal['gamma'], focal['alpha'])
+        self.cls_loss = Focal_loss(self.BCE, focal['gamma'], focal['alpha'])
 
     @tf.function
     def __call__(self, labels, preds):
         reg_loss, obj_loss, cls_loss = 0., 0., 0.
         # sampling
-        indices, gt_box, gt_cls, anchors = self.anchor_sampling(labels, bias=0.5)
+        indices, gt_box, gt_cls, anchors = self.sampler(labels, bias=0.5)
         
         # loss
         for l, pred in enumerate(preds):
@@ -35,12 +38,12 @@ class loss(loss):
                 # classification
                 one_hot = self.onehot_label(gt_cls[l])
                 pred_cls = positive[..., 5:]
-                cls_loss += tf.reduce_mean(self.BCE(one_hot, pred_cls))
+                cls_loss += tf.reduce_mean(self.cls_loss(one_hot, pred_cls))
 
             # objectness
             pred_obj = pred[..., 4]
             obj_weight = tf.where(tf.cast(gt_obj, tf.bool), 1.0, self.noobj)
-            obj_loss += tf.reduce_mean(self.BCE(gt_obj, pred_obj) * obj_weight) * self.balance[l]
+            obj_loss += tf.reduce_mean(self.obj_loss(gt_obj, pred_obj) * obj_weight) * self.balance[l]
     
         batch_size = preds[0].shape[0]
         reg_loss *= self.coord * batch_size

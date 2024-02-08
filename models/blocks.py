@@ -129,8 +129,8 @@ class CSPBlockA(Layer):
         super().__init__()
         self.branch_transition = ConvLayer(unit//2, 1, activate=activate, kernel_initializer=kernel_initializer)
 
-        self.block_pre_transition = ConvLayer(unit//2, 1, activate=activate, kernel_initializer=kernel_initializer)
         block = get_block(block)
+        self.block_pre_transition = ConvLayer(unit//2, 1, activate=activate, kernel_initializer=kernel_initializer)
         self.blocks = [block(unit//2, activate=activate, kernel_initializer=kernel_initializer) for b in range(block_size)]
         self.block_post_transition = ConvLayer(unit//2, 1, activate=activate, kernel_initializer=kernel_initializer)
 
@@ -154,8 +154,8 @@ class CSPBlockA2(Layer):
         super().__init__()
         self.branch_transition = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
 
-        self.block_pre_transition = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
         block = get_block(block)
+        self.block_pre_transition = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
         self.blocks = [block(unit, activate=activate, kernel_initializer=kernel_initializer) for b in range(block_size)]
         self.block_post_transition = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
 

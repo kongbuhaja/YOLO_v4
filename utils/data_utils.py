@@ -36,8 +36,8 @@ class DataLoader():
 
         data = data.map(self.read_image, num_parallel_calls=-1)
         data = data.map(self.normalization, num_parallel_calls=-1) 
-        data = data.map(lambda image, labels: random_augmentation(image, labels, self.input_size), num_parallel_calls=-1) if augmentation else data
-        data = data.map(lambda image, labels: resize_padding(image, labels, self.input_size, augmentation), num_parallel_calls=-1) if resize else data
+        data = data.map(lambda image, labels: random_augmentation(image, labels, self.input_size, seed=self.seed), num_parallel_calls=-1) if augmentation else data
+        data = data.map(lambda image, labels: resize_padding(image, labels, self.input_size, augmentation, seed=self.seed), num_parallel_calls=-1) if resize else data
 
         data = data.padded_batch(self.batch_size, padded_shapes=self.get_padded_shapes(), padding_values=self.get_padding_values(), drop_remainder=True)
 

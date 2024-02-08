@@ -1,26 +1,9 @@
 import tensorflow as tf
 from utils import bbox_utils
 
-class loss():
-    def __init__(self, input_size, anchors, strides, num_classes, assign):
-        self.input_size = tf.constant(input_size, tf.float32)
-        self.anchors = tf.constant(anchors, tf.float32)
-        self.row_anchors, self.col_anchors = self.anchors.shape[:2]
-        self.strides = tf.constant(strides, tf.float32)
-        self.scales = (self.input_size[None] // self.strides[:, None])
-        self.assign_method, self.assign_th = (self.ratio_assign, assign['ratio_th']) if assign['method']=='ratio' else (self.iou_assign, assign['iou_th'])
+class base_loss():
+    def __init__(self, num_classes):
         self.num_classes = num_classes
-
-    @staticmethod
-    @tf.function
-    def focal_weight(label, pred, gamma=2):
-        return tf.pow(label - pred, gamma)
-    
-    @staticmethod
-    @tf.function
-    def BCE(label, pred, eps=1e-7):
-        pred = tf.minimum(tf.maximum(pred, eps), 1-eps)
-        return -(label*tf.math.log(pred) + (1. - label)*tf.math.log(1. - pred))
 
     @tf.function
     def onehot_label(self, label, smooth=True, alpha=0.1):
@@ -28,7 +11,42 @@ class loss():
         if smooth:
             return onehot * (1. - alpha) + alpha/self.num_classes
         return onehot
+
+    @tf.function
+    def BCE(self, label, pred, eps=1e-7):
+        pred = tf.minimum(tf.maximum(pred, eps), 1-eps)
+        return -(label*tf.math.log(pred) + (1. - label)*tf.math.log(1. - pred))
     
+class Focal_loss():
+    def __init__(self, loss, reduction='none', gamma=2.0, alpha=0.25):
+        self.gamma = gamma
+        self.alpha = alpha
+        self.loss = loss
+        if reduction == 'mean':
+            self.reduction = tf.reduce_mean
+        elif reduction == 'sum':
+            self.reduction = tf.reduce_sum
+        else:
+            self.reduction = lambda x : x
+
+    @tf.function
+    def __call__(self, label, pred):
+        loss = self.reduction(self.loss(label, pred))
+        p_t = (label * pred) + ((1 - label) * (1 - pred))
+        alpha_facthor = (label * self.alpha + (1 - label) * (1 - self.alpha)) if self.alpha else 1.0
+        modulating_factor = tf.pow((1.0 - p_t), self.gamma) if self.gamma else 1.0
+        
+        return alpha_facthor * modulating_factor * loss
+    
+class Sampler():
+    def __init__(self, input_size, anchors, strides, assign):
+        input_size = tf.constant(input_size, tf.float32)
+        self.anchors = tf.cast(anchors, tf.float32)
+        self.row_anchors, self.col_anchors = self.anchors.shape[:2]
+        self.strides = strides
+        self.scales = (input_size[None] // self.strides[:, None])
+        self.assign_method, self.assign_th = (self.ratio_assign, assign['ratio_th']) if assign['method']=='ratio' else (self.iou_assign, assign['iou_th'])
+
     @tf.function
     def iou_assign(self, anchors, targets):
         mask = bbox_utils.bbox_iou_wh(anchors, targets) > self.assign_th
@@ -41,7 +59,7 @@ class loss():
         return mask
     
     @tf.function
-    def anchor_sampling(self, labels, bias=0.5):
+    def __call__(self, labels, bias=0.5):
         indices, tbox, tcls, anchs = [], [], [], []
         nt = len(labels)
         ai = tf.tile(tf.range(self.col_anchors, dtype=tf.float32)[:, None], [1, nt])
@@ -83,3 +101,6 @@ class loss():
             tcls.append(c)
             anchs.append(tf.gather(anchors/self.strides[r], a))
         return indices, tbox, tcls, anchs
+    
+
+    

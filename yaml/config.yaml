@@ -20,6 +20,9 @@ train:
     method: ratio
     ratio_th: 4.0
     iou_th: 0.5
+  focal:
+    gamma: 0
+    alpha: 0
   eval_per_epoch: 5
   
 eval:

@@ -17,15 +17,16 @@ def args_parse():
     return args
 
 def read_cfg():
-    args=args_parse()
+    # args=args_parse()
     
     with open('yaml/config.yaml') as f:
         cfg = yaml.load(f, Loader=yaml.FullLoader)
         
-    cfg['model']['name'] = args.model if args.model else cfg['model']['name']
-    cfg['data'] = args.data if args.data else cfg['data']
-    cfg['gpus'] = args.gpus if args.gpus else str(cfg['gpus'])
-    
+    # cfg['model']['name'] = args.model if args.model else cfg['model']['name']
+    # cfg['data'] = args.data if args.data else cfg['data']
+    # cfg['gpus'] = args.gpus if args.gpus else str(cfg['gpus'])
+    cfg['gpus'] = '0'
+
     with open(f"yaml/data/{cfg['data']}.yaml") as f:
         cfg.update(yaml.load(f, Loader=yaml.FullLoader))
 
