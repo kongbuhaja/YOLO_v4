@@ -31,12 +31,12 @@ class Focal_loss():
 
     @tf.function
     def __call__(self, label, pred):
-        loss = self.reduction(self.loss(label, pred))
+        loss = self.loss(label, pred)
         p_t = (label * pred) + ((1 - label) * (1 - pred))
         alpha_facthor = (label * self.alpha + (1 - label) * (1 - self.alpha)) if self.alpha else 1.0
         modulating_factor = tf.pow((1.0 - p_t), self.gamma) if self.gamma else 1.0
         
-        return alpha_facthor * modulating_factor * loss
+        return self.reduction(alpha_facthor * modulating_factor * loss)
     
 class Sampler():
     def __init__(self, input_size, anchors, strides, assign):
