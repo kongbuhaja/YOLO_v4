@@ -30,6 +30,7 @@ class ConvLayer(Layer):
         
         return x
 
+## not yet
 class OSALayer(Layer):
     def __init__(self, unit, growth_rate, activate='Mish', kernel_initializer=glorot, **kwargs):
         super().__init__()

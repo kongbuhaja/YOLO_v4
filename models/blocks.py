@@ -104,8 +104,8 @@ class PlainBlockA(Layer):
 
     @tf.function
     def call(self, x, training=False):        
-        for l in range(len(self.blocks)):
-            x = self.blocks[l](x, training)
+        for block in self.blocks:
+            x = block(x, training)
 
         return x
     
@@ -118,8 +118,8 @@ class PlainBlockB(Layer):
 
     @tf.function
     def call(self, x, training):
-        for l in range(len(self.blocks)):
-            x = self.blocks[l](x, training)
+        for block in self.blocks:
+            x = block(x, training)
         x = self.conv(x)
 
         return x
@@ -141,8 +141,8 @@ class CSPBlockA(Layer):
         branch = self.branch_transition(x, training)
         
         x = self.block_pre_transition(x, training)
-        for l in range(len(self.blocks)):
-            x = self.blocks[l](x, training)
+        for block in self.blocks:
+            x = block(x, training)
         x = self.block_post_transition(x, training)
         
         x = self.concat([x, branch], training)
@@ -166,8 +166,8 @@ class CSPBlockA2(Layer):
         branch = self.branch_transition(x, training)
         
         x = self.block_pre_transition(x, training)
-        for l in range(len(self.blocks)):
-            x = self.blocks[l](x, training)
+        for block in self.blocks:
+            x = block(x, training)
         x = self.block_post_transition(x, training)
         
         x = self.concat([x, branch], training)
@@ -191,8 +191,8 @@ class CSPBlockB(Layer):
         x = self.transition(x, training)
         branch = self.branch_transition(x, training)
         
-        for l in range(len(self.blocks)):
-            x = self.blocks[l](x, training)
+        for block in self.blocks:
+            x = block(x, training)
         
         x = self.concat([x, branch], training)
 
@@ -292,8 +292,8 @@ class TinyCSPBlock(Layer):
 
         x = self.pre_transition(x, training)
         branch = x
-        for l in range(len(self.blocks)):
-            x = self.blocks[l](x, training)
+        for block in self.blocks:
+            x = block(x, training)
         x = self.concat([x, branch], training)
         
         return x

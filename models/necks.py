@@ -31,21 +31,21 @@ class CSPPANSPP(Layer):
     @tf.function
     def call(self, x, training):
         up_branch = [self.sppblock(x[-1], training)]
-        for l in range(len(self.upsamples)):
-            u = self.upsamples[l][0](up_branch[-1], training)
-            b = self.upsamples[l][1](x[-l-2], training)
-            c = self.concat([u, b])
-            up_branch += [self.upsamples[l][2](c, training)]
+        for l, (upsample, transition, block) in enumerate(self.upsamples):
+            u = upsample(up_branch[-1], training)
+            br = transition(x[-l-2], training)
+            c = self.concat([u, br])
+            up_branch += [block(c, training)]
 
         down_branch = [up_branch[-1]]
-        for l in range(len(self.downsamples)):
-            d = self.downsamples[l][0](down_branch[-1], training)
+        for l, (downsample, block) in enumerate(self.downsamples):
+            d = downsample(down_branch[-1], training)
             c = self.concat([d, up_branch[-l-2]])
-            down_branch += [self.downsamples[l][1](c, training)]
+            down_branch += [block(c, training)]
 
         branch = []
-        for l in range(len(self.convs)):
-            branch += [self.convs[l](down_branch[l], training)]
+        for l, conv in enumerate(self.convs):
+            branch += [conv(down_branch[l], training)]
             
         return branch
     
@@ -106,7 +106,7 @@ class CSPFPN(Layer):
 
         self.convs = []
         for l in range(row_anchors):
-            self.convs += [ConvLayer(unit*2**min(3+l, 5), 3, activate=activate, kernel_initializer=kernel_initializer)]
+            self.convs += [ConvLayer(unit*2**min(row_anchors + 2 - l, 5), 3, activate=activate, kernel_initializer=kernel_initializer)]
         
         self.concat = Concatenate()
 
@@ -174,8 +174,8 @@ class tinyFPN(Layer):
     def call(self, x, training):
         up_branch = [self.conv(x[-1], training)]
 
-        for l in range(len(self.upsamples)):
-            u = self.upsamples[l](up_branch[-1], training)
+        for l, upsample in enumerate(self.upsamples):
+            u = upsample(up_branch[-1], training)
             up_branch += [self.concat([u, x[-l-2]])]
 
         branch = []
