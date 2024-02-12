@@ -22,8 +22,7 @@ class Dataset(Base_Dataset):
                 
                 os.remove(out_dir + self.dtype + '.zip')
             except:
-                self.download_from_server('custom', out_dir)
-                self.extract('custom', out_dir)
+                self.download_from_server()
 
     def read_files(self):
         print('Reading local_files...  ', end='', flush=True)

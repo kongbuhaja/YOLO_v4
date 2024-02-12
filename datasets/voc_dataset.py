@@ -20,8 +20,7 @@ class Dataset(Base_Dataset):
                     if file.endswith('.tar') or file.endswith('zip') or file.endswith('.INFO'):
                         os.remove(f'{out_dir}/downloads/{file}')
             except:
-                self.download_from_server('voc', out_dir)
-                self.extract('voc', out_dir)
+                self.download_from_server()
 
     def read_files(self):
         print('Reading local_files...  ', end='', flush=True)

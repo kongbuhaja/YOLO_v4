@@ -8,13 +8,13 @@ model:
   checkpoint: map_checkpoint
 
 # custom, voc, coco
-data: custom
+data: coco
 
 train:
-  epochs: 5000
+  epochs: 10000
   # cosine_annealing, poly, step
   lr_scheduler: cosine_annealing
-  lr: 0.001
+  lr: 0.01
   warmup_epochs: 10
   assign:
     method: ratio
@@ -44,6 +44,6 @@ eval:
 log:
   dir: logs
 
-batch_size: 14
+batch_size: 32
 seed: 42
 gpus: 0
