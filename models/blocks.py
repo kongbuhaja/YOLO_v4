@@ -1,4 +1,4 @@
-from tensorflow.keras.layers import Layer, Reshape, Concatenate
+from tensorflow.keras.layers import Layer, Add, Concatenate
 
 from models.layers import *
 

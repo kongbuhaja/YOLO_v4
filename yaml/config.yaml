@@ -1,6 +1,6 @@
 model:
   # YOLOv2, YOLOv2_tiny, YOLOv3, YOLOv3_tiny, YOLOv4, YOLOv4_tiny, YOLOv4_csp, YOLOv4_P5-7
-  name: YOLOv4_csp
+  name: YOLOv4_P6
   load: False
   dir: checkpoints
   checkpoint: map_checkpoint
@@ -42,6 +42,6 @@ eval:
 log:
   dir: logs
 
-batch_size: 1
+batch_size: 2
 seed: 42
-gpus: 0
+gpus: 3
