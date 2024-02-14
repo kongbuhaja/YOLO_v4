@@ -1,7 +1,5 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Layer, Conv2D, BatchNormalization, ReLU, LeakyReLU, Add, MaxPool2D, Concatenate
-from tensorflow.keras.initializers import GlorotUniform as glorot
-from tensorflow.keras.initializers import HeUniform as he
+from tensorflow.keras.layers import Layer, Conv2D, BatchNormalization, ReLU, LeakyReLU, MaxPool2D, Concatenate
 from tensorflow.keras.regularizers import l2
 
 class Mish(Layer):
@@ -13,7 +11,7 @@ class Mish(Layer):
         return x * tf.math.tanh(tf.math.softplus(x))
 
 class ConvLayer(Layer):
-    def __init__(self, unit, kernel_size, strides=1, padding='same', activate='Mish', bn=True, kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, kernel_size, strides=1, padding='same', activate='Mish', bn=True, kernel_initializer=None, **kwargs):
         super().__init__()        
         self.conv = Conv2D(unit, kernel_size, padding=padding, strides=strides,
                            use_bias=not bn, kernel_regularizer=l2(0.0005),
@@ -32,7 +30,7 @@ class ConvLayer(Layer):
 
 ## not yet
 class OSALayer(Layer):
-    def __init__(self, unit, growth_rate, activate='Mish', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, growth_rate, activate='Mish', kernel_initializer=None, **kwargs):
         super().__init__()
         self.layers = [ConvLayer(unit//growth_rate, 3, activate=activate, kernel_initializer=kernel_initializer)] * growth_rate
 
@@ -60,7 +58,7 @@ class SplitLayer(Layer):
         return tf.split(x, self.groups, -1)[self.group_id]
     
 class SPPLayer(Layer):
-    def __init__(self, unit, activate='Mish', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, activate='Mish', kernel_initializer=None, **kwargs):
         super().__init__()
         self.conv = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
         self.maxpool1 = MaxPool2D(5, 1, 'same')
@@ -79,7 +77,7 @@ class SPPLayer(Layer):
         return x
     
 class UpsampleLayer(Layer):
-    def __init__(self, unit, activate='Mish', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, activate='Mish', kernel_initializer=None, **kwargs):
         super().__init__()
         self.conv = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
 
@@ -90,7 +88,7 @@ class UpsampleLayer(Layer):
         return x
     
 class DownsampleLayer(Layer):
-    def __init__(self, unit, activate='Mish', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, activate='Mish', kernel_initializer=None, **kwargs):
         super().__init__()
         self.conv = ConvLayer(unit, 3, 2, activate=activate, kernel_initializer=kernel_initializer)
 
@@ -108,7 +106,7 @@ class IdentityLayer(Layer):
         return x
 
 class ConcatLayer(Layer):
-    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=None, **kwargs):
         super().__init__()
         self.concat = Concatenate()
         self.transition = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)

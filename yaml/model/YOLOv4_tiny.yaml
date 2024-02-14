@@ -1,0 +1,21 @@
+name: YOLOv4_tiny
+input_size: [416, 416]
+strides: [16, 32]
+anchors: 2x3
+kernel_init: glorot_uniform
+decode: v4
+loss: v4
+
+backbone: 
+  name: CSPDarknet19
+  unit: 32
+  activate: Mish
+
+neck: 
+  name: tinyFPN
+  unit: 32
+  activate: LeakyReLU
+
+head:
+  name: Detect
+

@@ -1,0 +1,22 @@
+name: YOLOv3
+input_size: [512, 512]
+strides: [8, 16, 32]
+anchors: 3x3
+kernel_init: glorot_uniform
+decode: v2
+loss: v3
+
+backbone: 
+  name: Darknet53
+  unit: 32
+  activate: LeakyReLU
+
+neck: 
+  name: FPN
+  unit: 32
+  activate: LeakyReLU
+  block_size: 2
+
+head:
+  name: Detect
+

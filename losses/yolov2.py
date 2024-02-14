@@ -1,5 +1,5 @@
 import tensorflow as tf
-from losses.common import *
+from losses.base import base_loss, Focal_loss, Sampler
 from utils.bbox_utils import *
 
 class loss(base_loss):

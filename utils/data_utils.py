@@ -1,12 +1,10 @@
 import tensorflow as tf
 import numpy as np
-from utils import augmentation
-from utils.augmentation import resize_padding
 from utils.bbox_utils import xyxy_to_xywh
-from utils.augmentation import random_augmentation
 from datasets.voc_dataset import Dataset as voc_dataset
 from datasets.coco_dataset import Dataset as coco_dataset
 from datasets.custom_dataset import Dataset as custom_dataset
+from utils.augmentation import resize_padding, random_augmentation
 
 class DataLoader():
     def __init__(self, cfg):

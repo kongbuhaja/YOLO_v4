@@ -1,12 +1,10 @@
 import tensorflow as tf
 import numpy as np
 from tensorflow.keras.layers import Layer
-from tensorflow.keras.initializers import GlorotUniform as glorot
-from tensorflow.keras.initializers import HeUniform as he
 from models.blocks import *
 
 class CSPPANSPP(Layer):
-    def __init__(self, unit, row_anchors, block_size, activate='Mish', kernel_initializer=glorot):
+    def __init__(self, unit, row_anchors, block_size, activate='Mish', kernel_initializer=None):
         super().__init__()
         self.sppblock = CSPSPPBlock(unit*2**4, activate=activate, kernel_initializer=kernel_initializer)        
         self.upsamples = []
@@ -50,7 +48,7 @@ class CSPPANSPP(Layer):
         return branch
     
 class PANSPP(Layer):
-    def __init__(self, unit, row_anchors, block_size, activate='Mish', kernel_initializer=glorot):
+    def __init__(self, unit, row_anchors, block_size, activate='Mish', kernel_initializer=None):
         super().__init__()
         self.sppblock = SPPBlock(unit*2**4, activate=activate, kernel_initializer=kernel_initializer)        
         self.upsamples = []
@@ -94,7 +92,7 @@ class PANSPP(Layer):
         return branch
 
 class CSPFPN(Layer):
-    def __init__(self, unit, row_anchors, block_size, activate='Mish', kernel_initializer=glorot):
+    def __init__(self, unit, row_anchors, block_size, activate='Mish', kernel_initializer=None):
         super().__init__()
         self.block = PlainBlockB(unit*2**4, 'Bottle', block_size, activate=activate, kernel_initializer=kernel_initializer)
         self.upsamples = []
@@ -126,7 +124,7 @@ class CSPFPN(Layer):
         return branch
 
 class FPN(Layer):
-    def __init__(self, unit, row_anchors, block_size, activate='Mish', kernel_initializer=glorot):
+    def __init__(self, unit, row_anchors, block_size, activate='Mish', kernel_initializer=None):
         super().__init__()
         self.block = PlainBlockB(unit*2**4, 'Bottle', block_size, activate=activate, kernel_initializer=kernel_initializer)
         self.upsamples = []
@@ -156,7 +154,7 @@ class FPN(Layer):
         return branch
 
 class tinyFPN(Layer):
-    def __init__(self, unit, row_anchors, activate='Mish', kernel_initializer=glorot):
+    def __init__(self, unit, row_anchors, activate='Mish', kernel_initializer=None):
         super().__init__()
         self.conv = ConvLayer(unit*2**3, 3, activate=activate, kernel_initializer=kernel_initializer)
         
@@ -185,7 +183,7 @@ class tinyFPN(Layer):
         return branch
 
 class reOrg(Layer):
-    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=glorot):
+    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=None):
         super().__init__()
         self.convm = ConvLayer(unit*2, 3, activate=activate, kernel_initializer=kernel_initializer)
         
@@ -199,12 +197,22 @@ class reOrg(Layer):
     @tf.function
     def call(self, x, training):
         m = self.convm(x[0], training)
-        medium_branch = self.concat([m[:, ::2, ::2], m[:, 1::2, ::2], m[:, ::2, 1::2], m[:, 1::2, 1::2]], -1)
+        medium_branch = self.concat([m[:, ::2, ::2], m[:, 1::2, ::2], m[:, ::2, 1::2], m[:, 1::2, 1::2]])
 
         l = self.convl_1(x[1], training)
         large_branch = self.convl_2(l, training)
-        x = self.concat([large_branch, medium_branch], -1)
+        x = self.concat([large_branch, medium_branch])
         x = self.conv(x, training)
 
-        return x
-    
+        return [x]
+
+class ConvNeck(Layer):
+    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=None):
+        super().__init__()
+        self.conv = ConvLayer(unit*2**5, 3, activate=activate, kernel_initializer=kernel_initializer)
+
+    @tf.function
+    def call(self, x, training):
+        x = self.conv(x, training)
+        
+        return [x]

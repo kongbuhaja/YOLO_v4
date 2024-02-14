@@ -21,6 +21,12 @@ def read_cfg():
     
     with open('yaml/config.yaml') as f:
         cfg = yaml.load(f, Loader=yaml.FullLoader)
+
+    with open(f"yaml/model/{cfg['model']['name']}.yaml") as f:
+        model_cfg = yaml.load(f, Loader=yaml.FullLoader)
+    
+    for key, value in model_cfg.items():
+        cfg['model'][key] = value
         
     cfg['model']['name'] = args.model if args.model else cfg['model']['name']
     cfg['data'] = args.data if args.data else cfg['data']
@@ -29,19 +35,10 @@ def read_cfg():
     with open(f"yaml/data/{cfg['data']}.yaml") as f:
         cfg.update(yaml.load(f, Loader=yaml.FullLoader))
 
-    if cfg['model']['name'] in ['YOLOv2', 'YOLOv2_tiny']:
-        cfg['model']['anchors'] = cfg['data']['anchors']['1x5']
-    elif cfg['model']['name'] in ['YOLOv3_tiny', 'YOLOv4_tiny']:
-        cfg['model']['anchors'] = cfg['data']['anchors']['2x3']
-    elif cfg['model']['name'] in ['YOLOv3', 'YOLOv4', 'YOLOv4_csp']:
-        cfg['model']['anchors'] = cfg['data']['anchors']['3x3']
-    elif cfg['model']['name'] in ['YOLOv4_P5']:
-        cfg['model']['anchors'] = cfg['data']['anchors']['3x4']
-    elif cfg['model']['name'] in ['YOLOv4_P6']:
-        cfg['model']['anchors'] = cfg['data']['anchors']['4x4']
-    elif cfg['model']['name'] in ['YOLOv4_P7']:
-        cfg['model']['anchors'] = cfg['data']['anchors']['5x4']
-    cfg['model']['anchors'] = np.array(cfg['model']['anchors'])
+    cfg['model']['input_size'] = np.array(cfg['model']['input_size'])
+    cfg['model']['strides'] = np.array(cfg['model']['strides'])
+    cfg['model']['anchors'] = np.array(cfg['data']['anchors'][cfg['model']['anchors']]) * cfg['model']['input_size']
+
     cfg['model']['dir'] = f"{cfg['model']['dir']}/{cfg['data']['name']}/{cfg['model']['name']}"
     cfg['model']['train_checkpoint'] = f"{cfg['model']['dir']}/train_loss/{cfg['model']['name']}"
     cfg['model']['loss_checkpoint'] = f"{cfg['model']['dir']}/val_loss/{cfg['model']['name']}"

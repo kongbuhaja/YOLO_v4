@@ -1,14 +1,11 @@
 import tensorflow as tf
 import numpy as np
-from tensorflow.keras.layers import Layer, Reshape
-from tensorflow.keras.initializers import GlorotUniform as glorot
-from tensorflow.keras.initializers import HeUniform as he
+from tensorflow.keras.layers import Layer
 from models.blocks import ConvLayer
 
 class Detect(Layer):
-    def __init__(self, decode, row_anchors, col_anchors, num_classes, kernel_initializer=glorot):
+    def __init__(self, row_anchors, col_anchors, num_classes, kernel_initializer=None):
         super().__init__()
-        self.decode = decode
         self.col_anchors = col_anchors
         self.detects = []
         for l in range(row_anchors):
@@ -19,6 +16,7 @@ class Detect(Layer):
         branch = []
         for l, detect in enumerate(self.detects):
             r = detect(x[l], training)
-            branch += [self.decode(tf.reshape(r, [*r.shape[:3], self.col_anchors, -1]))]
+            branch += [tf.reshape(r, [*r.shape[:3], self.col_anchors, -1])]
 
         return branch
+    

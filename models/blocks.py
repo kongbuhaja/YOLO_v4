@@ -1,11 +1,9 @@
 from tensorflow.keras.layers import Layer, Reshape, Concatenate
-from tensorflow.keras.initializers import GlorotUniform as glorot
-from tensorflow.keras.initializers import HeUniform as he
 
 from models.layers import *
 
 class ResidualBlockI(Layer):
-    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=None, **kwargs):
         super().__init__()
         self.conv1 = ConvLayer(unit//2, 1, activate=activate, kernel_initializer=kernel_initializer)
         self.conv2 = ConvLayer(unit, 3, activate=activate, kernel_initializer=kernel_initializer)
@@ -21,7 +19,7 @@ class ResidualBlockI(Layer):
         return x
 
 class CSPResidualBlockI(Layer):
-    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=None, **kwargs):
         super().__init__()
         self.conv1 = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
         self.conv2 = ConvLayer(unit, 3, activate=activate, kernel_initializer=kernel_initializer)
@@ -37,7 +35,7 @@ class CSPResidualBlockI(Layer):
         return x
     
 class ResidualBlockC(Layer):
-    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=None, **kwargs):
         super().__init__()
         self.branch = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
         self.conv1 = ConvLayer(unit//2, 1, activate=activate, kernel_initializer=kernel_initializer)
@@ -54,7 +52,7 @@ class ResidualBlockC(Layer):
         return x
     
 class CSPResidualBlockC(Layer):
-    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=None, **kwargs):
         super().__init__()
         self.branch = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
         self.conv1 = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
@@ -71,7 +69,7 @@ class CSPResidualBlockC(Layer):
         return x
     
 class BottleBlock(Layer):
-    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=None, **kwargs):
         super().__init__()
         self.conv1 = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
         self.conv2 = ConvLayer(unit*2, 3, activate=activate, kernel_initializer=kernel_initializer)
@@ -84,7 +82,7 @@ class BottleBlock(Layer):
         return x
     
 class CSPBottleBlock(Layer):
-    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=None, **kwargs):
         super().__init__()
         self.conv1 = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
         self.conv2 = ConvLayer(unit, 3, activate=activate, kernel_initializer=kernel_initializer)
@@ -97,7 +95,7 @@ class CSPBottleBlock(Layer):
         return x
     
 class PlainBlockA(Layer):
-    def __init__(self, unit, block, block_size, activate='Mish', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, block, block_size, activate='Mish', kernel_initializer=None, **kwargs):
         super().__init__()        
         block = get_block(block)
         self.blocks = [block(unit, activate=activate, kernel_initializer=kernel_initializer) for b in range(block_size)]
@@ -110,7 +108,7 @@ class PlainBlockA(Layer):
         return x
     
 class PlainBlockB(Layer):
-    def __init__(self, unit, block, block_size, activate='Mish', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, block, block_size, activate='Mish', kernel_initializer=None, **kwargs):
         super().__init__()        
         block = get_block(block)
         self.blocks = [block(unit, activate=activate, kernel_initializer=kernel_initializer) for b in range(block_size)]
@@ -125,7 +123,7 @@ class PlainBlockB(Layer):
         return x
     
 class CSPBlockA(Layer): 
-    def __init__(self, unit, block, block_size, activate='Mish', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, block, block_size, activate='Mish', kernel_initializer=None, **kwargs):
         super().__init__()
         self.branch_transition = ConvLayer(unit//2, 1, activate=activate, kernel_initializer=kernel_initializer)
 
@@ -150,7 +148,7 @@ class CSPBlockA(Layer):
         return x
 
 class CSPBlockA2(Layer):
-    def __init__(self, unit, block, block_size, activate='Mish', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, block, block_size, activate='Mish', kernel_initializer=None, **kwargs):
         super().__init__()
         self.branch_transition = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
 
@@ -175,7 +173,7 @@ class CSPBlockA2(Layer):
         return x
     
 class CSPBlockB(Layer):
-    def __init__(self, unit, block, block_size, activate='Mish', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, block, block_size, activate='Mish', kernel_initializer=None, **kwargs):
         super().__init__()
         self.transition = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
 
@@ -199,7 +197,7 @@ class CSPBlockB(Layer):
         return x
     
 class SPPBlock(Layer):
-    def __init__(self, unit, activate='Mish', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, activate='Mish', kernel_initializer=None, **kwargs):
         super().__init__()
         self.conv1 = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
         self.conv2 = ConvLayer(unit*2, 3, activate=activate, kernel_initializer=kernel_initializer)
@@ -220,7 +218,7 @@ class SPPBlock(Layer):
         return x
     
 class CSPSPPBlock(Layer):
-    def __init__(self, unit, activate='Mish', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, activate='Mish', kernel_initializer=None, **kwargs):
         super().__init__()
         self.branch_transition = ConvLayer(unit, 1, activate=activate, kernel_initializer=kernel_initializer)
         
@@ -247,7 +245,7 @@ class CSPSPPBlock(Layer):
         return x
     
 class CSPOSABlock(Layer):
-    def __init__(self, unit, growth_rate, activate='Mish', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, growth_rate, activate='Mish', kernel_initializer=None, **kwargs):
         super().__init__()
         self.unit = unit
         self.growth_rate = growth_rate
@@ -276,7 +274,7 @@ class CSPOSABlock(Layer):
         return x
     
 class TinyCSPBlock(Layer):
-    def __init__(self, unit, block, block_size, activate='Mish', kernel_initializer=glorot, **kwargs):
+    def __init__(self, unit, block, block_size, activate='Mish', kernel_initializer=None, **kwargs):
         super().__init__()
         self.split = SplitLayer(2, 1)
         

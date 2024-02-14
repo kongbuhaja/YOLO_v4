@@ -1,6 +1,5 @@
 import tensorflow as tf
 import numpy as np
-import cv2
 
 @tf.function
 def resize_padding(image, labels, out_size, random=False, mode='CONSTANT', constant_values=0, seed=42):

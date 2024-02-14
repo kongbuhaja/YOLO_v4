@@ -1,0 +1,23 @@
+name: YOLOv4_csp
+input_size: [512, 512]
+strides: [8, 16, 32]
+anchors: 3x3
+kernel_init: glorot_uniform
+decode: v4
+loss: v4
+
+backbone: 
+  name: CSPDarknet53
+  unit: 32
+  activate: Mish
+  csp: True
+
+neck: 
+  name: CSPPANSPP
+  unit: 32
+  activate: Mish
+  block_size: 2
+
+head:
+  name: Detect
+

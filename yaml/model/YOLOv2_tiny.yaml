@@ -1,0 +1,21 @@
+name: YOLOv2_tiny
+input_size: [416, 416]
+strides: [32]
+anchors: 1x5
+kernel_init: glorot_uniform
+decode: v2
+loss: v2
+
+backbone: 
+  name: Darknet19_v2_tiny
+  unit: 16
+  activate: LeakyReLU
+
+neck: 
+  name: Conv
+  unit: 16
+  activate: LeakyReLU
+
+head:
+  name: Detect
+

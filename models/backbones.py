@@ -1,11 +1,9 @@
 from tensorflow.keras.layers import Layer, MaxPool2D
-from tensorflow.keras.initializers import GlorotUniform as glorot
-from tensorflow.keras.initializers import HeUniform as he
 from models.blocks import *
 from models.layers import *
 
 class CSPP(Layer):
-    def __init__(self, unit, size, activate='Mish', kernel_initializer=glorot):
+    def __init__(self, unit, size, activate='Mish', kernel_initializer=None):
         super().__init__()
         units = [unit*2, unit*2**2, unit*2**3, unit*2**4, unit*2**5, unit*2**5, unit*2**5]
         block_sizes = [1, 3, 15, 15, 7, 7, 7]
@@ -31,7 +29,7 @@ class CSPP(Layer):
         return branch
 
 class CSPDarknet53(Layer):
-    def __init__(self, unit, csp=True, activate='Mish', kernel_initializer=glorot):
+    def __init__(self, unit, csp=True, activate='Mish', kernel_initializer=None):
         super().__init__()        
         self.conv = ConvLayer(unit, 3, activate=activate, kernel_initializer=kernel_initializer)
     
@@ -73,7 +71,7 @@ class CSPDarknet53(Layer):
         return small_branch, medium_branch, large_branch       
 
 class Darknet53(Layer):
-    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=glorot):
+    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=None):
         super().__init__()        
         self.conv = ConvLayer(unit, 3, activate=activate, kernel_initializer=kernel_initializer)
     
@@ -114,7 +112,7 @@ class Darknet53(Layer):
         return small_branch, medium_branch, large_branch
     
 class CSPDarknet19(Layer):
-    def __init__(self, unit, activate='Mish', kernel_initializer=glorot):
+    def __init__(self, unit, activate='Mish', kernel_initializer=None):
         super().__init__()
         self.activate = activate
         self.kernel_initialier = kernel_initializer
@@ -161,7 +159,7 @@ class CSPDarknet19(Layer):
         return medium_branch, large_branch
     
 class Darknet19(Layer):
-    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=glorot):
+    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=None):
         super().__init__()
         self.activate = activate
         self.kernel_initializer = kernel_initializer
@@ -202,7 +200,7 @@ class Darknet19(Layer):
         return medium_branch, large_branch
     
 class Darknet19_v2(Layer):
-    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=glorot):
+    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=None):
         super().__init__()
         self.activate = activate
         self.kernel_initializer = kernel_initializer
@@ -251,7 +249,7 @@ class Darknet19_v2(Layer):
         return medium_branch, large_branch
     
 class Darknet19_v2_tiny(Layer):
-    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=glorot):
+    def __init__(self, unit, activate='LeakyReLU', kernel_initializer=None):
         super().__init__()
         self.activate = activate
         self.kernel_initializer = kernel_initializer
@@ -290,3 +288,4 @@ class Darknet19_v2_tiny(Layer):
         x = self.conv7(x, training)
         
         return x
+    

@@ -63,7 +63,7 @@ def main():
         def test_step(batch_images, batch_grids):
             preds = model(batch_images)
             valid_loss = model.loss(batch_grids, preds)
-            batch_processed_preds = model.output(preds)
+            batch_processed_preds = model.decoder.final_decode(preds)
             
             return valid_loss, batch_processed_preds
         
@@ -85,7 +85,7 @@ def main():
             def step(batch_preds, batch_labels):
                 for i, preds in enumerate(batch_preds):
                     labels = batch_labels[batch_labels[..., 0]==i][..., 1:].numpy()
-                    NMS_preds = model.NMS(preds).numpy()
+                    NMS_preds = model.decoder.NMS(preds).numpy()
                     eval.update_stats(NMS_preds, labels)
             if gpus == 1:
                 step(per_batch_preds, per_batch_labels)

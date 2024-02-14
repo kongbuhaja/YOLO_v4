@@ -1,0 +1,22 @@
+name: YOLOv4_P6
+input_size: [1280, 1280]
+strides: [8, 16, 32, 64]
+anchors: 4x4
+kernel_init: glorot_uniform
+decode: v4
+loss: v4
+
+backbone: 
+  name: CSPP
+  unit: 32
+  activate: Mish
+
+neck: 
+  name: CSPPANSPP
+  unit: 32
+  activate: Mish
+  block_size: 3
+
+head:
+  name: Detect
+

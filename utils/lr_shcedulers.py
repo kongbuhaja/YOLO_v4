@@ -1,6 +1,4 @@
-from utils import io_utils
 import math
-from models.model import YOLO
 
 class warmup_lr_scheduler():
     def __init__(self, warmup_max_step, init_lr):

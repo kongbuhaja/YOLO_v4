@@ -1,0 +1,21 @@
+name: YOLOv3_tiny
+input_size: [416, 416]
+strides: [16, 32]
+anchors: 2x3
+kernel_init: glorot_uniform
+decode: v2
+loss: v3
+
+backbone: 
+  name: Darknet19
+  unit: 16
+  activate: LeakyReLU
+
+neck: 
+  name: tinyFPN
+  unit: 32
+  activate: LeakyReLU
+
+head:
+  name: Detect
+

@@ -56,14 +56,14 @@ def main():
     def test_step(batch_images, batch_labels):
         preds = model(batch_images)
         valid_loss = model.loss(batch_labels, preds)
-        batch_preds = model.output(preds)
+        batch_preds = model.decoder.final_decode(preds)
         
         return batch_preds, *valid_loss
     
     def update_eval_step(batch_preds, batch_labels):
         for i, preds in enumerate(batch_preds):
             labels = batch_labels[batch_labels[..., 0]==i][..., 1:].numpy()
-            NMS_preds = model.NMS(preds).numpy()
+            NMS_preds = model.decoder.NMS(preds).numpy()
             eval.update_stats(NMS_preds, labels)
 
     for epoch in range(start_epoch, epochs + 1):
