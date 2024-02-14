@@ -27,6 +27,10 @@ class loss(base_loss):
                 # regression
                 pred_xy = positive[..., :2]
                 pred_wh = positive[..., 2:4] * anchors[l]
+                gt_xy = gt_box[l][..., :2]
+                gt_wh = gt_box[l][..., 2:4]
+                reg_loss += tf.reduce_mean(tf.square(gt_xy - pred_xy)) + \
+                            tf.reduce_mean(tf.square(tf.sqrt(gt_wh) - tf.sqrt(pred_wh)))
                 pred_box = tf.concat([pred_xy, pred_wh], -1)
                 reg_loss += tf.reduce_mean(tf.square(gt_box[l] - pred_box))
             
@@ -45,7 +49,7 @@ class loss(base_loss):
             obj_loss += tf.reduce_mean(self.obj_loss(gt_obj, pred_obj) * obj_weight)
     
         batch_size = preds[0].shape[0]
-        reg_loss *= batch_size
+        reg_loss *= batch_size * self.coord
         obj_loss *= batch_size
         cls_loss *= batch_size
         total_loss = reg_loss + obj_loss + cls_loss
