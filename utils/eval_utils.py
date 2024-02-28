@@ -6,6 +6,7 @@ class Eval:
         self.labels=cfg['data']['labels']['name']
         self.eval_per_epoch = cfg['train']['eval_per_epoch']
         self.result_dir = cfg['eval']['dir']
+        self.warmup_epochs = cfg['train']['warmup_epochs']
         self.eps = eps
         self.num_of_ious = 10
         self.iou_thresholds = 0.5 + (0.5) / self.num_of_ious * np.arange(self.num_of_ious)
@@ -13,7 +14,7 @@ class Eval:
         self.ap = np.zeros((len(self.labels), self.num_of_ious))
 
     def check(self, epoch):
-        return epoch % self.eval_per_epoch == 0
+        return epoch >= self.warmup_epochs and epoch % self.eval_per_epoch == 0
 
     def init_stat(self):
         del self.stats
