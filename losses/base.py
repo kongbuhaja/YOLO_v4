@@ -1,7 +1,7 @@
 import tensorflow as tf
 from utils import bbox_utils
 
-class base_loss():
+class Base_loss():
     def __init__(self, num_classes):
         self.num_classes = num_classes
 

@@ -1,8 +1,8 @@
 import tensorflow as tf
-from losses.base import base_loss, Focal_loss, Sampler
+from losses.base import Base_loss, Focal_loss, Sampler
 from utils.bbox_utils import *
 
-class loss(base_loss):
+class loss(Base_loss):
     def __init__(self, input_size, anchors, strides, num_classes, assign, focal):
         super().__init__(num_classes)
         self.sampler = Sampler(input_size, anchors, strides, assign)
@@ -30,7 +30,7 @@ class loss(base_loss):
                 pred_box = tf.concat([pred_xy, pred_wh], -1)
                 gt_xy = gt_boxes[l][..., :2]
                 gt_wh = gt_boxes[l][..., 2:4]
-                reg_loss += tf.reduce_mean(tf.square(gt_xy - pred_xy)) + \
+                reg_loss += tf.reduce_mean(tf.maximum(tf.minimum(tf.square(gt_xy - pred_xy), 1.), 0.)) + \
                             tf.reduce_mean(tf.square(tf.sqrt(gt_wh) - tf.sqrt(pred_wh)))
                 
                 # objectness

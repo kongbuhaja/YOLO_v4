@@ -1,8 +1,8 @@
 import tensorflow as tf
-from losses.base import base_loss, Focal_loss, Sampler
+from losses.base import Base_loss, Focal_loss, Sampler
 from utils.bbox_utils import *
 
-class loss(base_loss):
+class loss(Base_loss):
     def __init__(self, input_size, anchors, strides, num_classes, assign, focal):
         super().__init__(num_classes)
         self.sampler = Sampler(input_size, anchors, strides, assign)

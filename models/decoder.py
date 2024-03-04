@@ -88,7 +88,7 @@ class Decoder():
     @tf.function
     def v2_decode(self, pred):
         xy = tf.sigmoid(pred[..., :2])
-        wh = tf.exp(pred[..., 2:4])
+        wh = tf.exp(tf.minimum(pred[..., 2:4], 8.0))
         obj = tf.sigmoid(pred[..., 4:5])
         cls = tf.sigmoid(pred[..., 5:])
 
