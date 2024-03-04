@@ -53,7 +53,7 @@ def read_cfg():
     else:
         cfg['eval']['score_th'] = 0.4    
         
-    cfg['log']['dir'] = f"{cfg['log']['dir']}/{cfg['model']['name']}_{cfg['data']['name']}_{datetime.now().strftime('%Y-%m-%d|%H:%M:%S')}"
+    cfg['log']['dir'] = f"{cfg['log']['dir']}/{cfg['model']['name']}[{cfg['data']['name']}]_{datetime.now().strftime('%Y-%m-%d|%H:%M:%S')}"
 
     env_set(cfg)
 
