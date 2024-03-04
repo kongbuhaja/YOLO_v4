@@ -18,7 +18,7 @@ class loss(base_loss):
     def __call__(self, labels, preds):
         reg_loss, obj_loss, cls_loss = 0., 0., 0.
         # sampling
-        indices, gt_box, gt_cls, anchors = self.sampler(labels)
+        indices, gt_boxes, gt_cls, anchors = self.sampler(labels)
         
         # loss
         for l, pred in enumerate(preds):
@@ -31,7 +31,7 @@ class loss(base_loss):
                 pred_xy = positive[..., :2]
                 pred_wh = positive[..., 2:4] * anchors[l]
                 pred_box = tf.concat([pred_xy, pred_wh], -1)
-                iou = bbox_iou(gt_box[l], pred_box, iou_type='ciou')
+                iou = bbox_iou(gt_boxes[l], pred_box, iou_type='ciou')
                 reg_loss += tf.reduce_mean(1.0 - iou)
             
                 # objectness

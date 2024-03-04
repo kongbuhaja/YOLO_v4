@@ -15,7 +15,7 @@ class loss(base_loss):
     def __call__(self, labels, preds):
         reg_loss, obj_loss, cls_loss = 0., 0., 0.
         # sampling
-        indices, gt_box, gt_cls, anchors = self.sampler(labels, bias=0.5)
+        indices, gt_boxes, gt_cls, anchors = self.sampler(labels, bias=0.5)
         
         # loss
         for l, pred in enumerate(preds):
@@ -27,15 +27,14 @@ class loss(base_loss):
                 # regression
                 pred_xy = positive[..., :2]
                 pred_wh = positive[..., 2:4] * anchors[l]
-                gt_xy = gt_box[l][..., :2]
-                gt_wh = gt_box[l][..., 2:4]
+                pred_box = tf.concat([pred_xy, pred_wh], -1)
+                gt_xy = gt_boxes[l][..., :2]
+                gt_wh = gt_boxes[l][..., 2:4]
                 reg_loss += tf.reduce_mean(tf.square(gt_xy - pred_xy)) + \
                             tf.reduce_mean(tf.square(tf.sqrt(gt_wh) - tf.sqrt(pred_wh)))
-                pred_box = tf.concat([pred_xy, pred_wh], -1)
-                reg_loss += tf.reduce_mean(tf.square(gt_box[l] - pred_box))
-            
+                
                 # objectness
-                iou = bbox_iou(gt_box[l], pred_box, iou_type='iou')
+                iou = bbox_iou(gt_boxes[l], pred_box, iou_type='iou')
                 gt_obj = tf.tensor_scatter_nd_update(gt_obj, indices[l], tf.maximum(iou, 0.))
 
                 # classification
