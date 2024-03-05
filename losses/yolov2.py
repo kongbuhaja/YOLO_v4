@@ -30,7 +30,7 @@ class loss(Base_loss):
                 pred_box = tf.concat([pred_xy, pred_wh], -1)
                 gt_xy = gt_boxes[l][..., :2]
                 gt_wh = gt_boxes[l][..., 2:4]
-                reg_loss += tf.reduce_mean(tf.maximum(tf.minimum(tf.square(gt_xy - pred_xy), 1.), 0.)) + \
+                reg_loss += tf.reduce_mean(tf.maximum(tf.minimum(tf.square(gt_xy - pred_xy), 1 - 1e-6), 1e-6)) + \
                             tf.reduce_mean(tf.square(tf.sqrt(gt_wh) - tf.sqrt(pred_wh)))
                 
                 # objectness
