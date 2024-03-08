@@ -1,6 +1,6 @@
 # YOLOv4  
 
-## Modules  
+## Implementation Modules  
 ### BoF for backbone  
 - [ ] CutMix   
 - [ ] Mosaic 
