@@ -29,42 +29,42 @@
 ## Performance  
 ### MS COCO 
 | Model | Test Size | AP | AP50 |  
-| ------------- | ------ | ------ | ------ |
-| VOLOv4_tiny  | - | - | - |
-| VOLOv4  | - | - | - |
-| VOLOv4_csp  | - | - | - |
-| VOLOv4_P5  | - | - | - |
-| VOLOv4_P6  | - | - | - |
-| VOLOv4_P7  | - | - | - |
-| YOLOv3_tiny  | - | - | - |
-| VOLOv3  | - | - | - |
-| VOLOv2_tiny  | - | - | - |
-| VOLOv2  | - | - | - |
+| ------------- | ------ | ------| ------ |
+| **VOLOv4_tiny**  | 416x416 | - | - |
+| **VOLOv4**  | 512x512 | - | - |
+| **VOLOv4_csp**  | 512x512 | - | - |
+| **VOLOv4_P5**  | 896x896 | - | - |
+| **VOLOv4_P6**  | 1280x1280 | - | - |
+| **VOLOv4_P7**  | 1536x1536 | - | - |
+| **YOLOv3_tiny**  | 416x416 | - | - |
+| **VOLOv3**  | 512x512 | - | - |
+| **VOLOv2_tiny**  | 416x416 | - | - |
+| **VOLOv2**  | 416x416 | - | - |
 
 ### VOC Pascal 
 | Model | Test Size | AP | AP50 |  
-| ------------- | ------ | ------| ------|
-| VOLOv4_tiny  | - | - | - |
-| VOLOv4  | - | - | - |
-| VOLOv4_csp  | - | - | - |
-| VOLOv4_P5  | - | - | - |
-| VOLOv4_P6  | - | - | - |
-| VOLOv4_P7  | - | - | - |
-| YOLOv3_tiny  | - | - | - |
-| VOLOv3  | - | - | - |
-| VOLOv2_tiny  | - | - | - |
-| VOLOv2  | - | - | - |
+| ------------- | ------ | ------| ------ |
+| **VOLOv4_tiny**  | 416x416 | - | - |
+| **VOLOv4**  | 512x512 | - | - |
+| **VOLOv4_csp**  | 512x512 | - | - |
+| **VOLOv4_P5**  | 896x896 | - | - |
+| **VOLOv4_P6**  | 1280x1280 | - | - |
+| **VOLOv4_P7**  | 1536x1536 | - | - |
+| **YOLOv3_tiny**  | 416x416 | - | - |
+| **VOLOv3**  | 512x512 | - | - |
+| **VOLOv2_tiny**  | 416x416 | - | - |
+| **VOLOv2**  | 416x416 | - | - |
 
 ### Custom dataset  
 | Model | Test Size | AP | AP50 |  
 | ------------- | ------ | ------ | ------ |
-| VOLOv4_tiny  | - | - | - |
-| VOLOv4  | - | 70.5% | 86.0% |
-| VOLOv4_csp  | - | 70.6% | 84.6% |
-| VOLOv4_P5  | - | - | - |
-| VOLOv4_P6  | - | - | - |
-| VOLOv4_P7  | - | - | - |
-| YOLOv3_tiny  | - | - | - |
-| VOLOv3  | - | - | - |
-| VOLOv2_tiny  | - | - | - |
-| VOLOv2  | - | - | - |
+| **VOLOv4_tiny**  | 416x416 | - | - |
+| **VOLOv4**  | 512x512 | 70.5% | 86.0% |
+| **VOLOv4_csp**  | 512x512 | 70.6% | 84.6% |
+| **VOLOv4_P5**  | 896x896 | - | - |
+| **VOLOv4_P6**  | 1280x1280 | - | - |
+| **VOLOv4_P7**  | 1536x1536 | - | - |
+| **YOLOv3_tiny**  | 416x416 | - | - |
+| **VOLOv3**  | 512x512 | - | - |
+| **VOLOv2_tiny**  | 416x416 | - | - |
+| **VOLOv2**  | 416x416 | - | - |
