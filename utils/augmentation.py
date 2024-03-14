@@ -1,51 +1,11 @@
 import tensorflow as tf
 import numpy as np
 
-@tf.function
-def resize_padding(image, labels, out_size, random=False, mode='CONSTANT', constant_values=0, seed=42):
-    size = tf.cast(tf.shape(image)[-2:-4:-1], tf.float32)
-    ratio = out_size/tf.reduce_max(size)
-    new_size = tf.cast(ratio * size, tf.int32)
-    pad_size = out_size - tf.cast(new_size, tf.float32)
-
-    pad_ratio = tf.random.uniform((), 0, 1, seed=seed) if random else 0.5
-    pad_LT = tf.cast(pad_size*pad_ratio, tf.int32)
-    pad_RB = tf.cast(pad_size, tf.int32) - pad_LT
-    pad_left, pad_top = pad_LT[0], pad_LT[1]
-    pad_right, pad_bottom = pad_RB[0], pad_RB[1]
-    padding = tf.reshape(tf.stack([pad_top, pad_bottom, pad_left, pad_right, 0, 0]), [3, 2])
-
-    resized_image = tf.image.resize(image, new_size[::-1])
-    padded_image = tf.pad(resized_image, padding, mode=mode, constant_values=constant_values)
-    resized_labels = tf.round(tf.concat([labels[..., 0:1] * ratio[0] + float(pad_left),
-                                         labels[..., 1:2] * ratio[1] + float(pad_top),
-                                         labels[..., 2:3] * ratio[0] + float(pad_left),
-                                         labels[..., 3:4] * ratio[1] + float(pad_top),
-                                         labels[..., 4:]], -1))
-    return padded_image, resized_labels
-
-def eval_resize_padding(image, out_size, mode='CONSTANT', constant_values=0):
-    size = tf.cast(tf.shape(image)[-2:-4:-1], tf.float32)
-    ratio = out_size/tf.reduce_max(size)
-    new_size = tf.cast(ratio * size, tf.int32)
-    pad_size = out_size - tf.cast(new_size, tf.float32)
-
-    pad_LT = tf.cast(pad_size*0.5, tf.int32)
-    pad_RB = tf.cast(pad_size, tf.int32) - pad_LT
-    pad_left, pad_top = pad_LT[0], pad_LT[1]
-    pad_right, pad_bottom = pad_RB[0], pad_RB[1]
-    padding = tf.reshape(tf.stack([pad_top, pad_bottom, pad_left, pad_right, 0,0]), [3,2])
-
-    resized_image = tf.image.resize(image, new_size[::-1])
-    padded_image = tf.pad(resized_image, padding, mode=mode, constant_values=constant_values)
-    
-    return padded_image, tf.cast(pad_LT, tf.float32)
-
-@tf.function
+# @tf.function
 def random_augmentation(image, labels, image_size, seed=42):
     bboxes = labels[..., :4]
-    
-    geometric_methods = [[random_scale, 0.5], [random_rotate90, 0.25], [random_flip_horizontally, 0.5], [random_crop, 0.5]]
+
+    geometric_methods = [[random_scale, 1.0], [random_rotate90, 0.75], [random_flip_horizontally, 0.5], [random_crop, 1.0]]
     kernel_methods = [[random_gaussian_blur, 0.5]]
     color_methods = [[random_brigthness, 0.5], [random_hue, 0.5], [random_saturation, 0.5], [random_contrast, 0.5]]
 
@@ -55,13 +15,67 @@ def random_augmentation(image, labels, image_size, seed=42):
 
     return minmax(image, labels)
 
-@tf.function
+# @tf.function
 def randomly_apply(method, image, bboxes, image_size, prob_threshold=0.5, seed=42):
-    if tf.random.uniform((), seed=seed) > prob_threshold:
+    if tf.random.uniform((), seed=seed) < prob_threshold:
         return method(image, bboxes, image_size, seed=seed)
     return image, bboxes
 
-@tf.function
+# @tf.function
+def resize_padding(image, labels, out_size, random=False, mode='CONSTANT', constant_values=0, seed=42):
+    size = tf.cast(tf.shape(image)[-2:-4:-1], tf.float32)
+
+    large = tf.reduce_max(size/out_size)
+    ratio = tf.reduce_min([large, 1/large])
+    new_size = tf.cast(ratio * size, tf.int32)
+    pad_size = out_size - tf.cast(new_size, tf.float32)
+
+    pad_ratio = tf.random.uniform((), 0, 1, seed=seed) if random else 0.5
+    pad_LT = tf.cast(pad_size*pad_ratio, tf.int32)
+    pad_RB = tf.cast(pad_size, tf.int32) - pad_LT
+    pad_left, pad_top = tf.unstack(pad_LT)
+    pad_right, pad_bottom = tf.unstack(pad_RB)
+    padding = tf.reshape(tf.stack([pad_top, pad_bottom, pad_left, pad_right, 0, 0]), [3, 2])
+
+    resized_image = tf.image.resize(image, new_size[::-1])
+    padded_image = tf.pad(resized_image, padding, mode=mode, constant_values=constant_values)
+    resized_labels = tf.round(tf.concat([labels[..., 0:1] * ratio + float(pad_left),
+                                         labels[..., 1:2] * ratio + float(pad_top),
+                                         labels[..., 2:3] * ratio + float(pad_left),
+                                         labels[..., 3:4] * ratio + float(pad_top),
+                                         labels[..., 4:]], -1))
+    return padded_image, resized_labels
+
+# @tf.function
+def resize(image, labels, out_size,):
+    size = tf.cast(tf.shape(image)[-2:-4:-1], tf.float32)
+    ratio = out_size/size
+    resized_image = tf.image.resize(image, tf.cast(out_size, tf.int32)[::-1])
+    resized_labels = tf.round(labels * tf.concat([ratio, ratio, tf.constant([1.])], 0))
+    return resized_image, resized_labels
+
+
+def eval_resize_padding(image, out_size, mode='CONSTANT', constant_values=0):
+    size = tf.cast(tf.shape(image)[-2:-4:-1], tf.float32)
+    large = max(size/out_size)
+    ratio = min(large, 1/large)
+    new_size = tf.cast(ratio * size, tf.int32)
+    pad_size = out_size - tf.cast(new_size, tf.float32)
+
+    pad_ratio = 0.5
+    pad_LT = tf.cast(pad_size*pad_ratio, tf.int32)
+    pad_RB = tf.cast(pad_size, tf.int32) - pad_LT
+    pad_left, pad_top = tf.unstack(pad_LT)
+    pad_right, pad_bottom = tf.unstack(pad_RB)
+    padding = tf.reshape(tf.stack([pad_top, pad_bottom, pad_left, pad_right, 0,0]), [3,2])
+
+    resized_image = tf.image.resize(image, new_size[::-1])
+    padded_image = tf.pad(resized_image, padding, mode=mode, constant_values=constant_values)
+    
+    return padded_image, tf.cast(pad_LT, tf.float32)
+
+
+# @tf.function
 def random_scale(image, bboxes, image_size, lower=0.7, upper=1.0, seed=42):
     size = tf.cast(tf.shape(image)[-2:-4:-1], tf.float32)
     scaled_image_size = tf.random.uniform((2, ), lower, upper, seed=seed) * image_size
@@ -72,14 +86,12 @@ def random_scale(image, bboxes, image_size, lower=0.7, upper=1.0, seed=42):
     
     return scaled_image, scaled_bboxes
 
-@tf.function
+# @tf.function
 def random_crop(image, bboxes, image_size, seed=42):
     bbox_LT = tf.reduce_min(bboxes[..., :2], axis=0)
     bbox_RB = tf.reduce_max(bboxes[..., 2:], axis=0)
     
-    if tf.reduce_any(bbox_LT >= bbox_RB):
-        return image, bboxes
-    elif tf.reduce_sum(bboxes) == 0:
+    if tf.reduce_sum(bboxes) == 0:
         return image, bboxes
     else:
         size = tf.cast(tf.shape(image)[-2:-4:-1], tf.float32)
@@ -91,7 +103,7 @@ def random_crop(image, bboxes, image_size, seed=42):
 
         return crop_image, bboxes
 
-@tf.function
+# @tf.function
 def random_flip_horizontally(image, bboxes, image_size, seed=42):
     if tf.reduce_sum(bboxes) != 0:
         size = tf.cast(tf.shape(image)[-2:-4:-1], tf.float32)
@@ -102,7 +114,7 @@ def random_flip_horizontally(image, bboxes, image_size, seed=42):
     
     return tf.image.flip_left_right(image), bboxes
 
-@tf.function
+# @tf.function
 def random_rotate90(image, bboxes, image_size, seed=42):
     def rotate90_bboxes(bboxes, width, height):
         if tf.reduce_sum(bboxes) != 0:
@@ -120,7 +132,7 @@ def random_rotate90(image, bboxes, image_size, seed=42):
         bboxes, width, height = rotate90_bboxes(bboxes, width, height)
     return tf.image.rot90(image, k), bboxes
 
-@tf.function
+# @tf.function
 def random_gaussian_blur(image, bboxes, image_size, ksize=3, sigma=1, seed=42):
     def gaussian_kernel(size=3, sigma=1):
         x_range = tf.range(-(size-1)//2, (size-1)//2 + 1, 1)
@@ -139,22 +151,22 @@ def random_gaussian_blur(image, bboxes, image_size, ksize=3, sigma=1, seed=42):
     blur_image = tf.concat([r_blur, g_blur, b_blur], -1)[0]
     return blur_image, bboxes
 
-@tf.function
+# @tf.function
 def random_saturation(image, bboxes, image_size, lower=0.5, upper=1.5, seed=42):
     return tf.image.random_saturation(image, lower, upper, seed=seed), bboxes
 
-@tf.function
+# @tf.function
 def random_hue(image, bboxes, image_size, max_delta=0.08, seed=42):
     return tf.image.random_hue(image, max_delta, seed=seed), bboxes
 
-@tf.function
+# @tf.function
 def random_contrast(image, bboxes, image_size, lower=0.5, upper=1.5, seed=42):
     return tf.image.random_contrast(image, lower, upper, seed=seed), bboxes
 
-@tf.function
+# @tf.function
 def random_brigthness(image, bboxes, image_size, max_delta=0.12, seed=42):
     return tf.image.random_brightness(image, max_delta, seed=seed), bboxes
 
-@tf.function
+# @tf.function
 def minmax(image, labels):
     return tf.maximum(tf.minimum(image, 1.), 0), labels

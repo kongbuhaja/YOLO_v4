@@ -11,7 +11,6 @@ from utils.bbox_utils import unresize_unpad_labels
 
 def main():
     cfg = read_cfg()
-    cfg['batch_size'] = 1
     cfg['model']['load'] = True
 
     draw = cfg['eval']['draw']
@@ -21,8 +20,8 @@ def main():
     eval = Eval(cfg)
     painter = Painter(cfg)
     
-    test_dataset = dataloader('val', shuffle=False, augmentation=False, resize=False)
-    test_dataset_legnth = dataloader.length['val'] // dataloader.batch_size
+    valid_dataset = dataloader('val')
+    valid_dataset_legnth = dataloader.length['val']
     out_size = tf.cast(model.input_size, tf.float32)
 
     def inference_step(image):
@@ -43,7 +42,7 @@ def main():
             image = (image*255).numpy().astype(np.uint8)
             painter.draw_image(image, labels, preds)
     
-    eval_tqdm = tqdm.tqdm(test_dataset, total=test_dataset_legnth, ncols=160, desc=f'Evaluate', ascii=' =', colour='red')
+    eval_tqdm = tqdm.tqdm(valid_dataset, total=valid_dataset_legnth, ncols=160, desc=f'Evaluate', ascii=' =', colour='red')
     for image, labels in eval_tqdm:
         image, labels = image[0], labels.numpy()
         preds = inference_step(image).numpy()

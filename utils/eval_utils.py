@@ -6,7 +6,7 @@ class Eval:
         self.labels=cfg['data']['labels']['name']
         self.eval_per_epoch = cfg['train']['eval_per_epoch']
         self.result_dir = cfg['eval']['dir']
-        self.warmup_epochs = cfg['train']['warmup_epochs']
+        self.warmup_epochs = cfg['train']['lr_scheduler']['warmup_epochs']
         self.eps = eps
         self.num_of_ious = 10
         self.iou_thresholds = 0.5 + (0.5) / self.num_of_ious * np.arange(self.num_of_ious)

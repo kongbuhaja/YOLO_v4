@@ -35,6 +35,9 @@ def read_cfg():
     with open(f"yaml/data/{cfg['data']}.yaml") as f:
         cfg.update(yaml.load(f, Loader=yaml.FullLoader))
 
+    with open('yaml/aug.yaml') as f:
+        cfg.update(yaml.load(f, Loader=yaml.FullLoader))
+
     cfg['model']['input_size'] = np.array(cfg['model']['input_size'])
     cfg['model']['strides'] = np.array(cfg['model']['strides'])
     cfg['model']['anchors'] = np.array(cfg['data']['anchors'][cfg['model']['anchors']]) * cfg['model']['input_size']
@@ -56,6 +59,8 @@ def read_cfg():
     cfg['log']['dir'] = f"{cfg['log']['dir']}/{cfg['model']['name']}[{cfg['data']['name']}]_{datetime.now().strftime('%Y-%m-%d|%H:%M:%S')}"
 
     env_set(cfg)
+    cfg['gpus'] = len(cfg['gpus'].split(','))
+    cfg['batch_size'] *= cfg['aug']['mosaic'] * cfg['gpus']  
 
     return cfg
 

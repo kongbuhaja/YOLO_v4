@@ -5,47 +5,41 @@ from utils.lr_shcedulers import LR_scheduler
 from utils.data_utils import DataLoader
 from utils.eval_utils import Eval
 from utils.io_utils import read_cfg, Logger
+from utils.optimizer import Optimizer
+
 
 def main():
     cfg = read_cfg()
-    
+
+    gpus = cfg['gpus']
     epochs = cfg['train']['epochs']
-    warmup_epochs = cfg['train']['warmup_epochs']
     train_checkpoint = cfg['model']['train_checkpoint']
     loss_checkpoint = cfg['model']['loss_checkpoint']
     map_checkpoint = cfg['model']['map_checkpoint']
-    gpus = len(cfg['gpus'].split(','))
-    cfg['batch_size'] *= gpus  
-
+    
     strategy = tf.distribute.MirroredStrategy()
 
     with strategy.scope():
         model, start_epoch, max_mAP50, max_mAP, max_loss = load_model(cfg)
         dataloader = DataLoader(cfg)
 
-        train_dataset = strategy.experimental_distribute_dataset(dataloader('train', augmentation=True))
+        train_dataset = strategy.experimental_distribute_dataset(dataloader('train', cfg['batch_size'], aug=cfg['aug']))
         valid_dataset = strategy.experimental_distribute_dataset(dataloader('val'))
     
     eval = Eval(cfg)
     logger = Logger(cfg)
 
-    train_dataset_length = dataloader.length['train'] // dataloader.batch_size
-    valid_dataset_length = dataloader.length['val'] //dataloader.batch_size
+    train_dataset_length = dataloader.length['train'] // cfg['batch_size']
+    valid_dataset_length = dataloader.length['val'] 
 
     train_best_loss = valid_best_loss = max_loss
     
     global_step = (start_epoch-1) * train_dataset_length + 1
-    warmup_step = 0
-    warmup_max_step = train_dataset_length * warmup_epochs
-    max_step = epochs * train_dataset_length
 
-    lr_scheduler = LR_scheduler(train_dataset_length, 
-                                max_step, 
-                                warmup_max_step, 
-                                cfg['train']['lr_scheduler'], 
-                                cfg['train']['lr'])
-    optimizer = tf.keras.optimizers.Adam(decay=0.005)
-    
+    optimizer = Optimizer(cfg['train']['optimizer'])
+    lr_scheduler = LR_scheduler(cfg['train']['lr_scheduler'],
+                                epochs,
+                                train_dataset_length)
     
 
     with strategy.scope():
@@ -55,7 +49,7 @@ def main():
                 preds = model(batch_images, True)
                 train_loss = model.loss(batch_grids, preds)
                 gradients = train_tape.gradient(train_loss[0], model.trainable_variables)
-                optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+                optimizer(zip(gradients, model.trainable_variables))
             
             return train_loss
         
@@ -99,7 +93,7 @@ def main():
             
         train_tqdm = tqdm.tqdm(train_dataset, total=train_dataset_length, ncols=160, desc=f'Train epoch {epoch}/{epochs}', ascii=' =', colour='red')
         for per_batch_images, per_batch_labels in train_tqdm:
-            optimizer.lr.assign(lr_scheduler(global_step, warmup_step))
+            optimizer.assign_lr(lr_scheduler(global_step))
 
             total_loss, reg_loss, obj_loss, cls_loss = distributed_train_step(per_batch_images, per_batch_labels)
             
@@ -110,15 +104,14 @@ def main():
 
             global_step += 1
             train_iter += 1
-            warmup_step += 1
             
             train_loss = [train_total_loss/train_iter,
                           train_reg_loss/train_iter, 
                           train_obj_loss/train_iter,
                           train_cls_loss/train_iter, ]
 
-            logger.write_train_summary(global_step, optimizer.lr.numpy(), train_loss)
-            tqdm_text = f'lr={optimizer.lr.numpy():.6f}, ' +\
+            logger.write_train_summary(global_step, optimizer.lr, train_loss)
+            tqdm_text = f'lr={optimizer.lr:.6f}, ' +\
                         f'total_loss={train_loss[0].numpy():.3f}, ' +\
                         f'reg_loss={train_loss[1].numpy():.3f}, ' +\
                         f'obj_loss={train_loss[2].numpy():.3f}, ' +\

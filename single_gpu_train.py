@@ -5,12 +5,12 @@ from utils.lr_shcedulers import LR_scheduler
 from utils.data_utils import DataLoader
 from utils.eval_utils import Eval
 from utils.io_utils import read_cfg, Logger
+from utils.optimizer import Optimizer
 
 def main():
     cfg = read_cfg()
 
     epochs = cfg['train']['epochs']
-    warmup_epochs = cfg['train']['warmup_epochs']
     train_checkpoint = cfg['model']['train_checkpoint']
     loss_checkpoint = cfg['model']['loss_checkpoint']
     map_checkpoint = cfg['model']['map_checkpoint']
@@ -18,28 +18,25 @@ def main():
     model, start_epoch, max_mAP50, max_mAP, max_loss = load_model(cfg)
     dataloader = DataLoader(cfg)
     
-    train_dataset = dataloader('train', augmentation=True)
+    train_dataset = dataloader('train', cfg['batch_size'], aug=cfg['aug'])
     valid_dataset = dataloader('val')
 
     eval = Eval(cfg)
     logger = Logger(cfg)
 
-    train_dataset_length = dataloader.length['train'] // dataloader.batch_size
-    valid_dataset_length = dataloader.length['val'] // dataloader.batch_size
+    train_dataset_length = dataloader.length['train'] // cfg['batch_size']
+    valid_dataset_length = dataloader.length['val'] 
 
     train_best_loss = valid_best_loss = max_loss
     
     global_step = (start_epoch-1) * train_dataset_length + 1
-    warmup_step = 0
-    warmup_max_step = train_dataset_length * warmup_epochs
-    max_step = epochs * train_dataset_length
 
-    lr_scheduler = LR_scheduler(train_dataset_length, 
-                                max_step, 
-                                warmup_max_step, 
-                                cfg['train']['lr_scheduler'], 
-                                cfg['train']['lr'])
-    optimizer = tf.keras.optimizers.Adam(decay=0.005)
+    # optimizer = Optimizer(cfg['train']['optimizer'])
+    # optimizer = tf.keras.optimizers.SGD(momentum=0.937, decay=0.005)
+    optimizer = tf.keras.optimizers.Adam(beta_1=0.9, decay=0.005)
+    lr_scheduler = LR_scheduler(cfg['train']['lr_scheduler'],
+                                epochs,
+                                train_dataset_length)
     
     
     @tf.function(experimental_relax_shapes=True)
@@ -49,6 +46,7 @@ def main():
             train_loss = model.loss(batch_labels, preds)
             gradients = train_tape.gradient(train_loss[0], model.trainable_variables)
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+            # optimizer(zip(gradients, model.trainable_variables))
         
         return train_loss
     
@@ -72,7 +70,8 @@ def main():
             
         train_tqdm = tqdm.tqdm(train_dataset, total=train_dataset_length, ncols=160, desc=f'Train epoch {epoch}/{epochs}', ascii=' =', colour='red')
         for batch_images, batch_labels in train_tqdm:
-            optimizer.lr.assign(lr_scheduler(global_step, warmup_step))
+            # optimizer.assign_lr(lr_scheduler(global_step))
+            optimizer.lr.assign(lr_scheduler(global_step))
 
             total_loss, reg_loss, obj_loss, cls_loss = train_step(batch_images, batch_labels)
 
@@ -83,14 +82,16 @@ def main():
 
             global_step += 1
             train_iter += 1
-            warmup_step += 1
             
             train_loss = [train_total_loss/train_iter,
                           train_reg_loss/train_iter, 
                           train_obj_loss/train_iter,
                           train_cls_loss/train_iter, ]
             
+            # logger.write_train_summary(global_step, optimizer.lr, train_loss)
             logger.write_train_summary(global_step, optimizer.lr.numpy(), train_loss)
+            
+            # tqdm_text = f'lr={optimizer.lr:.6f}, ' +\
             tqdm_text = f'lr={optimizer.lr.numpy():.6f}, ' +\
                         f'total_loss={train_loss[0].numpy():.3f}, ' +\
                         f'reg_loss={train_loss[1].numpy():.3f}, ' +\
@@ -125,8 +126,7 @@ def main():
                               valid_obj_loss / valid_iter, 
                               valid_cls_loss / valid_iter]
                 
-                tqdm_text = f'mAP50={mAP50:.4f}, ' +\
-                            f'mAP={mAP:.4f}, ' +\
+                tqdm_text = f'mAP={mAP:.4f}, ' +\
                             f'total_loss={valid_loss[0].numpy():.3f}, ' +\
                             f'reg_loss={valid_loss[1].numpy():.3f}, ' +\
                             f'obj_loss={valid_loss[2].numpy():.3f}, ' +\
