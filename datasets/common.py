@@ -4,10 +4,10 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 
 class Base_Dataset():
-    def __init__(self, split, dtype, anchors, labels):
+    def __init__(self, split, dtype, labels):
         self.split = split
         self.dtype = dtype
-        self.anchors = np.array(anchors)
+        # self.anchors = np.array(anchors)
         self.labels = labels
         self.data = []
         self.length = 0

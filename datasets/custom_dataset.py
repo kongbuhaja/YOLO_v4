@@ -4,8 +4,8 @@ import xml.etree.ElementTree as ET
 from datasets.common import Base_Dataset
 
 class Dataset(Base_Dataset):
-    def __init__(self, split, anchors, labels):
-        super().__init__(split, 'custom', anchors, labels)
+    def __init__(self, split, labels):
+        super().__init__(split, 'custom', labels)
 
     def download_dataset(self):
         path = 'https://drive.google.com/uc?id='

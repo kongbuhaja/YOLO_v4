@@ -6,15 +6,14 @@ import tensorflow_datasets as tfds
 
 
 class Dataset(Base_Dataset):
-    def __init__(self, split, anchors, labels):
-        super().__init__(split, 'coco', anchors, labels)
+    def __init__(self, split, labels):
+        super().__init__(split, 'coco', labels)
 
     def download_dataset(self):
         out_dir = './data/coco'
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
             try:
-                a=b
                 tfds.load('coco/2017', data_dir=out_dir)
                 if os.path.exists(f'{out_dir}/coco'):
                     shutil.rmtree(f'{out_dir}/coco')

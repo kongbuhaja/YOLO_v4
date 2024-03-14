@@ -5,8 +5,8 @@ from datasets.common import Base_Dataset
 import tensorflow_datasets as tfds
 
 class Dataset(Base_Dataset):
-    def __init__(self, split, anchors, labels):
-        super().__init__(split, 'voc', anchors, labels)
+    def __init__(self, split, labels):
+        super().__init__(split, 'voc', labels)
 
     def download_dataset(self):
         out_dir = './data/voc'
