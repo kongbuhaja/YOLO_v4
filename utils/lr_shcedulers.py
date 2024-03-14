@@ -46,19 +46,21 @@ class linear_lr_scheduler():
     
 class cosine_annealing_lr_scheduler():
     def __init__(self, init_lr, t_step=10, t_mult=2, min_lr=1e-6):
-        self.init_lr = init_lr
+        self.max_lr = init_lr
         self.t_step = t_step
         self.t_max = t_step
         self.t_mult = t_mult
+        self.csum = 0
         self.min_lr = min_lr
 
     def __call__(self, step):
-        t_cur = step - self.t_max
+        t_cur = step - self.csum
         while(t_cur >= self.t_max):
             t_cur -= self.t_max
+            self.csum += self.t_max
             self.t_max *= self.t_mult
             
-        lr = self.min_lr + 0.5 * (self.init_lr - self.min_lr) * (1 + math.cos(t_cur / self.t_max * math.pi))
+        lr = self.min_lr + 0.5 * (self.max_lr - self.min_lr) * (1 + math.cos(t_cur / self.t_max * math.pi))
         return lr
     
 class custom_lr_scheduler():
