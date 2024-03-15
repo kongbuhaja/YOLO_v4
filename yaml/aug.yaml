@@ -4,7 +4,7 @@
     random_scale: 1.0
     random_rotate90: 0.75
     random_flip_horizontal: 0.5
-    random_crop: 1.0
+    random_crop: 0.8
 
     random_gaussian_blur: 0.3
     

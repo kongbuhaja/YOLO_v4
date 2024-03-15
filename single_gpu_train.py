@@ -1,11 +1,11 @@
 import tqdm
 import tensorflow as tf
 from models.model import *
-from utils.lr_shcedulers import LR_scheduler
+from utils.lr_utils import LR_scheduler
 from utils.data_utils import DataLoader
 from utils.eval_utils import Eval
 from utils.io_utils import read_cfg, Logger
-from utils.optimizer import Optimizer
+from utils.opt_utils import Optimizer
 
 def main():
     cfg = read_cfg()
@@ -33,7 +33,7 @@ def main():
 
     # optimizer = Optimizer(cfg['train']['optimizer'])
     # optimizer = tf.keras.optimizers.SGD(momentum=0.937, decay=0.005)
-    optimizer = tf.keras.optimizers.Adam(beta_1=0.9, decay=0.005)
+    optimizer = tf.keras.optimizers.Adam(beta_1=0.937, decay=0.005)
     lr_scheduler = LR_scheduler(cfg['train']['lr_scheduler'],
                                 epochs,
                                 train_dataset_length)

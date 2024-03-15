@@ -3,7 +3,7 @@ import tensorflow as tf
 import numpy as np
 from models.model import load_model
 from utils.io_utils import read_cfg
-from utils.augmentation import eval_resize_padding
+from utils.aug_utils import resize_padding_without_labels
 from utils.bbox_utils import unresize_unpad_labels
 from utils.draw_utils import Player
 
@@ -21,7 +21,7 @@ def main():
 
     @tf.function
     def inference_step(frame):
-        resized_frame, _, pad = eval_resize_padding(frame, out_size)
+        resized_frame, _, pad = resize_padding_without_labels(frame, out_size)
         preds = model(resized_frame[None])
         decoded_preds = model.output(preds)
         NMS_preds = model.NMS(decoded_preds[0])

@@ -10,7 +10,7 @@ data: custom
 
 train:
   epochs: 1000
-  # cosine_annealing, poly, step, custom
+  # cosine_annealing_warm_restart, cosine_annealing, poly, step, custom
   lr_scheduler:
     name: cosine_annealing
     lr: 0.01

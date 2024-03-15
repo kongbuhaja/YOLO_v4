@@ -6,7 +6,7 @@ from utils.data_utils import DataLoader
 from utils.eval_utils import Eval
 from utils.io_utils import read_cfg
 from utils.draw_utils import Painter
-from utils.augmentation import eval_resize_padding
+from utils.aug_utils import resize_padding_without_labels
 from utils.bbox_utils import unresize_unpad_labels
 
 def main():
@@ -25,7 +25,7 @@ def main():
     out_size = tf.cast(model.input_size, tf.float32)
 
     def inference_step(image):
-        processd_image, pad = eval_resize_padding(image, out_size)
+        processd_image, pad = resize_padding_without_labels(image, out_size)
         ratio = out_size / tf.cast(tf.reduce_max(tf.shape(image)[:2]), tf.float32)
         input = processd_image[None]
         preds = model(input)
