@@ -3,7 +3,7 @@ import numpy as np
 
 # @tf.function
 def augmentation(image, labels, seed=42):
-    geometric_methods = [[crop, 1.0], [rotate90, 0.75], [flip_horizontally, 0.5]]
+    geometric_methods = [[crop, 0.6], [rotate90, 0.75], [flip_horizontally, 0.5]]
     kernel_methods = [[gaussian_blur, 0.5]]
     color_methods = [[brigthness, 0.5], [hue, 0.5], [saturation, 0.5], [contrast, 0.5]]
 
