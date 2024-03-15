@@ -1,11 +1,11 @@
 import tqdm
 import tensorflow as tf
 from models.model import *
-from utils.lr_utils import LR_scheduler
+from utils.lr_shcedulers import LR_scheduler
 from utils.data_utils import DataLoader
 from utils.eval_utils import Eval
 from utils.io_utils import read_cfg, Logger
-from utils.opt_utils import Optimizer
+from utils.optimizer import Optimizer
 
 def main():
     cfg = read_cfg()
@@ -31,9 +31,7 @@ def main():
     
     global_step = (start_epoch-1) * train_dataset_length + 1
 
-    # optimizer = Optimizer(cfg['train']['optimizer'])
-    # optimizer = tf.keras.optimizers.SGD(momentum=0.937, decay=0.005)
-    optimizer = tf.keras.optimizers.Adam(beta_1=0.937, decay=0.005)
+    optimizer = Optimizer(cfg['train']['optimizer'])
     lr_scheduler = LR_scheduler(cfg['train']['lr_scheduler'],
                                 epochs,
                                 train_dataset_length)
@@ -45,8 +43,7 @@ def main():
             preds = model(batch_images, True)
             train_loss = model.loss(batch_labels, preds)
             gradients = train_tape.gradient(train_loss[0], model.trainable_variables)
-            optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-            # optimizer(zip(gradients, model.trainable_variables))
+            optimizer(zip(gradients, model.trainable_variables))
         
         return train_loss
     
@@ -70,8 +67,7 @@ def main():
             
         train_tqdm = tqdm.tqdm(train_dataset, total=train_dataset_length, ncols=160, desc=f'Train epoch {epoch}/{epochs}', ascii=' =', colour='red')
         for batch_images, batch_labels in train_tqdm:
-            # optimizer.assign_lr(lr_scheduler(global_step))
-            optimizer.lr.assign(lr_scheduler(global_step))
+            optimizer.assign_lr(lr_scheduler(global_step))
 
             total_loss, reg_loss, obj_loss, cls_loss = train_step(batch_images, batch_labels)
 
@@ -88,11 +84,9 @@ def main():
                           train_obj_loss/train_iter,
                           train_cls_loss/train_iter, ]
             
-            # logger.write_train_summary(global_step, optimizer.lr, train_loss)
-            logger.write_train_summary(global_step, optimizer.lr.numpy(), train_loss)
+            logger.write_train_summary(global_step, optimizer.lr, train_loss)
             
-            # tqdm_text = f'lr={optimizer.lr:.6f}, ' +\
-            tqdm_text = f'lr={optimizer.lr.numpy():.6f}, ' +\
+            tqdm_text = f'lr={optimizer.lr:.6f}, ' +\
                         f'total_loss={train_loss[0].numpy():.3f}, ' +\
                         f'reg_loss={train_loss[1].numpy():.3f}, ' +\
                         f'obj_loss={train_loss[2].numpy():.3f}, ' +\
