@@ -1,11 +1,11 @@
 import tqdm
 import tensorflow as tf
 from models.model import *
-from utils.lr_shcedulers import LR_scheduler
+from utils.lr_utils import LR_scheduler
 from utils.data_utils import DataLoader
 from utils.eval_utils import Eval
 from utils.io_utils import read_cfg, Logger
-from utils.optimizer import Optimizer
+from utils.opt_utils import Optimizer
 
 def main():
     cfg = read_cfg()
