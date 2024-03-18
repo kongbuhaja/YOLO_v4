@@ -6,11 +6,11 @@ model:
   checkpoint: map_checkpoint
 
 # custom, voc, coco
-data: custom
+data: coco
 
 train:
   epochs: 1000
-  mosaic_epochs: 2
+  mosaic_epochs: 970
   # cosine_annealing_warm_restart, cosine_annealing, poly, step, custom
   lr_scheduler:
     name: cosine_annealing
@@ -51,6 +51,6 @@ eval:
 log:
   dir: logs
 
-batch_size: 12
+batch_size: 14
 seed: 42
 gpus: 0

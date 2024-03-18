@@ -1,11 +1,10 @@
   aug:
-    mosaic: 4
+    mosaic: 0
 
-    scale: 1.0
+    crop: 0.6
     rotate90: 0.75
     flip_horizontally: 0.5
-    crop: 0.6
-
+    
     gaussian_blur: 0.3
     
     brightness: 0.5

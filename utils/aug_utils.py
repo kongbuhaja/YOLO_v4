@@ -64,24 +64,24 @@ def flip_horizontally(image, labels, seed=42):
 # 한번에 돌리는 걸로 변경하기 if문 추가
 def rotate90(image, labels, seed=42):
     def rotate90_bboxes(labels, width, height):
-        if tf.reduce_sum(labels) != 0:
-            labels = tf.stack([labels[..., 1],
-                                width - labels[..., 2] -1,
-                                labels[..., 3],
-                                width - labels[..., 0] -1,
-                                labels[..., 4]], -1)
+        labels = tf.stack([labels[..., 1],
+                            width - labels[..., 2] -1,
+                            labels[..., 3],
+                            width - labels[..., 0] -1,
+                            labels[..., 4]], -1)
         return labels, height, width
     
     times = tf.random.uniform((), minval=1, maxval=4, dtype=tf.int32, seed=seed)
-    size = tf.cast(tf.shape(image)[-2:-4:-1], tf.float32)
-    width, height = size[0], size[1]
+    width, height = tf.unstack(tf.cast(tf.shape(image)[-2:-4:-1], tf.float32))
     for time in tf.range(times):
-        size = tf.shape(image)[-2:-4:-1]
         labels, width, height = rotate90_bboxes(labels, width, height)
     return tf.image.rot90(image, times), labels
 
 # @tf.function
-def gaussian_blur(image, labels, ksize=3, sigma=1, seed=42):
+def gaussian_blur(image, labels, sigma=1, seed=42):
+    idx = tf.random.uniform((), minval=0, maxval=6, dtype=tf.int32, seed=seed)
+    ksize = tf.constant([3, 5, 7, 9, 11, 13])[idx]
+
     def gaussian_kernel(size=3, sigma=1):
         x_range = tf.range(-(size-1)//2, (size-1)//2 + 1, 1)
         y_range = tf.range((size-1)//2, -(size-1)//2 - 1, -1)

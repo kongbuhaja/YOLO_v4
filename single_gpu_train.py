@@ -61,8 +61,8 @@ def main():
 
     for epoch in range(start_epoch, epochs + 1):
         if cfg['aug']['mosaic'] and epoch==cfg['train']['mosaic_epochs']:
-            cfg['batch_size'] //= cfg['aug']['mosaic']
-            cfg['aug']['mosaic']=0
+            cfg['batch_size'] //= 4
+            cfg['aug']['mosaic'] = 0
             train_dataset = dataloader('train', cfg['batch_size'], aug=cfg['aug'])
             train_dataset_length = dataloader.length['train'] // cfg['batch_size']
 
