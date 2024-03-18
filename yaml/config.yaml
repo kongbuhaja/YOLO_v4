@@ -6,7 +6,7 @@ model:
   checkpoint: map_checkpoint
 
 # custom, voc, coco
-data: coco
+data: custom
 
 train:
   epochs: 1000
@@ -18,7 +18,7 @@ train:
     power: 0.9
     steps: [100, 200]
     decays: [0.5, 0.5]
-    warmup_epochs: 1
+    warmup_epochs: 5
   optimizer:
     name: Adam
     momentum: 0.9

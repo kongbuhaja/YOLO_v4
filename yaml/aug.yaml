@@ -1,5 +1,5 @@
   aug:
-    mosaic: 0
+    mosaic: 1
 
     crop: 0.6
     rotate90: 0.75
