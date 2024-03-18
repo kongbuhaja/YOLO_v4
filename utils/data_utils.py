@@ -27,17 +27,17 @@ class DataLoader():
         dataset = self.Dataset(split, self.labels)
 
         data, self.length[split] = dataset.load()
+        data = data.shuffle(buffer_size = self.length[split], seed=self.seed, reshuffle_each_iteration=True) if aug else data
         data = data.cache() if cache else data
+
         data = data.map(self.read_image, num_parallel_calls=-1)
         data = data.map(self.normalization, num_parallel_calls=-1) 
-        
-        data = data.shuffle(buffer_size = self.length[split], seed=self.seed, reshuffle_each_iteration=True) if aug else data
-
         data = data.map(lambda image, labels: augmentation(image, labels, seed=self.seed), num_parallel_calls=-1) if aug else data
 
-        dataset = self.method(split, data, batch_size, aug)
-        
-        return dataset
+        data = self.method(split, data, batch_size, aug)
+        data = data.prefetch(-1)
+
+        return data
 
     def method(self, split, data, batch_size, aug):
         if aug:

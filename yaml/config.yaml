@@ -20,7 +20,7 @@ train:
     warmup_epochs: 10
   optimizer:
     name: Adam
-    momentum: 0.937
+    momentum: 0.9
     decay: 0.005
   assign:
     method: ratio
