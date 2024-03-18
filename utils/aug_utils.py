@@ -33,7 +33,7 @@ def randomly_apply(method, image, labels, prob_threshold=0.5, seed=42):
 # @tf.function
 def crop(image, labels, xyxy=None, seed=42):
     if xyxy is None:
-        size = tf.cast(tf.shape(image)[-2:-4:-1], tf.float32)
+        size = tf.cast(tf.shape(image)[:2][::-1], tf.float32)
         x1, y1 = tf.unstack(tf.cast(tf.random.uniform([2], minval=[0,0], maxval=size//3, seed=seed), tf.int32))
         x2, y2 = tf.unstack(tf.cast(tf.random.uniform([2], minval=size//3*2, maxval=size, seed=seed), tf.int32))
     else:
@@ -51,7 +51,7 @@ def crop(image, labels, xyxy=None, seed=42):
 # @tf.function
 def flip_horizontally(image, labels, seed=42):
     if tf.reduce_sum(labels) != 0:
-        size = tf.cast(tf.shape(image)[-2:-4:-1], tf.float32)
+        size = tf.cast(tf.shape(image)[:2][::-1], tf.float32)
         labels = tf.stack([size[0] - labels[..., 2] - 1,
                         labels[..., 1],
                         size[0] - labels[..., 0] - 1,
@@ -63,7 +63,7 @@ def flip_horizontally(image, labels, seed=42):
 # @tf.function
 def rotate90(image, labels, seed=42):
     times = tf.random.uniform((), minval=1, maxval=4, dtype=tf.int32, seed=seed)
-    width, height = tf.unstack(tf.cast(tf.shape(image)[-2:-4:-1], tf.float32))
+    width, height = tf.unstack(tf.cast(tf.shape(image)[:2][::-1], tf.float32))
 
     if times==1:
         labels = tf.stack([labels[..., 1],
@@ -131,7 +131,7 @@ def minmax(image, labels):
 
 # @tf.function
 def resize_padding(image, labels, out_size, random=False, mode='CONSTANT', constant_values=0, seed=42):
-    size = tf.cast(tf.shape(image)[-2:-4:-1], tf.float32)
+    size = tf.cast(tf.shape(image)[:2][::-1], tf.float32)
     ratio = out_size/tf.reduce_max(size)
     new_size = tf.cast(ratio * size, tf.int32)
     pad_size = out_size - tf.cast(new_size, tf.float32)
@@ -153,7 +153,7 @@ def resize_padding(image, labels, out_size, random=False, mode='CONSTANT', const
 
 # @tf.function
 def resize(image, labels, out_size):
-    size = tf.cast(tf.shape(image)[-2:-4:-1], tf.float32)
+    size = tf.cast(tf.shape(image)[:2][::-1], tf.float32)
     ratio = out_size/tf.reduce_max(size)
     new_size = tf.cast(ratio * size, tf.int32)
     resized_image = tf.image.resize(image, tf.cast(new_size, tf.int32)[::-1])
@@ -163,7 +163,7 @@ def resize(image, labels, out_size):
     return resized_image, resized_labels
 
 def resize_padding_without_labels(image, out_size, mode='CONSTANT', constant_values=0):
-    size = tf.cast(tf.shape(image)[-2:-4:-1], tf.float32)
+    size = tf.cast(tf.shape(image)[:2][::-1], tf.float32)
     ratio = out_size/tf.reduce_max(size)
     new_size = tf.cast(ratio * size, tf.int32)
     pad_size = out_size - tf.cast(new_size, tf.float32)

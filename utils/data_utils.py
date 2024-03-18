@@ -30,10 +30,10 @@ class DataLoader():
         data = data.shuffle(buffer_size = self.length[split], seed=self.seed, reshuffle_each_iteration=True) if aug else data
         data = data.cache() if cache else data
 
-        data = data.map(self.preprocess, num_parallel_calls=-1)
+        data = data.map(self.preprocess, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         data = self.augmentation(data, aug, seed=self.seed)
         data = self.method(split, data, batch_size, aug, seed=self.seed)
-        data = data.prefetch(-1)
+        data = data.prefetch(tf.data.experimental.AUTOTUNE)
 
         return data
     
@@ -58,7 +58,7 @@ class DataLoader():
     def augmentation(self, data, aug, seed=42):
         if aug:
             augmentation = mosaic_augmentation if aug['mosaic'] else batch_augmentation
-            return data.map(lambda image, labels: augmentation(image, labels, aug, seed=seed), num_parallel_calls=-1)
+            return data.map(lambda image, labels: augmentation(image, labels, aug, seed=seed), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         return data
 
     def method(self, split, data, batch_size, aug, seed=42):
@@ -67,11 +67,11 @@ class DataLoader():
                 method = self.mosaic
             else:
                 random_pad = True if split=='train' else False
-                data = data.map(lambda image, labels: resize_padding(image, labels, self.input_size, random_pad, seed=seed), num_parallel_calls=-1)
+                data = data.map(lambda image, labels: resize_padding(image, labels, self.input_size, random_pad, seed=seed), num_parallel_calls=tf.data.experimental.AUTOTUNE)
                 method = self.batch
         else:
             random_pad = True if split=='train' else False
-            data = data.map(lambda image, labels: resize_padding(image, labels, self.input_size, random_pad, seed=seed), num_parallel_calls=-1)
+            data = data.map(lambda image, labels: resize_padding(image, labels, self.input_size, random_pad, seed=seed), num_parallel_calls=tf.data.experimental.AUTOTUNE)
             method = self.batch
 
         dataset = tf.data.Dataset.from_generator(

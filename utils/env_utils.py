@@ -6,7 +6,7 @@ def os_set(gpus):
     warnings.filterwarnings('ignore')
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '4'
     # os.environ['TF_DETERMINISTIC_OPS'] = '1'
-    # os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
+    os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
     os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
     os.environ['CUDA_VISIBLE_DEVICES'] = gpus
     os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
@@ -28,7 +28,7 @@ def random_seed_set(seed):
     random.seed(seed)
     tf.random.set_seed(seed)
     tf.keras.utils.set_random_seed(seed)
-    tf.config.experimental.enable_op_determinism()
+    # tf.config.experimental.enable_op_determinism()
     np.random.seed(seed)
 
 def dir_check(*dirs):
