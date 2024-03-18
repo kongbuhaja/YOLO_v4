@@ -1,14 +1,14 @@
   aug:
     mosaic: 4
 
-    random_scale: 1.0
-    random_rotate90: 0.75
-    random_flip_horizontal: 0.5
-    random_crop: 0.8
+    scale: 1.0
+    rotate90: 0.75
+    flip_horizontally: 0.5
+    crop: 0.6
 
-    random_gaussian_blur: 0.3
+    gaussian_blur: 0.3
     
-    random_brightness: 0.5
-    random_hue: 0.5
-    random_satuation: 0.5
-    random_contrast: 0.5
+    brightness: 0.5
+    hue: 0.5
+    saturation: 0.5
+    contrast: 0.5

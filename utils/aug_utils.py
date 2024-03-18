@@ -1,19 +1,28 @@
 import tensorflow as tf
 import numpy as np
 
-# @tf.function
-def augmentation(image, labels, seed=42):
-    geometric_methods = [[crop, 0.6], [rotate90, 0.75], [flip_horizontally, 0.5]]
-    kernel_methods = [[gaussian_blur, 0.5]]
-    color_methods = [[brigthness, 0.5], [hue, 0.5], [saturation, 0.5], [contrast, 0.5]]
+@tf.function
+def batch_augmentation(image, labels, cfg, seed=42):
+    geometric_methods = [[crop, cfg['crop']], [rotate90, cfg['rotate90']], [flip_horizontally, cfg['flip_horizontally']]]
+    kernel_methods = [[gaussian_blur, cfg['gaussian_blur']]]
+    color_methods = [[brightness, cfg['brightness']], [hue, cfg['hue']], [saturation, cfg['saturation']], [contrast, cfg['contrast']]]
 
-    # for augmentation_method, prob_threshold in geometric_methods + kernel_methods + color_methods:
-    #     image, bboxes = randomly_apply(augmentation_method, image, bboxes, prob_threshold, seed=seed)
-
-    for augmentation_method, prob_threshold in [[crop, 1.0]]:
+    for augmentation_method, prob_threshold in geometric_methods + kernel_methods + color_methods:
         image, labels = randomly_apply(augmentation_method, image, labels, prob_threshold, seed=seed)
     
     return minmax(image, labels)
+
+@tf.function
+def mosaic_augmentation(image, labels, cfg, seed=42):
+    geometric_methods = [[rotate90, cfg['rotate90']], [flip_horizontally, cfg['flip_horizontally']]]
+    kernel_methods = [[gaussian_blur, cfg['gaussian_blur']]]
+    color_methods = [[brightness, cfg['brightness']], [hue, cfg['hue']], [saturation, cfg['saturation']], [contrast, cfg['contrast']]]
+
+    for augmentation_method, prob_threshold in geometric_methods + kernel_methods + color_methods:
+        image, labels = randomly_apply(augmentation_method, image, labels, prob_threshold, seed=seed)
+
+    return minmax(image, labels)
+
 
 # @tf.function
 def randomly_apply(method, image, labels, prob_threshold=0.5, seed=42):
@@ -103,7 +112,7 @@ def contrast(image, labels, lower=0.5, upper=1.5, seed=42):
     return tf.image.random_contrast(image, lower, upper, seed=seed), labels
 
 # @tf.function
-def brigthness(image, labels, max_delta=0.12, seed=42):
+def brightness(image, labels, max_delta=0.12, seed=42):
     return tf.image.random_brightness(image, max_delta, seed=seed), labels
 
 # @tf.function
