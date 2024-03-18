@@ -32,10 +32,10 @@ class DataLoader():
 
         data = data.map(self.preprocess, num_parallel_calls=-1)
         data = self.augmentation(data, aug, seed=self.seed)
-        dataset = self.method(split, data, batch_size, aug, seed=self.seed)
-        dataset = dataset.prefetch(-1)
+        data = self.method(split, data, batch_size, aug, seed=self.seed)
+        data = data.prefetch(-1)
 
-        return dataset
+        return data
     
     @tf.function
     def read_image(self, file, labels):
@@ -84,15 +84,18 @@ class DataLoader():
     def batch(self, data, batch_size, seed=42):
         batch_images = []
         batch_labels = []
+        idx = 0
 
         for image, labels in data:
-            for idx in range(batch_size):
-                batch_images += [image]
-                batch_labels += [tf.concat([tf.zeros(labels.shape[:-1], dtype=tf.float32)[..., None]+idx, labels], -1)]
-            yield tf.stack(batch_images, 0), tf.concat(batch_labels, 0)
-            
-            batch_images = []
-            batch_labels = []
+            batch_images += [image]
+            batch_labels += [tf.concat([tf.zeros(labels.shape[:-1], dtype=tf.float32)[..., None]+idx, labels], -1)]
+            idx += 1
+
+            if len(batch_images) == batch_size:
+                yield tf.stack(batch_images, 0), tf.concat(batch_labels, 0)
+                batch_images = []
+                batch_labels = []
+                idx = 0
 
     def mosaic(self, data, batch_size, size=4, seed=42):
         batch_images = []

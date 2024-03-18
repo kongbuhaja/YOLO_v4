@@ -17,13 +17,11 @@ def main():
     
     model, start_epoch, max_mAP50, max_mAP, max_loss = load_model(cfg)
     dataloader = DataLoader(cfg)
+    eval = Eval(cfg)
+    logger = Logger(cfg)
     
     train_dataset = dataloader('train', cfg['batch_size'], aug=cfg['aug'])
     valid_dataset = dataloader('val')
-
-    eval = Eval(cfg)
-    logger = Logger(cfg)
-
     train_dataset_length = dataloader.length['train'] // cfg['batch_size']
     valid_dataset_length = dataloader.length['val'] 
 
@@ -62,6 +60,12 @@ def main():
             eval.update_stats(NMS_preds, labels)
 
     for epoch in range(start_epoch, epochs + 1):
+        if cfg['aug']['mosaic'] and epoch==cfg['train']['mosaic_epochs']:
+            cfg['batch_size'] //= cfg['aug']['mosaic']
+            cfg['aug']['mosaic']=0
+            train_dataset = dataloader('train', cfg['batch_size'], aug=cfg['aug'])
+            train_dataset_length = dataloader.length['train'] // cfg['batch_size']
+
         #train
         train_iter, train_total_loss, train_reg_loss, train_obj_loss, train_cls_loss = 0, 0., 0., 0., 0.
             

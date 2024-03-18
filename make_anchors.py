@@ -9,6 +9,7 @@ from utils.bbox_utils import bbox_iou_wh
 def main():
     cfg = read_cfg()
     cfg['batch_size'] = 1
+    cfg['mosaic'] = 0
     cfg['model']['anchors'] = np.zeros([0,0])
     cfg['model']['input_size'] = np.zeros([2,])
 
@@ -17,8 +18,8 @@ def main():
     
     dataloader = DataLoader(cfg)
 
-    train_dataset = dataloader('train', shuffle=False, augmentation=False, resize=False)
-    train_dataset_length = dataloader.length['train'] // dataloader.batch_size
+    train_dataset = dataloader('train', cfg['batch_size'], aug=cfg['aug'])
+    train_dataset_length = dataloader.length['train']
 
     anchor_tqdm = tqdm.tqdm(train_dataset, total=train_dataset_length, ncols=160, desc=f'Reading train dataset', ascii=' =', colour='red')
     for image, label in anchor_tqdm:
