@@ -61,7 +61,7 @@ def read_cfg():
     env_set(cfg)
     cfg['gpus'] = len(cfg['gpus'].split(','))
     cfg['batch_size'] *= cfg['gpus']
-    cfg['batch_size'] *= 4 if cfg['aug']['mosaic'] else 1
+    # cfg['batch_size'] *= 4 if cfg['aug']['mosaic'] else 1
 
     return cfg
 

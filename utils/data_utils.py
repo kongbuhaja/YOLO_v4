@@ -111,7 +111,7 @@ class DataLoader():
             batch_labels += [labels]
 
             if len(batch_images) == batch_size:
-                for idx in range(batch_size//size):
+                for idx in range(batch_size):
                     mosaic_image = np.zeros([*(mosaic_size.astype(np.int32)), 3])
                     mosaic_labels = []
                     xc, yc = tf.unstack(tf.cast(tf.random.uniform([2], 
@@ -119,8 +119,8 @@ class DataLoader():
                                                                   maxval=mosaic_size//(2**size)*(2**(size-1)+1), 
                                                                   seed=seed), dtype=tf.int32))
                     xcf, ycf = tf.cast(xc, tf.float32), tf.cast(yc, tf.float32)
-                    # indices = tf.random.uniform([size], minval=0, maxval=batch_size, dtype=tf.int32, seed=seed)
-                    indices = tf.range(idx*size, (idx+1)*size)
+                    indices = tf.random.uniform([size], minval=0, maxval=batch_size, dtype=tf.int32, seed=seed)
+                    # indices = tf.range(idx*size, (idx+1)*size)
 
                     for i, index in enumerate(indices):
                         image = batch_images[index]

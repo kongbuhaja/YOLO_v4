@@ -26,7 +26,7 @@ RUN echo "== Install Basic Tools ==" &&\
     # ldconfig
 
 RUN echo "== Install Dev Tolls ==" &&\
-    pip3 install tensorflow==2.8 &&\
+    pip3 install tensorflow==2.14 &&\
     pip3 install opencv-python &&\
     pip3 install matplotlib &&\
     pip3 install pillow &&\

@@ -61,20 +61,29 @@ def flip_horizontally(image, labels, seed=42):
     return tf.image.flip_left_right(image), labels
 
 # @tf.function
-# 한번에 돌리는 걸로 변경하기 if문 추가
 def rotate90(image, labels, seed=42):
-    def rotate90_bboxes(labels, width, height):
+    times = tf.random.uniform((), minval=1, maxval=4, dtype=tf.int32, seed=seed)
+    width, height = tf.unstack(tf.cast(tf.shape(image)[-2:-4:-1], tf.float32))
+
+    if times==1:
         labels = tf.stack([labels[..., 1],
                             width - labels[..., 2] -1,
                             labels[..., 3],
                             width - labels[..., 0] -1,
                             labels[..., 4]], -1)
-        return labels, height, width
-    
-    times = tf.random.uniform((), minval=1, maxval=4, dtype=tf.int32, seed=seed)
-    width, height = tf.unstack(tf.cast(tf.shape(image)[-2:-4:-1], tf.float32))
-    for time in tf.range(times):
-        labels, width, height = rotate90_bboxes(labels, width, height)
+    elif times==2:
+        labels = tf.stack([width - labels[..., 2] -1,
+                            height - labels[..., 1] -1,
+                            width - labels[..., 0] -1,
+                            height - labels[..., 3] -1,
+                            labels[..., 4]], -1)
+    else:
+        labels = tf.stack([height - labels[..., 3] -1,
+                            labels[..., 0],
+                            height - labels[..., 1] -1,
+                            labels[..., 2],
+                            labels[..., 4]], -1)
+
     return tf.image.rot90(image, times), labels
 
 # @tf.function

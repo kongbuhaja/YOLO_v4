@@ -13,7 +13,7 @@ train:
   mosaic_epochs: 970
   # cosine_annealing_warm_restart, cosine_annealing, poly, step, custom
   lr_scheduler:
-    name: cosine_annealing
+    name: cosine_annealing_warm_restart
     lr: 0.01
     power: 0.9
     steps: [100, 200]

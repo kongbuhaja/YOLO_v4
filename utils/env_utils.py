@@ -1,11 +1,13 @@
-import os, random
+import os, random, warnings
 import tensorflow as tf
 import numpy as np
 
 def os_set(gpus):
-    os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+    warnings.filterwarnings('ignore')
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '4'
+    os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
     os.environ['CUDA_VISIBLE_DEVICES'] = gpus
+    os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
     os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 def hw_set():
@@ -21,7 +23,6 @@ def hw_set():
 
 def random_seed_set(seed):
     os.environ['PYTHONASHSEED']=str(seed)
-    # os.environ['TF_DETERMINISTIC_OPS'] = '1'
     random.seed(seed)
     tf.random.set_seed(seed)
     np.random.seed(seed)

@@ -5,10 +5,10 @@ class Optimizer():
     def __init__(self, opt):
         if opt['name'] in ['sgd', 'SGD']:
             self.optimizer = SGD(momentum=opt['momentum'],
-                                 decay=opt['decay'])
+                                 weight_decay=opt['decay'])
         elif opt['name'] in ['adam', 'Adam']:
             self.optimizer = Adam(beta_1=opt['momentum'],
-                                  decay=opt['decay'])
+                                  weight_decay=opt['decay'])
 
         self.lr = float(self.optimizer.lr.numpy())
 
