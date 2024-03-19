@@ -27,9 +27,9 @@ class DataLoader():
         dataset = self.Dataset(split, self.labels)
 
         data, self.length[split] = dataset.load()
-        data = data.shuffle(buffer_size = self.length[split], seed=self.seed, reshuffle_each_iteration=True) if aug else data
         data = data.cache() if cache else data
-
+        data = data.shuffle(buffer_size = self.length[split], seed=self.seed, reshuffle_each_iteration=True) if aug else data
+        
         data = data.map(self.preprocess, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         data = self.augmentation(data, aug, seed=self.seed)
         data = self.method(split, data, batch_size, aug, seed=self.seed)
@@ -40,12 +40,12 @@ class DataLoader():
     @tf.function
     def read_image(self, file, labels):
         image_raw = tf.io.read_file(file)
-        image = tf.image.decode_jpeg(image_raw, channels=3)
-        return tf.cast(image, tf.float32), labels
+        image = tf.cast(tf.image.decode_jpeg(image_raw, channels=3), tf.float32)
+        return image, labels
 
     @tf.function
     def normalization(self, image, labels):
-        image = tf.cast(image, tf.float32)/255.
+        image = image/255.
         return image, labels
 
     @tf.function
