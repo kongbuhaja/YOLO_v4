@@ -103,8 +103,8 @@ class DataLoader():
         batch_mosaic_images = []
         batch_mosaic_labels = []
         s = np.sqrt(size).astype(np.int32)
-        mosaic_size = tf.round(self.input_size * 1.5)
-        ix1, iy1 = tf.round((mosaic_size - self.input_size)/2)
+        mosaic_size = np.round(self.input_size * 2)
+        ix1, iy1 = np.round((mosaic_size - self.input_size)/2)
         ix2, iy2 = ix1+self.input_size[0], iy1+self.input_size[1]
         
         for image, labels in data:

@@ -9,8 +9,8 @@ model:
 data: custom
 
 train:
-  epochs: 1000
-  mosaic_epochs: 970
+  epochs: 3000
+  mosaic_epochs: 3000
   # cosine_annealing_warm_restart, cosine_annealing, poly, step, custom
   lr_scheduler:
     name: cosine_annealing_warm_restart
