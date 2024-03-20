@@ -100,12 +100,13 @@ class DataLoader():
     def mosaic(self, data, batch_size, size=4, seed=42):
         batch_images = []
         batch_labels = []
-        batch_mosaic_images = []
-        batch_mosaic_labels = []
-        s = np.sqrt(size).astype(np.int32)
-        mosaic_size = np.round(self.input_size * 2)
-        ix1, iy1 = np.round((mosaic_size - self.input_size)/2)
+        batch_mosaic_images = tf.zeros([0]+tf.unstack(self.input_size)+[3])
+        batch_mosaic_labels = tf.zeros([0, 6], tf.float32)
+        s = tf.cast(tf.sqrt(tf.cast(size, tf.float32)), tf.int32)
+        mosaic_size = tf.round(self.input_size * 2)
+        ix1, iy1 = tf.unstack(tf.round((mosaic_size - self.input_size)/2))
         ix2, iy2 = ix1+self.input_size[0], iy1+self.input_size[1]
+        crop_xyxy = tf.stack([ix1, iy1, ix2, iy2])
         
         for image, labels in data:
             batch_images += [image]
@@ -113,8 +114,8 @@ class DataLoader():
 
             if len(batch_images) == batch_size:
                 for idx in range(batch_size):
-                    mosaic_image = np.zeros([*(mosaic_size.astype(np.int32)), 3])
-                    mosaic_labels = []
+                    mosaic_image = tf.Variable(tf.zeros(tf.unstack(mosaic_size)+[3]), trainable=False)
+                    mosaic_labels = tf.zeros([0, 5], tf.float32)
                     xc, yc = tf.unstack(tf.cast(tf.random.uniform([2], 
                                                                   minval=mosaic_size//(2**size)*(2**(size-1)-1), 
                                                                   maxval=mosaic_size//(2**size)*(2**(size-1)+1), 
@@ -133,18 +134,17 @@ class DataLoader():
                         x1, y1 = xc if i%s else xc - w, yc if i//s else yc - h
                         x2, y2 = x1+w, y1+h
  
-                        mosaic_image[y1:y2, x1:x2] = image
-                        mosaic_labels += [labels + [x1, y1, x1, y1, 0]]
+                        mosaic_image[y1:y2, x1:x2].assign(image)
+                        mosaic_labels = tf.concat([mosaic_labels, labels + [x1, y1, x1, y1, 0]], 0)
 
-                    mosaic_labels = tf.concat(mosaic_labels, 0)
-                    crop_image, crop_labels = crop(mosaic_image, mosaic_labels, tf.stack([ix1, iy1, ix2, iy2]))
-                    batch_mosaic_images += [crop_image]
-                    batch_mosaic_labels += [tf.concat([tf.zeros(crop_labels.shape[:-1], dtype=tf.float32)[..., None]+idx, crop_labels], -1)]
+                    crop_image, crop_labels = crop(mosaic_image.value(), mosaic_labels, crop_xyxy)
+                    batch_mosaic_images = tf.concat([batch_mosaic_images, crop_image[None]], 0)
+                    batch_mosaic_labels = tf.concat([batch_mosaic_labels, tf.concat([tf.zeros(crop_labels.shape[:-1], dtype=tf.float32)[..., None]+idx, crop_labels], -1)], 0)
                     
-                yield tf.stack(batch_mosaic_images, 0), tf.concat(batch_mosaic_labels, 0)
+                yield batch_mosaic_images, tf.concat(batch_mosaic_labels, 0)
                 batch_images = []
                 batch_labels = []
-                batch_mosaic_images = []
-                batch_mosaic_labels = []
+                batch_mosaic_images = tf.zeros([0]+tf.unstack(self.input_size)+[3])
+                batch_mosaic_labels = tf.zeros([0, 6], tf.float32)
 
 
