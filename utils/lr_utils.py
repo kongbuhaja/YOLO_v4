@@ -7,7 +7,7 @@ class warmup():
         self.warmup_max_step = warmup_max_step
 
     def __call__(self, step):
-        lr = self.init_lr / self.warmup_max_step * (step + 1)
+        lr = self.init_lr / self.warmup_max_step * step / 100
         return lr
 
 class step():
@@ -112,8 +112,8 @@ class LR_scheduler():
             self.lr_scheduler = custom(self.init_lr)
 
     def __call__(self, step):
-        if self.warmup_step < self.warmup_max_step:
-            lr = self.warmup_lr_scheduler(step)
+        if self.warmup_step <= self.warmup_max_step:
+            lr = self.warmup_lr_scheduler(self.warmup_step)
             self.warmup_step += 1
         else:
             lr = self.lr_scheduler(step - self.warmup_max_step)
