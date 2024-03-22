@@ -11,11 +11,9 @@ def main():
     cfg = read_cfg()
 
     epochs = cfg['train']['epochs']
-    train_checkpoint = cfg['model']['train_checkpoint']
-    loss_checkpoint = cfg['model']['loss_checkpoint']
-    map_checkpoint = cfg['model']['map_checkpoint']
+    checkpoint = cfg['model']['checkpoint']
     
-    model, start_epoch, max_mAP50, max_mAP, max_loss = load_model(cfg)
+    model, start_epoch, max_mAP = load_model(cfg)
     dataloader = DataLoader(cfg)
     eval = Eval(cfg)
     logger = Logger(cfg)
@@ -24,8 +22,6 @@ def main():
     valid_dataset = dataloader('val')
     train_dataset_length = dataloader.length['train'] // cfg['batch_size']
     valid_dataset_length = dataloader.length['val'] 
-
-    train_best_loss = valid_best_loss = max_loss
     
     global_step = (start_epoch-1) * train_dataset_length + 1
 
@@ -97,10 +93,6 @@ def main():
                         f'cls_loss={train_loss[3].numpy():.3f}'
 
             train_tqdm.set_postfix_str(tqdm_text)
-            
-        if train_loss[0] < train_best_loss:
-            train_best_loss = train_loss[0]
-            save_model(model, epoch, 0., 0., train_loss, train_checkpoint)
                 
         # valid
         if eval.check(epoch):
@@ -134,15 +126,9 @@ def main():
             
             logger.write_eval_summary(epoch, mAP50, mAP, valid_loss)
             
-            if valid_loss[0] < valid_best_loss:
-                if mAP50 > max_mAP50:
-                    max_mAP50 = mAP50
-                valid_best_loss = valid_loss[0]
-                save_model(model, epoch, mAP50, mAP, valid_loss, loss_checkpoint)
-            
             if mAP > max_mAP:
                 max_mAP = mAP
-                save_model(model, epoch, mAP50, mAP, valid_loss, map_checkpoint)
+                save_model(model, epoch, mAP50, mAP, valid_loss, checkpoint)
                 print(f'\033[32mbest_model is saved with {mAP:.4f} mAP in {epoch} epoch\033[0m')
 
        

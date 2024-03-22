@@ -41,12 +41,7 @@ def read_cfg():
     cfg['model']['input_size'] = np.array(cfg['model']['input_size'])
     cfg['model']['strides'] = np.array(cfg['model']['strides'])
     cfg['model']['anchors'] = np.array(cfg['data']['anchors'][cfg['model']['anchors']]) * cfg['model']['input_size']
-
-    cfg['model']['dir'] = f"{cfg['model']['dir']}/{cfg['data']['name']}/{cfg['model']['name']}"
-    cfg['model']['train_checkpoint'] = f"{cfg['model']['dir']}/train_loss/{cfg['model']['name']}"
-    cfg['model']['loss_checkpoint'] = f"{cfg['model']['dir']}/val_loss/{cfg['model']['name']}"
-    cfg['model']['map_checkpoint'] = f"{cfg['model']['dir']}/val_mAP/{cfg['model']['name']}"
-    cfg['model']['checkpoint'] = cfg['model'][cfg['model']['checkpoint']]
+    cfg['model']['checkpoint'] = f"{cfg['model']['checkpoint']}/{cfg['data']['name']}/{cfg['model']['name']}/{cfg['model']['name']}"
 
     cfg['eval']['dir'] = f"{cfg['eval']['dir']}/{cfg['data']['name']}/{cfg['model']['name']}"
     cfg['eval']['image_dir'] = f"{cfg['eval']['dir']}/image"
@@ -61,7 +56,6 @@ def read_cfg():
     env_set(cfg)
     cfg['gpus'] = len(cfg['gpus'].split(','))
     cfg['batch_size'] *= cfg['gpus']
-    # cfg['batch_size'] *= 4 if cfg['aug']['mosaic'] else 1
 
     return cfg
 

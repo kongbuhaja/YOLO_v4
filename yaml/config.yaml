@@ -2,15 +2,14 @@ model:
   # YOLOv2, YOLOv2_tiny, YOLOv3, YOLOv3_tiny, YOLOv4, YOLOv4_tiny, YOLOv4_csp, YOLOv4_P5-7
   name: YOLOv4_csp
   load: False
-  dir: checkpoints
-  checkpoint: map_checkpoint
+  checkpoint: checkpoints
 
 # custom, voc, coco
 data: custom
 
 train:
-  epochs: 3000
-  mosaic_epochs: 3000
+  epochs: 5000
+  mosaic_epochs: 5000
   # cosine_annealing_warm_restart, cosine_annealing, poly, step, custom
   lr_scheduler:
     name: cosine_annealing_warm_restart
@@ -18,7 +17,7 @@ train:
     power: 0.9
     steps: [100, 200]
     decays: [0.5, 0.5]
-    warmup_epochs: 5
+    warmup_epochs: 10
   optimizer:
     name: Adam
     momentum: 0.9

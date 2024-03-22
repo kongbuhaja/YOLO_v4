@@ -44,11 +44,11 @@ def load_model(cfg):
             model.load_weights(cfg['model']['checkpoint'])
             saved = read_model_info(cfg['model']['checkpoint'])
             print(f"succeed to load model| epoch:{saved['epoch']} mAP50:{saved['mAP50']} mAP:{saved['mAP']} total_loss:{saved['total_loss']}")
-            return model, saved['epoch'], saved['mAP50'], saved['mAP'], saved['total_loss']
+            return model, saved['epoch'], saved['mAP']
         except:
             print(f'{cfg["model"]["checkpoint"]} is not exist.')
     print('make new model')
-    return model, 1, -1, -1., 9999999999
+    return model, 1, -1
 
 def save_model(model, epoch, mAP50, mAP, loss, checkpoint):
     model.save_weights(checkpoint)
