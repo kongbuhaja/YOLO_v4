@@ -90,7 +90,9 @@ def bbox_iou_wh_np(wh1, wh2, eps=1e-7):
 def unresize_unpad_labels(labels, pad, ratio, xywh=True):
     xy1 = (labels[..., 0:2] - pad) / ratio
     if xywh:
-        return tf.concat([xy1, labels[..., 2:]], -1)
+        labels = tf.concat([xy1, labels[..., 2:]], -1)
     else:
         xy2 = (labels[..., 2:4] - pad) / ratio
-        return tf.concat([xy1, xy2, labels[..., 4:]], -1)
+        labels = tf.concat([xy1, xy2, labels[..., 4:]], -1)
+
+    return labels

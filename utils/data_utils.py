@@ -23,7 +23,7 @@ class DataLoader():
         elif cfg['data']['name'] == 'custom':
             self.Dataset = custom_dataset
     
-    def __call__(self, split, batch_size=1, aug=None, cache=True):
+    def __call__(self, split, batch_size=1, aug=None, resize=True, cache=True):
         dataset = self.Dataset(split, self.labels)
 
         data, self.length[split] = dataset.load()
@@ -32,7 +32,7 @@ class DataLoader():
         
         data = data.map(self.preprocess, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         data = self.augmentation(data, aug, seed=self.seed)
-        data = self.method(split, data, batch_size, aug, seed=self.seed)
+        data = self.method(split, data, batch_size, aug, resize, seed=self.seed)
         data = data.prefetch(tf.data.experimental.AUTOTUNE)
 
         return data
@@ -61,7 +61,7 @@ class DataLoader():
             return data.map(lambda image, labels: augmentation(image, labels, aug, seed=seed), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         return data
 
-    def method(self, split, data, batch_size, aug, seed=42):
+    def method(self, split, data, batch_size, aug, resize, seed=42):
         if aug:
             if aug['mosaic']:
                 method = self.mosaic
@@ -71,7 +71,7 @@ class DataLoader():
                 method = self.batch
         else:
             random_pad = True if split=='train' else False
-            data = data.map(lambda image, labels: resize_padding(image, labels, self.input_size, random_pad, seed=seed), num_parallel_calls=tf.data.experimental.AUTOTUNE)
+            data = data.map(lambda image, labels: resize_padding(image, labels, self.input_size, random_pad, seed=seed), num_parallel_calls=tf.data.experimental.AUTOTUNE) if resize else data
             method = self.batch
 
         dataset = tf.data.Dataset.from_generator(

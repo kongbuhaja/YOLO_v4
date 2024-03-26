@@ -46,8 +46,9 @@ class Base_Dataset():
         print(f'Start make {filepath}......      ', end='', flush=True)
         with tf.io.TFRecordWriter(filepath) as writer:
             for image_file, labels in tqdm.tqdm(self.data):
-                # image = self.read_image(image_file)
-                writer.write(_data_features(image_file, labels))
+                image = self.read_image(image_file)
+                writer.write(_data_features(image, labels))
+                # writer.write(_data_features(image_file, labels))
         print('Done!')
 
     def download_from_server(self):
@@ -84,6 +85,7 @@ def parse_tfrecord_fn(example):
         'labels': tf.io.VarLenFeature(tf.float32),
     }
     example = tf.io.parse_single_example(example, feature_description)
+    # example['image'] = tf.io.decode_jpeg(example['image'], channels=3)
     example['labels'] = tf.reshape(tf.sparse.to_dense(example['labels']), [-1, 5])
 
     return example['image'], example['labels']
@@ -109,8 +111,8 @@ def _int64_feature(value):
         value=[value]
     return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
 def _data_features(image, labels):
-    # image_feature = _image_feature(image)
-    image_feature = _string_feature(image)
+    image_feature = _image_feature(image)
+    # image_feature = _string_feature(image)
     labels_feature = _array_feature(np.array(labels))
     
     objects_features = {

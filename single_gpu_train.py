@@ -19,9 +19,9 @@ def main():
     logger = Logger(cfg)
     
     train_dataset = dataloader('train', cfg['batch_size'], aug=cfg['aug'])
-    valid_dataset = dataloader('val')
+    valid_dataset = dataloader('val', cfg['eval']['batch_size'])
     train_dataset_length = dataloader.length['train'] // cfg['batch_size']
-    valid_dataset_length = dataloader.length['val'] 
+    valid_dataset_length = dataloader.length['val'] // cfg['eval']['batch_size']
     
     global_step = (start_epoch-1) * train_dataset_length + 1
 

@@ -180,4 +180,4 @@ def resize_padding_without_labels(image, out_size, mode='CONSTANT', constant_val
     resized_image = tf.image.resize(image, new_size[::-1])
     padded_image = tf.pad(resized_image, padding, mode=mode, constant_values=constant_values)
     
-    return padded_image, tf.cast(pad_LT, tf.float32)
+    return padded_image, tf.cast(pad_LT, tf.float32), ratio

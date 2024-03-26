@@ -36,12 +36,6 @@ def dir_check(*dirs):
         if not os.path.exists(dir):
             os.makedirs(dir)
 
-def output_set(output_dir):
-    if not os.path.exists(output_dir + 'image/'):
-        os.makedirs(output_dir + 'image/')
-    if not os.path.exists(output_dir + 'video/'):
-        os.makedirs(output_dir + 'video/')
-
 def env_set(cfg):
     random_seed_set(cfg['seed'])
     os_set(cfg['gpus'])

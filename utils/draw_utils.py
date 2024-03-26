@@ -24,20 +24,23 @@ class Drawer():
             color = self.colors[cls]
             cv2.rectangle(image, bbox[:2], bbox[2:], color, 2)
             cv2.putText(image, f'{self.data_labels[cls]}:{score:.3f}', (bbox[0], bbox[1]-5), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, color, 1)
+        
+        return image
 
 class Painter(Drawer):
     def __init__(self, cfg):
         super().__init__(cfg)
-        self.dir = f"{cfg['eval']['dir']}/image"
+        self.dir = f"{cfg['eval']['image_dir']}"
         self.draw = cfg['eval']['draw']
         self.title = 'prediction' if self.draw%2==0 else 'gt_&_pred'
         self.count = len(glob.glob(f'{self.dir}/{self.title}_*.jpg'))
         
     def draw_image(self, image, labels, preds, xywh=True):
         image = image[..., ::-1]
-        output = self.draw_labels(image.copy(), preds)
+        output = self.draw_labels(image.copy(), preds, xywh=xywh)
+
         if self.title != 'prediction':
-            gt = self.draw_labels(image.copy(), labels, xywh=xywh)
+            gt = self.draw_labels(image.copy(), labels, xywh=False)
             output = np.concatenate([gt, output], 1)
         
         self.write_image(output)

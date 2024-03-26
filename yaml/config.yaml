@@ -5,11 +5,11 @@ model:
   checkpoint: checkpoints
 
 # custom, voc, coco
-data: coco
+data: custom
 
 train:
-  epochs: 5000
-  mosaic_epochs: 4900
+  epochs: 500
+  mosaic_epochs: 500
   # cosine_annealing_warm_restart, cosine_annealing, poly, step, custom
   lr_scheduler:
     name: cosine_annealing_warm_restart
@@ -32,6 +32,7 @@ train:
   eval_per_epoch: 1
   
 eval:
+  batch_size: 1
   nms:
     # normal, soft_normal, soft_gaussian
     type: soft_gaussian
