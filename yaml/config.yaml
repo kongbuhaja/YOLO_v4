@@ -37,8 +37,8 @@ eval:
     # normal, soft_normal, soft_gaussian
     type: soft_gaussian
     iou_th: 0.2
-    score_th: 0.01
-    sigma: 0.5
+    score_th: 0.1
+    sigma: 0.3
   dir: outputs
   video: 0
   # dataset

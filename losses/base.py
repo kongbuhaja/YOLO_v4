@@ -1,5 +1,5 @@
 import tensorflow as tf
-from utils import bbox_utils
+from utils.bbox_utils import bbox_iou_wh
 
 class Base_loss():
     def __init__(self, num_classes):
@@ -49,7 +49,7 @@ class Sampler():
 
     @tf.function
     def iou_assign(self, anchors, targets):
-        mask = bbox_utils.bbox_iou_wh(anchors, targets) > self.assign_th
+        mask = bbox_iou_wh(anchors, targets) > self.assign_th
         return mask
     
     @tf.function

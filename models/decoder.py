@@ -57,7 +57,7 @@ class Decoder():
         return output
 
     @tf.function
-    def final_decode(self, preds):
+    def bbox_decode(self, preds):
         batch_size = preds[0].shape[0]
         bboxes = tf.zeros((batch_size, 0, 4))
         scores = tf.zeros((batch_size, 0, 1))
@@ -110,7 +110,7 @@ class Decoder():
         return tf.where(ious >= self.iou_th, scores * (1 - ious), scores)
 
     def soft_gaussian_nms(self, ious, scores):
-        return tf.exp(-(ious)**2/self.sigma) * scores
+        return tf.exp(-tf.square(ious)/self.sigma) * scores
 
     
 def get_anchors_grid(anchors, strides, image_size):

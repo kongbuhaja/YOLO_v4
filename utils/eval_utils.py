@@ -1,5 +1,5 @@
 import numpy as np
-from utils.bbox_utils import bbox_iou
+from utils.bbox_utils import bbox_iou_np
 
 class Eval:
     def __init__(self, cfg, eps=1e-6):
@@ -20,65 +20,62 @@ class Eval:
         del self.stats
         self.stats = []
 
-    def update_stats(self, pred, gt):
-        if pred.shape[0] == 0:
-            if gt.shape[0] == 0:
-                self.stats += [[np.zeros((0, self.num_of_ious), dtype=bool), [], [], gt[..., 4]]]
-            return
+    def update(self, labels, preds):
+        correct = np.zeros([preds.shape[0], self.num_of_ious])    
 
-        correct = np.zeros((pred.shape[0], self.num_of_ious), dtype=bool)
-        if gt.shape[0]:
-            detected = []
+        if preds.shape[0] == 0:
+            if labels.shape[0]:
+                self.stats += [[correct, np.zeros(0), np.zeros(0), labels[:, 4]]]
 
-            for gt_unique_class in np.unique(gt[..., 4]):
-                ti = (gt_unique_class == gt[..., 4]).nonzero()[0]
-                pi = (gt_unique_class == pred[..., 5]).nonzero()[0]
+        elif labels.shape[0]:
+            detect = []
+            for c in np.unique(labels[:, 4]):
+                ti = (c == labels[: 4]).nonzero()[0]
+                pi = (c == preds[:, 5]).nonzero()[0]
+                
                 if pi.shape[0]:
-                    ious = bbox_iou(pred[pi, :4][:, None], gt[ti, :4][None]).numpy()
+                    ious = bbox_iou_np(preds[pi, :4][:, None], labels[ti, :4][None])
                     best_id = np.argmax(ious, -1)
                     best_iou = np.max(ious, -1)
-                    detected_set = set()
-                    for j in (best_iou > self.iou_thresholds[0]).nonzero()[0]:
-                        det = ti[best_id[j]]
-                        if det not in detected_set:
-                            detected_set.add(det)
-                            detected += [det]
-                            correct[pi[j]] = best_iou[j] > self.iou_thresholds
-                            if len(detected) == gt.shape[0]:
-                                break
-    
-        self.stats += [[correct, pred[..., 4], pred[..., 5], gt[..., 4]]]
 
-    def calculate_mAP(self):
+                    detect_set = set()
+                    for j in (ious > self.iou_thresholds[0]).nonzero()[0]:
+                        det = ti[best_id[j]]
+                        if det not in detect_set:
+                            detect_set.add(det)
+                            detect += [det]
+                            correct[pi[j]] = best_iou[j] > self.iou_thresholds
+                            if len(detect) == labels.shape[0]:
+                                break
+            self.stats += [[correct, preds[:, 4], preds[:, 5], labels[:, 4]]]
+
+    def compute_mAP(self):
         if len(self.stats) == 0:
             return 0., 0.
-        tp, conf, pred_classes, gt_classes = [np.concatenate(x, 0) for x in zip(*self.stats)]
+
+        tp, conf, pred_cls, gt_cls = [np.concatenate(x, 0) for x in zip(*self.stats)]
         idx = np.argsort(-conf)
-        tp, conf, pred_classes = tp[idx], conf[idx], pred_classes[idx]
+        tp, conf, pred_cls = tp[idx], conf[idx], pred_cls[idx]
 
-        gt_unique_classes = np.unique(gt_classes.astype(np.int32))
-
-        ap = np.zeros((len(self.labels), self.num_of_ious))
-        for c in gt_unique_classes:
-            i_p = pred_classes == c
-            n_g = (gt_classes == c).sum()
-            n_p = (i_p).sum()
+        for c in np.unique(gt_cls.astype(np.int32)):
+            i = pred_cls == c
+            n_g = (gt_cls == c).sum()
+            n_p = i.sum()
 
             if n_p == 0 or n_g == 0:
                 continue
             
-            tpc = tp[i_p].cumsum(0)
-            fpc = (1 - tp[i_p]).cumsum(0)
+            tpc = tp[i].cumsum(0)
+            fpc = (1 - tp[i]).cumsum(0)
 
             recall = tpc / (n_g + self.eps)
+
             precision = tpc / (tpc + fpc)
  
             for j in range(self.num_of_ious):
-                ap[c, j] = self.compute_ap(recall[:, j], precision[:, j])
-            
-        self.ap = ap
+                self.ap[c, j] = self.compute_ap(recall[:, j], precision[:, j])
         
-        return np.mean(ap[:, 0]), np.mean(ap)
+        return np.mean(self.ap[:, 0]), np.mean(self.ap)
 
     def compute_ap(self, recall, precision):
         mrec = np.concatenate(([0.], recall, [1.]))

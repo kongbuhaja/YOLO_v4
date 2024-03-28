@@ -1,6 +1,5 @@
 import cv2, glob, sys
 import numpy as np
-from utils.bbox_utils import xywh_to_xyxy_np
 import time
 
 class Drawer():
@@ -13,9 +12,7 @@ class Drawer():
     def get_colors(self, num_classes):
         return [[np.random.randint(0, 256), np.random.randint(0, 256), np.random.randint(0, 256)] for _ in range(num_classes)]
 
-    def draw_labels(self, image, data, xywh=True):
-        if xywh:
-            data = xywh_to_xyxy_np(data, with_label=True)
+    def draw_labels(self, image, data):
         bboxes = data[..., :4].astype(np.int32)
         scores = np.ones_like(data[..., -1]) if data.shape[-1] ==5 else data[..., 4]
         classes = data[..., -1].astype(np.int32)
@@ -35,12 +32,12 @@ class Painter(Drawer):
         self.title = 'prediction' if self.draw%2==0 else 'gt_&_pred'
         self.count = len(glob.glob(f'{self.dir}/{self.title}_*.jpg'))
         
-    def draw_image(self, image, labels, preds, xywh=True):
+    def draw_image(self, image, labels, preds):
         image = image[..., ::-1]
-        output = self.draw_labels(image.copy(), preds, xywh=xywh)
+        output = self.draw_labels(image.copy(), preds)
 
         if self.title != 'prediction':
-            gt = self.draw_labels(image.copy(), labels, xywh=False)
+            gt = self.draw_labels(image.copy(), labels)
             output = np.concatenate([gt, output], 1)
         
         self.write_image(output)

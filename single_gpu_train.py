@@ -45,15 +45,15 @@ def main():
     def test_step(batch_images, batch_labels):
         preds = model(batch_images)
         valid_loss = model.loss(batch_labels, preds)
-        batch_preds = model.decoder.final_decode(preds)
+        batch_preds = model.decoder.bbox_decode(preds)
         
         return batch_preds, *valid_loss
     
-    def update_eval_step(batch_preds, batch_labels):
+    def update_eval_step(batch_labels, batch_preds):
         for i, preds in enumerate(batch_preds):
             labels = batch_labels[batch_labels[..., 0]==i][..., 1:].numpy()
             NMS_preds = model.decoder.NMS(preds).numpy()
-            eval.update_stats(NMS_preds, labels)
+            eval.update(labels, NMS_preds)
 
     for epoch in range(start_epoch, epochs + 1):
         if cfg['aug']['mosaic'] and epoch==cfg['train']['mosaic_epochs']:
@@ -86,7 +86,7 @@ def main():
             
             logger.write_train_summary(global_step, optimizer.lr, train_loss)
             
-            tqdm_text = f'lr={optimizer.lr:.6f}, ' +\
+            tqdm_text = f'lr={optimizer.lr:.5f}, ' +\
                         f'total_loss={train_loss[0].numpy():.3f}, ' +\
                         f'reg_loss={train_loss[1].numpy():.3f}, ' +\
                         f'obj_loss={train_loss[2].numpy():.3f}, ' +\
@@ -101,8 +101,8 @@ def main():
             valid_tqdm = tqdm.tqdm(valid_dataset, total=valid_dataset_length, ncols=160, desc=f'Valid epoch {epoch}/{epochs}', ascii=' =', colour='blue')
             for batch_images, batch_labels in valid_tqdm:
                 batch_preds, total_loss, reg_loss, obj_loss, cls_loss = test_step(batch_images, batch_labels)
-                update_eval_step(batch_preds, batch_labels)
-                mAP50, mAP = eval.calculate_mAP()
+                update_eval_step(batch_labels, batch_preds)
+                mAP50, mAP = eval.compute_mAP()
                 
                 valid_total_loss += total_loss
                 valid_reg_loss += reg_loss

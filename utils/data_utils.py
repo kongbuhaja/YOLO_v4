@@ -1,10 +1,10 @@
 import tensorflow as tf
 import numpy as np
-from utils.bbox_utils import xyxy_to_xywh
 from datasets.voc_dataset import Dataset as voc_dataset
 from datasets.coco_dataset import Dataset as coco_dataset
 from datasets.custom_dataset import Dataset as custom_dataset
 from utils.aug_utils import resize, resize_padding, mosaic_augmentation, batch_augmentation, crop
+from utils.bbox_utils import xyxy_to_xywh
 
 class DataLoader():
     def __init__(self, cfg):
@@ -30,9 +30,10 @@ class DataLoader():
         data = data.cache() if cache else data
         data = data.shuffle(buffer_size = self.length[split], seed=self.seed, reshuffle_each_iteration=True) if aug else data
         
-        data = data.map(self.preprocess, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        data = data.map(lambda image, labels: self.preprocess(image, labels, split), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         data = self.augmentation(data, aug, seed=self.seed)
         data = self.method(split, data, batch_size, aug, resize, seed=self.seed)
+        data = data.map(self.xyxy_to_xywh, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         data = data.prefetch(tf.data.experimental.AUTOTUNE)
 
         return data
@@ -49,10 +50,15 @@ class DataLoader():
         return image, labels
 
     @tf.function
-    def preprocess(self, file, labels):
+    def preprocess(self, file, labels, split):
         image, labels = self.read_image(file, labels)
         image, labels = self.normalization(image, labels)
-        image, labels = resize(image, labels, self.input_size)
+        image, labels = resize(image, labels, self.input_size) if split=='train' else (image, labels)
+        return image, labels
+    
+    @tf.function
+    def xyxy_to_xywh(self, image, labels):
+        labels = xyxy_to_xywh(labels, start=1)
         return image, labels
     
     def augmentation(self, data, aug, seed=42):

@@ -57,7 +57,7 @@ def main():
         def test_step(batch_images, batch_grids):
             preds = model(batch_images)
             valid_loss = model.loss(batch_grids, preds)
-            batch_processed_preds = model.decoder.final_decode(preds)
+            batch_processed_preds = model.decoder.bbox_decode(preds)
             
             return valid_loss, batch_processed_preds
         

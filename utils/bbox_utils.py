@@ -47,28 +47,40 @@ def bbox_iou(bbox1, bbox2, xywh=True, iou_type='iou', eps=1e-7):
             
     return iou
 
-def xyxy_to_xywh(boxes, with_label=False):
-    labels = tf.concat([(boxes[..., 0:2] + boxes[..., 2:4])*0.5, boxes[..., 2:4] - boxes[..., 0:2]],-1)
-    if with_label:
-        labels = tf.concat([labels, boxes[..., 4:]], -1)
+def bbox_iou_np(bbox1, bbox2, xywh=True, eps=1e-7):
+    if xywh:
+        area1 = np.prod(bbox1[..., 2:4], -1)
+        area2 = np.prod(bbox2[..., 2:4], -1)
+        bbox1 = np.concatenate([bbox1[..., :2] - bbox1[..., 2:] * 0.5, bbox1[..., :2] + bbox1[..., 2:] * 0.5], -1)
+        bbox2 = np.concatenate([bbox2[..., :2] - bbox2[..., 2:] * 0.5, bbox2[..., :2] + bbox2[..., 2:] * 0.5], -1)
+    else:
+        area1 = np.prod(bbox1[..., 2:] - bbox1[..., :2], -1)
+        area2 = np.prod(bbox2[..., 2:] - bbox2[..., :2], -1)
+    
+    i_Left_Top = np.maximum(bbox1[..., :2], bbox2[..., :2])
+    i_Right_Bottom = np.minimum(bbox1[..., 2:], bbox2[..., 2:])
+
+    inter_area = np.prod(np.maximum(i_Right_Bottom - i_Left_Top, 0.0), -1)
+    union_area = np.maximum(area1 + area2 - inter_area, eps)
+
+    iou = inter_area / union_area
+            
+    return iou
+
+def xyxy_to_xywh(labels, start=0):
+    labels = tf.concat([labels[..., :start],
+                        (labels[..., start:start+2] + labels[..., start+2:start+4])*0.5,
+                        labels[..., start+2:start+4] - labels[..., start:start+2],
+                        labels[..., start+4:]],-1)
+
     return labels
 
-def xywh_to_xyxy(boxes, with_label=False):
-    labels = tf.concat([boxes[..., :2] - boxes[..., 2:4] * 0.5 , boxes[..., :2] + boxes[..., 2:4] * 0.5], -1)
-    if with_label:
-        labels = tf.concat([labels, boxes[..., 4:]], -1)
-    return labels
-
-def xyxy_to_xywh_np(boxes, with_label=False):
-    labels = np.concatenate([(boxes[..., 0:2] + boxes[..., 2:4])*0.5, boxes[..., 2:4] - boxes[..., 0:2]],-1)
-    if with_label:
-        labels = np.concatenate([labels, boxes[..., 4:]], -1)
-    return labels
-
-def xywh_to_xyxy_np(boxes, with_label=False):
-    labels = np.concatenate([boxes[..., :2] - boxes[..., 2:4] * 0.5 , boxes[..., :2] + boxes[..., 2:4] * 0.5], -1)
-    if with_label:
-        labels = np.concatenate([labels, boxes[..., 4:]], -1)
+def xywh_to_xyxy(labels, start=0):
+    labels = tf.concat([labels[..., :start],
+                        labels[..., start:start+2] - labels[..., start+2:start+4] * 0.5, 
+                        labels[..., start:start+2] + labels[..., start+2:start+4] * 0.5,
+                        labels[..., start+4:]], -1)
+        
     return labels
 
 def coco_to_xyxy(boxes):
@@ -87,12 +99,12 @@ def bbox_iou_wh_np(wh1, wh2, eps=1e-7):
     union_area = np.maximum(wh1[..., 0] * wh1[..., 1] + wh2[..., 0] * wh2[..., 1] - inter_area, eps)
     return inter_area / union_area
 
-def unresize_unpad_labels(labels, pad, ratio, xywh=True):
-    xy1 = (labels[..., 0:2] - pad) / ratio
-    if xywh:
-        labels = tf.concat([xy1, labels[..., 2:]], -1)
-    else:
-        xy2 = (labels[..., 2:4] - pad) / ratio
-        labels = tf.concat([xy1, xy2, labels[..., 4:]], -1)
+def unresize_unpad_labels(labels, pad, ratio):
+    # labels = tf.concat([(labels[..., 0:2] - pad) / ratio,
+    #                     (labels[..., 2:4] - pad) / ratio,
+    #                     labels[..., 4:]], -1)
+    labels = tf.concat([(labels[..., 0:2] - pad) / ratio,
+                        labels[..., 2:4] / ratio,
+                        labels[..., 4:]], -1)
 
     return labels
