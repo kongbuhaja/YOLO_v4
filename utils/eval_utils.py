@@ -30,7 +30,7 @@ class Eval:
         elif labels.shape[0]:
             detect = []
             for c in np.unique(labels[:, 4]):
-                ti = (c == labels[: 4]).nonzero()[0]
+                ti = (c == labels[:, 4]).nonzero()[0]
                 pi = (c == preds[:, 5]).nonzero()[0]
                 
                 if pi.shape[0]:
