@@ -11,21 +11,21 @@ def main():
     cfg['batch_size'] = 1
     cfg['mosaic'] = 0
     cfg['model']['anchors'] = np.zeros([0,0])
-    cfg['model']['input_size'] = np.zeros([2,])
 
     anchors = Anchors(cfg['seed'])
-    temp = []
+    data = []
     
     dataloader = DataLoader(cfg)
 
-    train_dataset = dataloader('train', cfg['batch_size'], aug=cfg['aug'])
+    train_dataset = dataloader('train', resize=True)
     train_dataset_length = dataloader.length['train']
 
     anchor_tqdm = tqdm.tqdm(train_dataset, total=train_dataset_length, ncols=160, desc=f'Reading train dataset', ascii=' =', colour='red')
-    for image, label in anchor_tqdm:
-        temp += [label[..., 3:5]/tf.cast(tf.reduce_max(image.shape[1:3]), tf.float32)]
 
-    cfg['data']['anchors'] = anchors.generate_anchors(tf.concat(temp, 0))
+    for image, label in anchor_tqdm:
+        data += [label[..., 3:5]/tf.cast(tf.reduce_max(image.shape[1:3]), tf.float32)]
+
+    cfg['data']['anchors'] = anchors.generate_anchors(tf.concat(data, 0))
     write_cfg({'data': cfg['data']})
 
 class Anchors:

@@ -5,7 +5,7 @@ model:
   checkpoint: checkpoints
 
 # custom, voc, coco
-data: custom
+data: voc
 
 train:
   epochs: 5000
