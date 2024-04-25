@@ -36,24 +36,28 @@ class Decoder():
         return decoded_preds
     
     def NMS(self, targets):
-        output = tf.zeros((0, 6), tf.float32)
+        # output = tf.zeros((0, 6), tf.float32)
+        output = []
 
         mask = targets[:, 4] >= self.score_th
         targets = targets[mask]
         while(tf.shape(targets)[0] > 0):   
             max_idx = tf.argmax(targets[:, 4], -1)
-            max_target = targets[max_idx][None]
-            output = tf.concat([output, max_target], 0)
+            max_target = targets[max_idx]
+            # max_target = targets[max_idx][None]
+            # output = tf.concat([output, max_target], 0)
+            output += [max_target]
 
             targets = tf.concat([targets[:max_idx], targets[max_idx+1:]], 0)
-            ious = bbox_iou(max_target[:, :4], targets[:, :4], iou_type='diou')
+            ious = bbox_iou(max_target[None, :4], targets[:, :4], iou_type='diou')
+            # ious = bbox_iou(max_target[:, :4], targets[:, :4], iou_type='diou')
             scores = self.nms(ious, targets[:, 4])
             
             targets = tf.concat([targets[:, :4], scores[:, None], targets[:, 5:]], -1)
 
             mask = targets[:, 4] >= self.score_th
             targets = targets[mask]
-            
+        output = tf.stack(output)
         return output
 
     @tf.function

@@ -8,8 +8,8 @@ model:
 data: voc
 
 train:
-  epochs: 5000
-  mosaic_epochs: 4900
+  epochs: 5
+  mosaic_epochs: 5
   # cosine_annealing_warm_restart, cosine_annealing, poly, step, custom
   lr_scheduler:
     name: cosine_annealing_warm_restart
@@ -17,7 +17,7 @@ train:
     power: 0.9
     steps: [100, 200]
     decays: [0.5, 0.5]
-    warmup_epochs: 10
+    warmup_epochs: 1
   optimizer:
     name: Adam
     momentum: 0.9

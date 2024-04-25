@@ -12,7 +12,6 @@ class DataLoader():
         self.row_anchors , self.col_anchors = cfg['model']['anchors'].shape[:2]
         self.num_classes = cfg['data']['labels']['count']
         self.input_size = cfg['model']['input_size'].astype(np.float32)
-        self.max_bboxes = cfg['data']['max_bboxes']
         self.seed = cfg['seed']
         self.length = {}
 
