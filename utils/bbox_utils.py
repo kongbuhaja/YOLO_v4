@@ -11,7 +11,6 @@ def bbox_iou(bbox1, bbox2, xywh=True, iou_type='iou', eps=1e-7):
         area1 = tf.reduce_prod(bbox1[..., 2:] - bbox1[..., :2], -1)
         area2 = tf.reduce_prod(bbox2[..., 2:] - bbox2[..., :2], -1)
     
-
     i_Left_Top = tf.maximum(bbox1[..., :2], bbox2[..., :2])
     i_Right_Bottom = tf.minimum(bbox1[..., 2:], bbox2[..., 2:])
 
@@ -47,7 +46,7 @@ def bbox_iou(bbox1, bbox2, xywh=True, iou_type='iou', eps=1e-7):
             
     return iou
 
-def bbox_iou_np(bbox1, bbox2, xywh=True, eps=1e-7):
+def bbox_iou_np(bbox1, bbox2, xywh=True, iou_type='iou', eps=1e-7):
     if xywh:
         area1 = np.prod(bbox1[..., 2:4], -1)
         area2 = np.prod(bbox2[..., 2:4], -1)
@@ -65,6 +64,31 @@ def bbox_iou_np(bbox1, bbox2, xywh=True, eps=1e-7):
 
     iou = inter_area / union_area
             
+    if iou_type in ['giou', 'diou', 'ciou']:
+        c_Left_Top = np.minimum(bbox1[..., :2], bbox2[..., :2])
+        c_Right_Bottom = np.maximum(bbox1[..., 2:], bbox2[..., 2:])
+        if iou_type == 'giou':
+            c_area = np.maximum(np.prod(c_Right_Bottom - c_Left_Top, -1), eps)
+            return iou - (c_area - union_area)/c_area
+        
+        elif iou_type in ['diou', 'ciou']:
+            center_xy1 = (bbox1[..., :2] + bbox1[..., 2:]) * 0.5
+            center_xy2 = (bbox2[..., :2] + bbox2[..., 2:]) * 0.5
+            p_square = np.sum(np.square(center_xy2 - center_xy1), -1)
+            c_square = np.maximum(np.sum(np.squre(c_Right_Bottom - c_Left_Top), -1), eps)
+
+            if iou_type == 'diou':
+                return iou - p_square/c_square
+            
+            w1 = bbox1[..., 2] - bbox1[..., 0]
+            h1 = np.maximum(bbox1[..., 3] - bbox1[..., 1], eps)
+            w2 = bbox2[..., 2] - bbox2[..., 0]
+            h2 = np.maximum(bbox2[..., 3] - bbox2[..., 1], eps)
+
+            v = 4/np.squre(np.pi) * np.square(np.arctan(w2/h2) - np.arctan(w1/h1))
+            alpha = v/np.maximum((1.0 - iou + v), eps)
+            return iou - p_square/c_square - alpha*v
+        
     return iou
 
 def xyxy_to_xywh(labels, start=0):
