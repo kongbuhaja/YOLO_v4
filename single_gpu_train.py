@@ -51,8 +51,7 @@ def main():
     def update_eval_step(batch_labels, batch_preds):
         for i, preds in enumerate(batch_preds):
             labels = batch_labels[batch_labels[..., 0]==i][..., 1:].numpy()
-            # NMS_preds = model.decoder.NMS(preds).numpy()
-            NMS_preds = model.decoder.NMS2(preds.numpy())
+            NMS_preds = model.decoder.NMS(preds.numpy())
             eval.update(labels, NMS_preds)
 
     for epoch in range(start_epoch, epochs + 1):
