@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np 
-from utils.bbox_utils import bbox_iou
+from utils.bbox_utils import bbox_iou, bbox_iou_np
 
 class Decoder():
     def __init__(self, cfg):
@@ -59,6 +59,49 @@ class Decoder():
             targets = targets[mask]
         output = tf.stack(output)
         return output
+    
+    def NMS2(self, preds):
+        output = []
+        preds = preds[preds[:, 4] >= self.score_th]
+
+        if preds.shape[0] == 0:
+            return np.zeros([0, 6])
+        
+        while(preds.shape[0] > 0):
+            max_idx = np.argmax(preds[:, 4], -1)
+            max_pred = preds[max_idx]
+            max_cls = max_pred[5]
+            output += [max_pred]
+
+            preds = np.concatenate([preds[:max_idx], preds[max_idx+1:]], 0)
+            target_mask = preds[:, 5] == max_cls
+            targets = preds[target_mask]
+            ious = bbox_iou_np(max_pred[None, :4], targets[:, :4], iou_type='iou')
+            preds[target_mask, 5] = np.where(ious >= self.iou_th, targets[:, 4] * (1 - ious), targets[:, 4])
+            preds = preds[preds[:, 4] >= self.score_th]
+
+        return np.stack(output)
+
+    def NMS3(self, preds):
+        output = []
+        
+        preds = preds[preds[:, 4] >= self.score_th]
+        while(preds.shape[0] > 0):
+            max_idx = tf.argmax(preds[:, 4], -1)
+            max_pred = preds[max_idx]
+            max_cls = max_pred[5]
+            output += [max_pred]
+
+            preds = tf.concat([preds[:max_idx], preds[max_idx+1:]], 0)
+            target_idx = tf.where(preds[:, 5] == max_cls)
+            targets = tf.gather(preds, target_idx[:, 0])
+            ious = bbox_iou(max_pred[None, :4], targets[:, :4], iou_type='iou')
+            indices = tf.concat([target_idx, tf.zeros_like(target_idx)+5], -1)
+            scores = tf.where(ious >= self.iou_th, targets[:, 4] * (1 - ious), targets[:, 4])
+            preds = tf.tensor_scatter_nd_update(preds, indices, scores)
+            preds = preds[preds[:, 4] >= self.score_th]
+
+        return tf.stack(output)
 
     @tf.function
     def bbox_decode(self, preds):

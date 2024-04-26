@@ -5,11 +5,11 @@ model:
   checkpoint: checkpoints
 
 # custom, voc, coco
-data: voc
+data: custom
 
 train:
-  epochs: 5
-  mosaic_epochs: 5
+  epochs: 5000
+  mosaic_epochs: 5000
   # cosine_annealing_warm_restart, cosine_annealing, poly, step, custom
   lr_scheduler:
     name: cosine_annealing_warm_restart
@@ -17,7 +17,7 @@ train:
     power: 0.9
     steps: [100, 200]
     decays: [0.5, 0.5]
-    warmup_epochs: 1
+    warmup_epochs: 10
   optimizer:
     name: Adam
     momentum: 0.9
@@ -36,8 +36,8 @@ eval:
   nms:
     # normal, soft_normal, soft_gaussian
     type: soft_gaussian
-    iou_th: 0.2
-    score_th: 0.1
+    iou_th: 0.5
+    score_th: 0.01
     sigma: 0.3
   dir: outputs
   video: 0
