@@ -11,7 +11,6 @@ def main():
     cfg = read_cfg()
 
     epochs = cfg['train']['epochs']
-    checkpoint = cfg['model']['checkpoint']
     
     model, start_epoch, max_mAP = load_model(cfg)
     dataloader = DataLoader(cfg)
@@ -129,8 +128,8 @@ def main():
             
             if mAP > max_mAP:
                 max_mAP = mAP
-                save_model(model, epoch, mAP50, mAP, valid_loss, checkpoint)
-                print(f'\033[32mbest_model is saved with {mAP:.4f} mAP in {epoch} epoch\033[0m')
+                save_model(model, epoch, mAP50, mAP, valid_loss, cfg['model']['best_checkpoint'])
+            save_model(model, epoch, mAP50, mAP, valid_loss, cfg['model']['last_checkpoint'])
 
        
 if __name__ == '__main__':

@@ -53,5 +53,5 @@ def load_model(cfg):
 def save_model(model, epoch, mAP50, mAP, loss, checkpoint):
     model.save_weights(checkpoint)
     write_model_info(checkpoint, epoch, mAP50, mAP, loss)
-    if 'map' in checkpoint.split('/')[-1]:
-        print(f'{checkpoint} epoch:{epoch}, mAP50:{mAP50:.4f}, mAP:{mAP:.4f} best_model is saved')
+    if 'best' in checkpoint:
+        print(f'\033[32mbest_model is saved with {mAP:.4f} mAP in {epoch} epoch\033[0m')
