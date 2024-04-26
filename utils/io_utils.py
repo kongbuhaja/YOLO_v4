@@ -41,7 +41,7 @@ def read_cfg():
     cfg['model']['input_size'] = np.array(cfg['model']['input_size'])
     cfg['model']['strides'] = np.array(cfg['model']['strides'])
     cfg['model']['anchors'] = np.array(cfg['data']['anchors'][cfg['model']['anchors']]) * cfg['model']['input_size']
-    cfg['model']['checkpoint'] = f"{cfg['model']['checkpoint']}/{cfg['data']['name']}"
+    cfg['model']['checkpoint'] = f"{cfg['model']['checkpoint']}/{cfg['data']['name']}/{cfg['model']['name']}"
     cfg['model']['best_checkpoint'] = f"{cfg['model']['checkpoint']}/best/{cfg['model']['name']}"
     cfg['model']['last_checkpoint'] = f"{cfg['model']['checkpoint']}/last/{cfg['model']['name']}"
     cfg['model']['checkpoint'] = cfg['model']['best_checkpoint'] if cfg['model']['load'] == 'best' else cfg['model']['last_checkpoint']
