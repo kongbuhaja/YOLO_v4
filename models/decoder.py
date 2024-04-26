@@ -106,9 +106,10 @@ class Decoder():
     @tf.function
     def bbox_decode(self, preds):
         batch_size = preds[0].shape[0]
-        bboxes = tf.zeros((batch_size, 0, 4))
-        scores = tf.zeros((batch_size, 0, 1))
-        classes = tf.zeros((batch_size, 0, 1))
+        bboxes = []
+        scores = []
+        classes = []
+
         for pred, anchor, stride in zip(preds, self.anchors, self.strides):
             pred = tf.reshape(pred, [batch_size, -1, 5+self.num_classes])
 
@@ -120,10 +121,13 @@ class Decoder():
             max_prob_id = tf.cast(tf.argmax(probs, -1)[..., None], tf.float32)
             max_prob = tf.reduce_max(probs, -1)[..., None]
 
-            bboxes = tf.concat([bboxes, tf.concat([xy, wh], -1) * stride], 1)
-            scores = tf.concat([scores, score * max_prob], 1)
-            classes = tf.concat([classes, max_prob_id], 1)
+            bboxes += [tf.concat([xy, wh], -1) * stride]
+            scores += [score * max_prob]
+            classes += [max_prob_id]
 
+        bboxes = tf.concat(bboxes, 1)
+        scores = tf.concat(scores, 1)
+        classes = tf.concat(classes, 1)
         bboxes = tf.minimum(tf.maximum(bboxes, [0., 0., 0., 0.]), [*self.input_size, *self.input_size])
 
         return tf.concat([bboxes, scores, classes], -1)
