@@ -132,7 +132,7 @@ def minmax(image, labels):
 
 
 # @tf.function
-def resize_padding(image, labels, out_size, random=False, mode='CONSTANT', constant_values=128, seed=42):
+def resize_padding(image, labels, out_size, random=False, mode='CONSTANT', constant_values=0, seed=42):
     size = tf.cast(tf.shape(image)[:2][::-1], tf.float32)
     ratio = out_size/tf.reduce_max(size)
     new_size = tf.cast(ratio * size, tf.int32)
@@ -164,7 +164,7 @@ def resize(image, labels, out_size):
 
     return resized_image, resized_labels
 
-def resize_padding_without_labels(image, out_size, mode='CONSTANT', constant_values=128):
+def resize_padding_without_labels(image, out_size, mode='CONSTANT', constant_values=0):
     size = tf.cast(tf.shape(image)[:2][::-1], tf.float32)
     ratio = out_size/tf.reduce_max(size)
     new_size = tf.cast(ratio * size, tf.int32)
