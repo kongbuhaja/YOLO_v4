@@ -75,7 +75,7 @@ def bbox_iou_np(bbox1, bbox2, xywh=True, iou_type='iou', eps=1e-7):
             center_xy1 = (bbox1[..., :2] + bbox1[..., 2:]) * 0.5
             center_xy2 = (bbox2[..., :2] + bbox2[..., 2:]) * 0.5
             p_square = np.sum(np.square(center_xy2 - center_xy1), -1)
-            c_square = np.maximum(np.sum(np.squre(c_Right_Bottom - c_Left_Top), -1), eps)
+            c_square = np.maximum(np.sum(np.square(c_Right_Bottom - c_Left_Top), -1), eps)
 
             if iou_type == 'diou':
                 return iou - p_square/c_square
@@ -85,7 +85,7 @@ def bbox_iou_np(bbox1, bbox2, xywh=True, iou_type='iou', eps=1e-7):
             w2 = bbox2[..., 2] - bbox2[..., 0]
             h2 = np.maximum(bbox2[..., 3] - bbox2[..., 1], eps)
 
-            v = 4/np.squre(np.pi) * np.square(np.arctan(w2/h2) - np.arctan(w1/h1))
+            v = 4/np.square(np.pi) * np.square(np.arctan(w2/h2) - np.arctan(w1/h1))
             alpha = v/np.maximum((1.0 - iou + v), eps)
             return iou - p_square/c_square - alpha*v
         

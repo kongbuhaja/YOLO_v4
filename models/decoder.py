@@ -42,39 +42,44 @@ class Decoder():
         if preds.shape[0] == 0:
             return np.zeros([0, 6])
         
-        while(preds.shape[0] > 0):
-            max_idx = np.argmax(preds[:, 4], -1)
-            max_pred = preds[max_idx]
-            max_cls = max_pred[5]
-            output += [max_pred]
+        for cls in range(self.num_classes):
+            pred = preds[preds[:, 5]==cls]
+            
+            while(pred.shape[0] > 0):
+                max_idx = np.argmax(pred[:, 4], -1)
+                max_pred = pred[max_idx]
+                output += [max_pred]
 
-            preds = np.concatenate([preds[:max_idx], preds[max_idx+1:]], 0)
-            target_mask = preds[:, 5] == max_cls
-            targets = preds[target_mask]
-            ious = bbox_iou_np(max_pred[None, :4], targets[:, :4], iou_type='iou')
-            preds[target_mask, 5] = self.nms(ious, targets[:, 4])
-            preds = preds[preds[:, 4] >= self.score_th]
+                pred = np.concatenate([pred[:max_idx], pred[max_idx+1:]], 0)
+                boxes = pred[:, :4]
+                ious = bbox_iou_np(max_pred[None, :4], boxes, iou_type='diou')
+                scores = (np.exp(-np.square(ious)/self.sigma) * pred[:, 4])[:, None]
+                pred = np.concatenate([boxes, scores, np.zeros_like(scores)+cls], -1)
+                pred = pred[pred[:, 4] >= self.score_th]
 
         return np.stack(output)
 
     def NMS_tf(self, preds):
         output = []
-        
         preds = preds[preds[:, 4] >= self.score_th]
-        while(preds.shape[0] > 0):
-            max_idx = tf.argmax(preds[:, 4], -1)
-            max_pred = preds[max_idx]
-            max_cls = max_pred[5]
-            output += [max_pred]
 
-            preds = tf.concat([preds[:max_idx], preds[max_idx+1:]], 0)
-            target_idx = tf.where(preds[:, 5] == max_cls)
-            targets = tf.gather(preds, target_idx[:, 0])
-            ious = bbox_iou(max_pred[None, :4], targets[:, :4], iou_type='iou')
-            indices = tf.concat([target_idx, tf.zeros_like(target_idx)+5], -1)
-            scores = tf.where(ious >= self.iou_th, targets[:, 4] * (1 - ious), targets[:, 4])
-            preds = tf.tensor_scatter_nd_update(preds, indices, scores)
-            preds = preds[preds[:, 4] >= self.score_th]
+        if preds.shape[0] == 0:
+            return tf.zeros([0, 6])
+        
+        for cls in range(self.num_classes):
+            pred = preds[preds[:, 5]==cls]
+
+            while(pred.shape[0] > 0):
+                max_idx = tf.argmax(pred[:, 4], -1)
+                max_pred = pred[max_idx]
+                output += [max_pred]
+
+                pred = tf.concat([pred[:max_idx], pred[max_idx+1:]], 0)
+                boxes = pred[:, :4]
+                ious = bbox_iou(max_pred[None, :4], boxes, iou_type='diou')
+                scores = (tf.exp(-np.square(ious)/self.sigma) * pred[:, 4])[:, None]
+                pred = tf.concat([boxes, scores, tf.zeros_like(scores)+cls], -1)
+                pred = pred[pred[:, 4] >= self.score_th]
 
         return tf.stack(output)
 
@@ -141,7 +146,7 @@ class Decoder():
         return np.where(ious >= self.iou_th, scores * (1 - ious), scores)
 
     def soft_gaussian_nms(self, ious, scores):
-        return np.exp(-np.square(ious)/self.sigma) * scores
+        return tf.exp(-np.square(ious)/self.sigma) * scores
 
     
 def get_anchors_grid(anchors, strides, image_size):
