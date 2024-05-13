@@ -46,9 +46,9 @@ class Base_Dataset():
         print(f'Start make {filepath}......      ', end='', flush=True)
         with tf.io.TFRecordWriter(filepath) as writer:
             for image_file, labels in tqdm.tqdm(self.data):
-                image = self.read_image(image_file)
-                writer.write(_data_features(image, labels))
-                # writer.write(_data_features(image_file, labels))
+                # image = self.read_image(image_file)
+                # writer.write(_data_features(image, labels))
+                writer.write(_data_features(image_file, labels))
         print('Done!')
 
     def download_from_server(self):
@@ -58,8 +58,8 @@ class Base_Dataset():
         os.remove(f'data/{self.dtype}.tar.gz')
         
     def read_image(self, image_file):
-        image = cv2.imread(image_file)
-        return image[..., ::-1]
+        image = tf.io.read_file(image_file)
+        return image
     
     # Overwrite in subclass
     def download_dataset(self):
@@ -111,8 +111,8 @@ def _int64_feature(value):
         value=[value]
     return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
 def _data_features(image, labels):
-    image_feature = _image_feature(image)
-    # image_feature = _string_feature(image)
+    # image_feature = _image_feature(image)
+    image_feature = _string_feature(image)
     labels_feature = _array_feature(np.array(labels))
     
     objects_features = {
