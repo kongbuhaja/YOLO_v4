@@ -238,8 +238,12 @@ class DataLoader():
                         width, height = self.mosaic_size[0] - xcf if i%2 else xcf, self.mosaic_size[1] - ycf if i//2 else ycf
                         image, labels = resize_padding(image, labels, tf.stack([width, height]))
 
+                        h, w = tf.unstack(image.shape[:2])
+                        x1, y1 = xc if i%s else xc - w, yc if i//s else yc - h
+                        x2, y2 = x1+w, y1+h
+
                         mosaic_image += [image]
-                        mosaic_labels += [labels]
+                        mosaic_labels += [labels + [x1, y1, x1, y1, 0]]
 
                     mosaic_image = tf.concat([tf.concat(mosaic_image[0:2], 1), tf.concat(mosaic_image[2:4], 1)], 0)
                     mosaic_labels = tf.concat(mosaic_labels, 0)
