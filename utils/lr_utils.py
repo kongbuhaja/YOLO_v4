@@ -7,7 +7,7 @@ class warmup():
         self.warmup_max_step = warmup_max_step
 
     def __call__(self, step):
-        lr = self.init_lr / self.warmup_max_step * step / 100
+        lr = self.init_lr / self.warmup_max_step * step
         return lr
 
 class step():
