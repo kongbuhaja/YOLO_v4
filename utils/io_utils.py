@@ -59,6 +59,7 @@ def read_cfg():
     env_set(cfg)
     cfg['gpus'] = len(cfg['gpus'].split(','))
     cfg['batch_size'] *= cfg['gpus']
+    cfg['eval']['batch_size'] *= cfg['gpus']
 
     return cfg
 
