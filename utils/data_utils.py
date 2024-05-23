@@ -73,7 +73,8 @@ class DataLoader():
                 ix1, iy1 = tf.unstack(tf.round((self.mosaic_size - self.input_size)/2))
                 ix2, iy2 = ix1+self.input_size[0], iy1+self.input_size[1]
                 self.crop_xyxy = tf.stack([ix1, iy1, ix2, iy2])
-                method = self.mosaic3
+                self.mosaic_size = tf.round(self.input_size * 1.5)
+                method = self.mosaic
             else:
                 random_pad = True if split=='train' else False
                 data = data.map(lambda image, labels: resize_padding(image, labels, self.input_size, random_pad, seed=seed), num_parallel_calls=tf.data.experimental.AUTOTUNE)
@@ -112,10 +113,6 @@ class DataLoader():
         batch_mosaic_images = tf.zeros([0]+tf.unstack(self.input_size)+[3])
         batch_mosaic_labels = tf.zeros([0, 6], tf.float32)
         s = tf.cast(tf.sqrt(tf.cast(size, tf.float32)), tf.int32)
-        mosaic_size = tf.round(self.input_size * 1.5)
-        ix1, iy1 = tf.unstack(tf.round((mosaic_size - self.input_size)/2))
-        ix2, iy2 = ix1+self.input_size[0], iy1+self.input_size[1]
-        crop_xyxy = tf.stack([ix1, iy1, ix2, iy2])
         
         for image, labels in data:
             batch_images += [image]
@@ -123,11 +120,11 @@ class DataLoader():
 
             if len(batch_images) == batch_size:
                 for idx in range(batch_size):
-                    mosaic_image = tf.Variable(tf.zeros(tf.unstack(mosaic_size)+[3]), trainable=False)
+                    mosaic_image = tf.Variable(tf.zeros(tf.unstack(self.mosaic_size)+[3]), trainable=False)
                     mosaic_labels = tf.zeros([0, 5], tf.float32)
                     xc, yc = tf.unstack(tf.cast(tf.random.uniform([2], 
-                                                                  minval=mosaic_size//(2**size)*(2**(size-1)-1), 
-                                                                  maxval=mosaic_size//(2**size)*(2**(size-1)+1), 
+                                                                  minval=self.mosaic_size//(2**size)*(2**(size-1)-1), 
+                                                                  maxval=self.mosaic_size//(2**size)*(2**(size-1)+1), 
                                                                   seed=seed), dtype=tf.int32))
                     xcf, ycf = tf.cast(xc, tf.float32), tf.cast(yc, tf.float32)
                     indices = tf.random.uniform([size], minval=0, maxval=batch_size, dtype=tf.int32, seed=seed)
@@ -136,7 +133,7 @@ class DataLoader():
                     for i, index in enumerate(indices):
                         image = batch_images[index]
                         labels = batch_labels[index]
-                        width, height = mosaic_size[0] - xcf if i%2 else xcf, mosaic_size[1] - ycf if i//2 else ycf
+                        width, height = self.mosaic_size[0] - xcf if i%2 else xcf, self.mosaic_size[1] - ycf if i//2 else ycf
                         image, labels = resize(image, labels, tf.stack([width, height]))
 
                         h, w = tf.unstack(image.shape[:2])
@@ -146,7 +143,7 @@ class DataLoader():
                         mosaic_image[y1:y2, x1:x2].assign(image)
                         mosaic_labels = tf.concat([mosaic_labels, labels + [x1, y1, x1, y1, 0]], 0)
 
-                    crop_image, crop_labels = crop(mosaic_image.value(), mosaic_labels, crop_xyxy)
+                    crop_image, crop_labels = crop(mosaic_image.value(), mosaic_labels, self.crop_xyxy)
                     batch_mosaic_images = tf.concat([batch_mosaic_images, crop_image[None]], 0)
                     batch_mosaic_labels = tf.concat([batch_mosaic_labels, tf.concat([tf.zeros(crop_labels.shape[:-1], dtype=tf.float32)[..., None]+idx, crop_labels], -1)], 0)
                     
