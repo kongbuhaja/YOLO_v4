@@ -8,11 +8,6 @@ from utils.io_utils import read_model_info, write_model_info
 class YOLO(Model):
     def __init__(self, cfg):
         super().__init__()
-        self.nms = cfg['eval']['nms']['type']
-        self.score_th = cfg['eval']['nms']['score_th']
-        self.iou_th = cfg['eval']['nms']['iou_th']
-        self.sigma = cfg['eval']['nms']['sigma']
-
         cfg['model']['kernel_init'] = get_kernel_initializer(cfg)    
             
         self.backbone = get_backbone(cfg)
