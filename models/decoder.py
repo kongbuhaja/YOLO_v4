@@ -25,7 +25,6 @@ class Decoder():
 
         self.score_th = cfg['eval']['nms']['score_th']
         self.iou_th = cfg['eval']['nms']['iou_th']
-        self.sigma = cfg['eval']['nms']['sigma']
     
     @tf.function
     def __call__(self, preds):
@@ -53,35 +52,11 @@ class Decoder():
                 pred = np.concatenate([pred[:max_idx], pred[max_idx+1:]], 0)
                 boxes = pred[:, :4]
                 ious = bbox_iou_np(max_pred[None, :4], boxes, iou_type='diou')
-                scores = (np.exp(-np.square(ious)/self.sigma) * pred[:, 4])[:, None]
+                scores = np.nms(ious, pred[:, 4])[:, None]
                 pred = np.concatenate([boxes, scores, np.zeros_like(scores)+cls], -1)
                 pred = pred[pred[:, 4] >= self.score_th]
 
         return np.stack(output)
-
-    def NMS_tf(self, preds):
-        output = []
-        preds = preds[preds[:, 4] >= self.score_th]
-
-        if preds.shape[0] == 0:
-            return tf.zeros([0, 6])
-        
-        for cls in range(self.num_classes):
-            pred = preds[preds[:, 5]==cls]
-
-            while(pred.shape[0] > 0):
-                max_idx = tf.argmax(pred[:, 4], -1)
-                max_pred = pred[max_idx]
-                output += [max_pred]
-
-                pred = tf.concat([pred[:max_idx], pred[max_idx+1:]], 0)
-                boxes = pred[:, :4]
-                ious = bbox_iou(max_pred[None, :4], boxes, iou_type='diou')
-                scores = (tf.exp(-np.square(ious)/self.sigma) * pred[:, 4])[:, None]
-                pred = tf.concat([boxes, scores, tf.zeros_like(scores)+cls], -1)
-                pred = pred[pred[:, 4] >= self.score_th]
-
-        return tf.stack(output)
 
     @tf.function
     def bbox_decode(self, preds):
@@ -89,9 +64,7 @@ class Decoder():
         bboxes = []
         scores = []
         classes = []
-        # bboxes = tf.zeros((batch_size, 0, 4))
-        # scores = tf.zeros((batch_size, 0, 1))
-        # classes = tf.zeros((batch_size, 0, 1))
+
         for pred, anchor, stride in zip(preds, self.anchors, self.strides):
             pred = tf.reshape(pred, [batch_size, -1, 5+self.num_classes])
 
@@ -106,9 +79,6 @@ class Decoder():
             bboxes += [tf.concat([xy, wh], -1) * stride]
             scores += [score * max_prob]
             classes += [max_prob_id]
-            # bboxes = tf.concat([bboxes, tf.concat([xy, wh], -1) * stride], 1)
-            # scores = tf.concat([scores, score * max_prob], 1)
-            # classes = tf.concat([classes, max_prob_id], 1)
 
         bboxes = tf.concat(bboxes, 1)
         scores = tf.concat(scores, 1)
@@ -145,8 +115,8 @@ class Decoder():
     def soft_normal_nms(self, ious, scores):
         return np.where(ious >= self.iou_th, scores * (1 - ious), scores)
 
-    def soft_gaussian_nms(self, ious, scores):
-        return tf.exp(-np.square(ious)/self.sigma) * scores
+    def soft_gaussian_nms(self, ious, scores, sigma=0.3):
+        return np.exp(-np.square(ious)/sigma) * scores
 
     
 def get_anchors_grid(anchors, strides, image_size):
