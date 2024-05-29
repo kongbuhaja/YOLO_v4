@@ -52,7 +52,7 @@ class Decoder():
                 pred = np.concatenate([pred[:max_idx], pred[max_idx+1:]], 0)
                 boxes = pred[:, :4]
                 ious = bbox_iou_np(max_pred[None, :4], boxes, iou_type='diou')
-                scores = np.nms(ious, pred[:, 4])[:, None]
+                scores = self.nms(ious, pred[:, 4])[:, None]
                 pred = np.concatenate([boxes, scores, np.zeros_like(scores)+cls], -1)
                 pred = pred[pred[:, 4] >= self.score_th]
 
