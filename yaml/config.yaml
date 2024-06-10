@@ -5,7 +5,7 @@ model:
   checkpoint: checkpoints
 
 # custom, voc, coco
-data: coco
+data: custom
 
 train:
   epochs: 5000
@@ -35,9 +35,9 @@ eval:
   batch_size: 1
   nms:
     # normal, soft_normal, soft_gaussian
-    type: soft_gaussian
+    type: soft_normal
     iou_th: 0.45
-    score_th: 0.01
+    score_th: 0.3
   dir: outputs
   video: 0
   # dataset
@@ -50,6 +50,6 @@ eval:
 log:
   dir: logs
 
-batch_size: 14
+batch_size: 12
 seed: 42
 gpus: 0
