@@ -59,14 +59,14 @@ def main():
         @tf.function(experimental_relax_shapes=True)
         def distributed_train_step(dist_batch_images, dist_batch_labels):
             dist_replica_losses = strategy.run(train_step, args=(dist_batch_images, dist_batch_labels))
-            train_loss = strategy.reduce(tf.distribute.ReduceOp.MEAN, dist_replica_losses, axis=None)
+            train_loss = strategy.reduce(tf.distribute.ReduceOp.SUM, dist_replica_losses, axis=None)
 
             return train_loss
         
         @tf.function(experimental_relax_shapes=True)
         def distributed_eval_step(dist_batch_images, dist_batch_labels):
             dist_replica_losses, dist_batch_preds = strategy.run(eval_step, args=(dist_batch_images, dist_batch_labels))
-            test_loss = strategy.reduce(tf.distribute.ReduceOp.MEAN, dist_replica_losses, axis=None)          
+            test_loss = strategy.reduce(tf.distribute.ReduceOp.SUM, dist_replica_losses, axis=None)          
 
             return dist_batch_preds, *test_loss
         
