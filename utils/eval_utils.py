@@ -2,64 +2,54 @@ import numpy as np
 from utils.bbox_utils import bbox_iou_np
 
 class Eval:
-    def __init__(self, cfg, eps=1e-6):
+    def __init__(self, cfg, eps=1e-10):
         self.labels=cfg['data']['labels']['name']
         self.eval_per_epoch = cfg['train']['eval_per_epoch']
         self.result_dir = cfg['eval']['dir']
         self.warmup_epochs = cfg['train']['lr_scheduler']['warmup_epochs']
         self.eps = eps
-        self.num_of_ious = 10
-        self.iou_thresholds = 0.5 + (0.5) / self.num_of_ious * np.arange(self.num_of_ious)
+        self.num_of_threshold = 10
+        self.iou_thresholds = np.linspace(0.5, 0.95, self.num_of_threshold)
         self.stats = []
-        self.ap = np.zeros((len(self.labels), self.num_of_ious))
+        self.ap = np.zeros((len(self.labels), self.num_of_threshold))
 
     def check(self, epoch):
         return epoch >= self.warmup_epochs and epoch % self.eval_per_epoch == 0
 
     def init_stat(self):
-        del self.stats
-        self.stats = []
+        self.stats = dict(tp=[], conf=[], pred_cls=[], gt_cls=[])
 
-    def update(self, labels, preds):
-        correct = np.zeros([preds.shape[0], self.num_of_ious])    
+    def update(self, gt, pred):
+        tp = np.zeros((pred.shape[0], self.iou_thresholds.shape[0])).astype(bool)
+        pred_cls = pred[:, -1]
+        pred_conf = pred[:, -2]
+        gt_cls = gt[:, -1]
+        cls_mask = pred_cls[:, None] == gt_cls
+        ious = bbox_iou_np(pred[:, None, :4], gt[:, :4])
+        ious = ious * cls_mask
+        
+        for i, iou_threshold in enumerate(self.iou_thresholds):
+            matches = np.nonzero(ious >= iou_threshold)
+            matches = np.array(matches).T
+            if matches.shape[0]:
+                if matches.shape[0] > 1:
+                    matches = matches[ious[matches[:, 0], matches[:, 1]].argsort()[::-1]]
+                    matches = matches[np.unique(matches[:, 1], return_index=True)[1]]
+                    matches = matches[np.unique(matches[:, 0], return_index=True)[1]]
+                tp[matches[:, 1].astype(int), i] = True
 
-        if preds.shape[0] == 0:
-            if labels.shape[0]:
-                self.stats += [[correct, np.zeros(0), np.zeros(0), labels[:, 4]]]
-
-        elif labels.shape[0]:
-            detect = []
-            for c in np.unique(labels[:, 4]):
-                ti = (c == labels[:, 4]).nonzero()[0]
-                pi = (c == preds[:, 5]).nonzero()[0]
-                
-                if pi.shape[0]:
-                    ious = bbox_iou_np(preds[pi, :4][:, None], labels[ti, :4][None])
-                    best_id = np.argmax(ious, -1)
-                    best_iou = np.max(ious, -1)
-
-                    detect_set = set()
-                    for j in (ious > self.iou_thresholds[0]).nonzero()[0]:
-                        det = ti[best_id[j]]
-                        if det not in detect_set:
-                            detect_set.add(det)
-                            detect += [det]
-                            correct[pi[j]] = best_iou[j] > self.iou_thresholds
-                            if len(detect) == labels.shape[0]:
-                                break
-            self.stats += [[correct, preds[:, 4], preds[:, 5], labels[:, 4]]]
+        self.stats['conf'] += [pred_conf]
+        self.stats['pred_cls'] += [pred_cls]
+        self.stats['gt_cls'] += [gt_cls]
+        self.stats['tp'] += [tp]
 
     def compute_mAP(self):
-        if len(self.stats) == 0:
-            return 0., 0.
-
-        tp, conf, pred_cls, gt_cls = [np.concatenate(x, 0) for x in zip(*self.stats)]
+        tp, conf, pred_cls, gt_cls = self.extract_stat()
         idx = np.argsort(-conf)
         tp, conf, pred_cls = tp[idx], conf[idx], pred_cls[idx]
 
-        for c in np.unique(gt_cls.astype(np.int32)):
+        for c, n_g in zip(*np.unique(gt_cls.astype(np.int32), return_counts=True)):
             i = pred_cls == c
-            n_g = (gt_cls == c).sum()
             n_p = i.sum()
 
             if n_p == 0 or n_g == 0:
@@ -72,7 +62,7 @@ class Eval:
 
             precision = tpc / (tpc + fpc)
  
-            for j in range(self.num_of_ious):
+            for j in range(self.num_of_threshold):
                 self.ap[c, j] = self.compute_ap(recall[:, j], precision[:, j])
         
         return np.mean(self.ap[:, 0]), np.mean(self.ap)
@@ -87,6 +77,12 @@ class Eval:
         ap = np.trapz(np.interp(x, mrec, mpre), x)
 
         return ap
+    
+    def extract_stat(self):
+            stat = {key: np.concatenate(value, 0) for key, value in self.stats.items()}
+            def extract(tp, conf, gt_cls, pred_cls):
+                return tp, conf, pred_cls, gt_cls
+            return extract(**stat)
 
     def get_result(self):
         text = ''
