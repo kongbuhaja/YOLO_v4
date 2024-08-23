@@ -36,16 +36,7 @@ class Eval:
                     matches = matches[ious[matches[:, 0], matches[:, 1]].argsort()[::-1]]
                     matches = matches[np.unique(matches[:, 1], return_index=True)[1]]
                     matches = matches[np.unique(matches[:, 0], return_index=True)[1]]
-                try:
-                    tp[matches[:, 0].astype(int), i] = True
-                except:
-                    
-                    print(matches)
-                    print()
-                    print(tp.shape)
-                    print()
-                    print(pred, gt)
-                    tp[matches[:, 0].astype(int), i] = True
+                tp[matches[:, 0].astype(int), i] = True
 
         self.stats['conf'] += [pred_conf]
         self.stats['pred_cls'] += [pred_cls]
