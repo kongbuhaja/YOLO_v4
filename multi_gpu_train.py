@@ -22,7 +22,8 @@ def main():
 
         train_dataset = strategy.experimental_distribute_dataset(dataloader('train', cfg['batch_size'], aug=cfg['aug']))
         valid_dataset = strategy.experimental_distribute_dataset(dataloader('val', cfg['eval']['batch_size']))
-    
+        optimizer = Optimizer(cfg['train']['optimizer'])
+
     eval = Eval(cfg)
     logger = Logger(cfg)
 
@@ -31,7 +32,7 @@ def main():
     
     global_step = (start_epoch-1) * train_dataset_length + 1
 
-    optimizer = Optimizer(cfg['train']['optimizer'])
+    
     lr_scheduler = LR_scheduler(cfg['train']['lr_scheduler'],
                                 epochs,
                                 train_dataset_length)
@@ -53,7 +54,6 @@ def main():
             preds = model(batch_images)
             valid_loss = model.loss(batch_grids, preds)
             batch_processed_preds = model.decoder.bbox_decode(preds)
-            
             return valid_loss, batch_processed_preds
         
         @tf.function(experimental_relax_shapes=True)
