@@ -59,14 +59,13 @@ def main():
         @tf.function(experimental_relax_shapes=True)
         def distributed_train_step(dist_batch_images, dist_batch_labels):
             dist_replica_losses = strategy.run(train_step, args=(dist_batch_images, dist_batch_labels))
-            train_loss = strategy.reduce(tf.distribute.ReduceOp.SUM, dist_replica_losses, axis=None)
-
+            train_loss = strategy.reduce(tf.distribute.ReduceOp.MEAN, dist_replica_losses, axis=None)
             return train_loss
         
         @tf.function(experimental_relax_shapes=True)
         def distributed_eval_step(dist_batch_images, dist_batch_labels):
             dist_replica_losses, dist_batch_preds = strategy.run(eval_step, args=(dist_batch_images, dist_batch_labels))
-            test_loss = strategy.reduce(tf.distribute.ReduceOp.SUM, dist_replica_losses, axis=None)          
+            test_loss = strategy.reduce(tf.distribute.ReduceOp.MEAN, dist_replica_losses, axis=None)          
 
             return dist_batch_preds, *test_loss
         
@@ -82,80 +81,80 @@ def main():
                 for gpu in range(gpus):
                     step(dist_batch_preds.values[gpu], dist_batch_labels.values[gpu])
                         
-    for epoch in range(start_epoch, epochs + 1):  
-        if cfg['aug']['mosaic'] and epoch==cfg['train']['mosaic_epochs']:
-            cfg['aug']['mosaic'] = 0
-            train_dataset = dataloader('train', cfg['batch_size'], aug=cfg['aug'])
-            train_dataset_length = dataloader.length['train'] // cfg['batch_size']
+        for epoch in range(start_epoch, epochs + 1):  
+            if cfg['aug']['mosaic'] and epoch==cfg['train']['mosaic_epochs']:
+                cfg['aug']['mosaic'] = 0
+                train_dataset = dataloader('train', cfg['batch_size'], aug=cfg['aug'])
+                train_dataset_length = dataloader.length['train'] // cfg['batch_size']
 
-        #train
-        train_iter, train_total_loss, train_reg_loss, train_obj_loss, train_cls_loss = 0, 0., 0., 0., 0.
-            
-        train_tqdm = tqdm.tqdm(train_dataset, total=train_dataset_length, ncols=160, desc=f'Train epoch {epoch}/{epochs}', ascii=' =', colour='red')
-        for dist_batch_images, dist_batch_labels in train_tqdm:
-            optimizer.assign_lr(lr_scheduler(global_step))
-
-            total_loss, reg_loss, obj_loss, cls_loss = distributed_train_step(dist_batch_images, dist_batch_labels)
-            
-            train_total_loss += total_loss
-            train_reg_loss += reg_loss
-            train_obj_loss += obj_loss
-            train_cls_loss += cls_loss
-
-            global_step += 1
-            train_iter += 1
-            
-            train_loss = [train_total_loss/train_iter,
-                          train_reg_loss/train_iter, 
-                          train_obj_loss/train_iter,
-                          train_cls_loss/train_iter, ]
-
-            logger.write_train_summary(global_step, optimizer.lr, train_loss)
-            tqdm_text = f'lr={optimizer.lr:.6f}, ' +\
-                        f'total_loss={train_loss[0].numpy():.3f}, ' +\
-                        f'reg_loss={train_loss[1].numpy():.3f}, ' +\
-                        f'obj_loss={train_loss[2].numpy():.3f}, ' +\
-                        f'cls_loss={train_loss[3].numpy():.3f}'
-            
-            train_tqdm.set_postfix_str(tqdm_text)
-                       
-        # valid
-        if eval.check(epoch):
-            eval.init_stat()
-            valid_iter, valid_total_loss, valid_reg_loss, valid_obj_loss, valid_cls_loss = 0, 0, 0, 0, 0
-            valid_tqdm = tqdm.tqdm(valid_dataset, total=valid_dataset_length, ncols=160, desc=f'Valid epoch {epoch}/{epochs}', ascii=' =', colour='blue')
-            for dist_batch_images, dist_batch_labels in valid_tqdm:
-                dist_batch_preds, total_loss, reg_loss, obj_loss, cls_loss = distributed_eval_step(dist_batch_images, dist_batch_labels)
-                update_eval_step(dist_batch_preds, dist_batch_labels)
-                mAP50, mAP = eval.compute_mAP()
+            #train
+            train_iter, train_total_loss, train_reg_loss, train_obj_loss, train_cls_loss = 0, 0., 0., 0., 0.
                 
-                valid_total_loss += total_loss
-                valid_reg_loss += reg_loss
-                valid_obj_loss += obj_loss
-                valid_cls_loss += cls_loss
+            train_tqdm = tqdm.tqdm(train_dataset, total=train_dataset_length, ncols=160, desc=f'Train epoch {epoch}/{epochs}', ascii=' =', colour='red')
+            for dist_batch_images, dist_batch_labels in train_tqdm:
+                optimizer.assign_lr(lr_scheduler(global_step))
 
-                valid_iter += 1
+                total_loss, reg_loss, obj_loss, cls_loss = distributed_train_step(dist_batch_images, dist_batch_labels)
                 
-                valid_loss = [valid_total_loss / valid_iter,
-                              valid_reg_loss / valid_iter, 
-                              valid_obj_loss / valid_iter, 
-                              valid_cls_loss / valid_iter]
+                train_total_loss += total_loss
+                train_reg_loss += reg_loss
+                train_obj_loss += obj_loss
+                train_cls_loss += cls_loss
 
-                tqdm_text = f'mAP50={mAP50:.4f}, ' +\
-                            f'mAP={mAP:.4f}, ' +\
-                            f'total_loss={valid_loss[0].numpy():.3f}, ' +\
-                            f'reg_loss={valid_loss[1].numpy():.3f}, ' +\
-                            f'obj_loss={valid_loss[2].numpy():.3f}, ' +\
-                            f'cls_loss={valid_loss[3].numpy():.3f}'
+                global_step += 1
+                train_iter += 1
                 
-                valid_tqdm.set_postfix_str(tqdm_text)
-            
-            logger.write_eval_summary(epoch, mAP50, mAP, valid_loss)
-            
-            if mAP > max_mAP:
-                max_mAP = mAP
-                save_model(model, epoch, mAP50, mAP, valid_loss, cfg['model']['best_checkpoint'])
-            save_model(model, epoch, mAP50, mAP, valid_loss, cfg['model']['last_checkpoint'])
+                train_loss = [train_total_loss/train_iter,
+                            train_reg_loss/train_iter, 
+                            train_obj_loss/train_iter,
+                            train_cls_loss/train_iter, ]
+
+                logger.write_train_summary(global_step, optimizer.lr, train_loss)
+                tqdm_text = f'lr={optimizer.lr:.6f}, ' +\
+                            f'total_loss={train_loss[0].numpy():.3f}, ' +\
+                            f'reg_loss={train_loss[1].numpy():.3f}, ' +\
+                            f'obj_loss={train_loss[2].numpy():.3f}, ' +\
+                            f'cls_loss={train_loss[3].numpy():.3f}'
+                
+                train_tqdm.set_postfix_str(tqdm_text)
+                        
+            # valid
+            if eval.check(epoch):
+                eval.init_stat()
+                valid_iter, valid_total_loss, valid_reg_loss, valid_obj_loss, valid_cls_loss = 0, 0, 0, 0, 0
+                valid_tqdm = tqdm.tqdm(valid_dataset, total=valid_dataset_length, ncols=160, desc=f'Valid epoch {epoch}/{epochs}', ascii=' =', colour='blue')
+                for dist_batch_images, dist_batch_labels in valid_tqdm:
+                    dist_batch_preds, total_loss, reg_loss, obj_loss, cls_loss = distributed_eval_step(dist_batch_images, dist_batch_labels)
+                    update_eval_step(dist_batch_preds, dist_batch_labels)
+                    mAP50, mAP = eval.compute_mAP()
+                    
+                    valid_total_loss += total_loss
+                    valid_reg_loss += reg_loss
+                    valid_obj_loss += obj_loss
+                    valid_cls_loss += cls_loss
+
+                    valid_iter += 1
+                    
+                    valid_loss = [valid_total_loss / valid_iter,
+                                valid_reg_loss / valid_iter, 
+                                valid_obj_loss / valid_iter, 
+                                valid_cls_loss / valid_iter]
+
+                    tqdm_text = f'mAP50={mAP50:.4f}, ' +\
+                                f'mAP={mAP:.4f}, ' +\
+                                f'total_loss={valid_loss[0].numpy():.3f}, ' +\
+                                f'reg_loss={valid_loss[1].numpy():.3f}, ' +\
+                                f'obj_loss={valid_loss[2].numpy():.3f}, ' +\
+                                f'cls_loss={valid_loss[3].numpy():.3f}'
+                    
+                    valid_tqdm.set_postfix_str(tqdm_text)
+                
+                logger.write_eval_summary(epoch, mAP50, mAP, valid_loss)
+                
+                if mAP > max_mAP:
+                    max_mAP = mAP
+                    save_model(model, epoch, mAP50, mAP, valid_loss, cfg['model']['best_checkpoint'])
+                save_model(model, epoch, mAP50, mAP, valid_loss, cfg['model']['last_checkpoint'])
 
 if __name__ == '__main__':
     main()
