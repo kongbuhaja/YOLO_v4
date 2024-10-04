@@ -156,5 +156,7 @@ def main():
                     save_model(model, epoch, mAP50, mAP, valid_loss, cfg['model']['best_checkpoint'])
                 save_model(model, epoch, mAP50, mAP, valid_loss, cfg['model']['last_checkpoint'])
 
+        dataloader.reset()
+
 if __name__ == '__main__':
     main()
