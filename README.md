@@ -3,7 +3,7 @@
 ## Implementation Modules  
 ### BoF for backbone  
 - [ ] CutMix   
-- [ ] Mosaic 
+- [x] Mosaic 
 - [ ] DropBlock  
 - [x] Class label smoothing  
 ### BoS for backbone  
@@ -14,7 +14,7 @@
 - [x] CIoU-loss  
 - [ ] CmBN  
 - [ ] DropBlock
-- [ ] Mosaic  
+- [x] Mosaic  
 - [x] Self-Adversarial Training(SAT)  
 - [x] Eliminate grid sensityivity  
 - [x] multiple anchors for single ground truth
@@ -32,7 +32,7 @@
 | ------------- | ------ | ------| ------ |
 | **VOLOv4_tiny**  | 416x416 | - | - |
 | **VOLOv4**  | 512x512 | - | - |
-| **VOLOv4_csp**  | 512x512 | - | - |
+| **VOLOv4_csp**  | 512x512 | 0.33 | 0.49 |
 | **VOLOv4_P5**  | 896x896 | - | - |
 | **VOLOv4_P6**  | 1280x1280 | - | - |
 | **VOLOv4_P7**  | 1536x1536 | - | - |
@@ -59,9 +59,9 @@
 | Model | Test Size | AP | AP50 |  
 | ------------- | ------ | ------ | ------ |
 | **VOLOv4_tiny**  | 416x416 | - | - |
-| **VOLOv4**  | 512x512 | 70.5% | 86.0% |
-| **VOLOv4_csp**  | 512x512 | 70.6% | 84.6% |
-| **VOLOv4_P5**  | 896x896 | 62.2% | 78.5% |
+| **VOLOv4**  | 512x512 | 70.5 | 86.0 |
+| **VOLOv4_csp**  | 512x512 | 70.6 | 84.6 |
+| **VOLOv4_P5**  | 896x896 | 62.2 | 78.5 |
 | **VOLOv4_P6**  | 1280x1280 | - | - |
 | **VOLOv4_P7**  | 1536x1536 | - | - |
 | **YOLOv3_tiny**  | 416x416 | - | - |
