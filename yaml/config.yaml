@@ -9,7 +9,7 @@ data: custom
 
 train:
   epochs: 5000
-  mosaic_epochs: 4900
+  mosaic_epochs: 4500
   # cosine_annealing_warm_restart, cosine_annealing, poly, step, custom
   lr_scheduler:
     name: cosine_annealing_warm_restart
@@ -17,7 +17,7 @@ train:
     power: 0.9
     steps: [100, 200]
     decays: [0.5, 0.5]
-    warmup_epochs: 10
+    warmup_epochs: 0
   optimizer:
     name: Adam
     momentum: 0.9
@@ -50,6 +50,6 @@ eval:
 log:
   dir: logs
 
-batch_size: 12
+batch_size: 4
 seed: 42
 gpus: 0

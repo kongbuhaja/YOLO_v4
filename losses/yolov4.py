@@ -51,5 +51,5 @@ class loss(Base_loss):
         obj_loss *= self.obj_ratio * batch_size
         cls_loss *= self.cls_ratio * batch_size
         total_loss = reg_loss + obj_loss + cls_loss
-
+        
         return total_loss, reg_loss, obj_loss, cls_loss

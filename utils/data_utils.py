@@ -29,11 +29,11 @@ class DataLoader():
         data = data.cache() if cache else data
         data = data.shuffle(buffer_size = self.length[split], seed=self.seed, reshuffle_each_iteration=True) if aug else data
         
-        data = data.map(lambda image, labels: self.preprocess(image, labels, split), num_parallel_calls=tf.data.AUTOTUNE)
+        data = data.map(lambda image, labels: self.preprocess(image, labels, split), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         data = self.augmentation(data, aug, seed=self.seed)
         data = self.method(split, data, batch_size, aug, resize, seed=self.seed)
-        data = data.map(self.xyxy_to_xywh, num_parallel_calls=tf.data.AUTOTUNE)
-        data = data.prefetch(tf.data.AUTOTUNE)
+        data = data.map(self.xyxy_to_xywh, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        data = data.prefetch(tf.data.experimental.AUTOTUNE)
 
         return data
     
@@ -63,22 +63,25 @@ class DataLoader():
     def augmentation(self, data, aug, seed=42):
         if aug:
             augmentation = mosaic_augmentation if aug['mosaic'] else batch_augmentation
-            return data.map(lambda image, labels: augmentation(image, labels, aug, seed=seed), num_parallel_calls=tf.data.AUTOTUNE)
+            return data.map(lambda image, labels: augmentation(image, labels, aug, seed=seed), num_parallel_calls=tf.data.experimental.AUTOTUNE)
         return data
 
     def method(self, split, data, batch_size, aug, resize, seed=42):
         if aug:
             if aug['mosaic']:
                 self.mosaic_size = tf.round(self.input_size * 1.5)
-                # self.mosaic_size = tf.round(self.input_size * 1.5)
+                ix1, iy1 = tf.unstack(tf.round((self.mosaic_size - self.input_size)/2))
+                ix2, iy2 = ix1+self.input_size[0], iy1+self.input_size[1]
+                self.crop_xyxy = tf.stack([ix1, iy1, ix2, iy2])
+                self.mosaic_size = tf.round(self.input_size * 1.5)
                 method = self.mosaic
             else:
                 random_pad = True if split=='train' else False
-                data = data.map(lambda image, labels: resize_padding(image, labels, self.input_size, random_pad, seed=seed), num_parallel_calls=tf.data.AUTOTUNE)
+                data = data.map(lambda image, labels: resize_padding(image, labels, self.input_size, random_pad, seed=seed), num_parallel_calls=tf.data.experimental.AUTOTUNE)
                 method = self.batch
         else:
             random_pad = True if split=='train' else False
-            data = data.map(lambda image, labels: resize_padding(image, labels, self.input_size, random_pad, seed=seed), num_parallel_calls=tf.data.AUTOTUNE) if resize else data
+            data = data.map(lambda image, labels: resize_padding(image, labels, self.input_size, random_pad, seed=seed), num_parallel_calls=tf.data.experimental.AUTOTUNE) if resize else data
             method = self.batch
 
         dataset = tf.data.Dataset.from_generator(
@@ -116,11 +119,8 @@ class DataLoader():
             batch_labels += [labels]
 
             if len(batch_images) == batch_size:
-                for batch in range(batch_size):
-                    # tensorarray로 변경해보자
-                    # mosaic_image = tf.Variable(tf.zeros(tf.unstack(self.mosaic_size)+[3]), trainable=False)
-                    mosaic_image = tf.TensorArray(tf.float32, size=1, dynamic_size=True)
-                    mosaic_image = mosaic_image.write(0, tf.zeros(tf.unstack(self.mosaic_size+[3])))
+                for idx in range(batch_size):
+                    mosaic_image = tf.Variable(tf.zeros(tf.unstack(self.mosaic_size)+[3]), trainable=False)
                     mosaic_labels = tf.zeros([0, 5], tf.float32)
                     xc, yc = tf.unstack(tf.cast(tf.random.uniform([2], 
                                                                   minval=self.mosaic_size//(2**size)*(2**(size-1)-1), 
@@ -139,23 +139,11 @@ class DataLoader():
                         h, w = tf.unstack(image.shape[:2])
                         x1, y1 = xc if i%s else xc - w, yc if i//s else yc - h
                         x2, y2 = x1+w, y1+h
-
-                        # mosaic_image[y1:y2, x1:x2].assign(image)
-                        print(y1, y2, x1, x2, image.shape)
-                        mosaic_image = mosaic_image.write(0, 
-                                                          tf.tensor_scatter_nd_update(mosaic_image.read(0),
-                                                                                      [[y, x, v] for y in range(y1, y2) for x in range(x1, x2) for v in range(3)],
-                                                                                      tf.reshape(image, [-1])))
+ 
+                        mosaic_image[y1:y2, x1:x2].assign(image)
                         mosaic_labels = tf.concat([mosaic_labels, labels + [x1, y1, x1, y1, 0]], 0)
 
-
-                    ix1, iy1 = tf.unstack(tf.round((self.mosaic_size - self.input_size)/2))
-                    ix2, iy2 = ix1+self.input_size[0], iy1+self.input_size[1]
-                    crop_xyxy = tf.stack([ix1, iy1, ix2, iy2])
-                    # crop_image, crop_labels = crop(mosaic_image.value(), mosaic_labels, self.crop_xyxy)
-                    # batch_mosaic_images = tf.concat([batch_mosaic_images, crop_image[None]], 0)
-                    crop_image, crop_labels = crop(mosaic_image.stack(), mosaic_labels, crop_xyxy)
-
+                    crop_image, crop_labels = crop(mosaic_image.value(), mosaic_labels, self.crop_xyxy)
                     batch_mosaic_images = tf.concat([batch_mosaic_images, crop_image[None]], 0)
                     batch_mosaic_labels = tf.concat([batch_mosaic_labels, tf.concat([tf.zeros(crop_labels.shape[:-1], dtype=tf.float32)[..., None]+idx, crop_labels], -1)], 0)
                     

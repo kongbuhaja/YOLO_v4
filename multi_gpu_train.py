@@ -20,8 +20,10 @@ def main():
         model, start_epoch, max_mAP = load_model(cfg)
         dataloader = DataLoader(cfg)
 
-        train_dataset = strategy.experimental_distribute_dataset(dataloader('train', cfg['batch_size'], aug=cfg['aug']))
-        valid_dataset = strategy.experimental_distribute_dataset(dataloader('val', cfg['eval']['batch_size']))
+        options = tf.data.Options()
+        options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
+        train_dataset = strategy.experimental_distribute_dataset(dataloader('train', cfg['batch_size'], aug=cfg['aug']).with_options(options))
+        valid_dataset = strategy.experimental_distribute_dataset(dataloader('val', cfg['eval']['batch_size']).with_options(options))
         optimizer = Optimizer(cfg['train']['optimizer'])
 
     eval = Eval(cfg)
