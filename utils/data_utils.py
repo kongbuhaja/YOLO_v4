@@ -73,7 +73,6 @@ class DataLoader():
                 ix1, iy1 = tf.unstack(tf.round((self.mosaic_size - self.input_size)/2))
                 ix2, iy2 = ix1+self.input_size[0], iy1+self.input_size[1]
                 self.crop_xyxy = tf.stack([ix1, iy1, ix2, iy2])
-                self.mosaic_size = tf.round(self.input_size * 1.5)
                 method = self.mosaic
             else:
                 random_pad = True if split=='train' else False
