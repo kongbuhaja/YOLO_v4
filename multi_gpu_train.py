@@ -74,7 +74,10 @@ def main():
         def update_eval_step(dist_batch_preds, dist_batch_labels):
             def step(batch_preds, batch_labels):
                 for i, preds in enumerate(batch_preds):
-                    labels = batch_labels[batch_labels[..., 0]==i][..., 1:].numpy()
+                    try:
+                        labels = batch_labels[batch_labels[..., 0]==i][..., 1:].numpy()
+                    except:
+                        print(batch_labels)
                     NMS_preds = model.decoder.NMS(preds.numpy())
                     eval.update(labels, NMS_preds)
             if gpus == 1:
