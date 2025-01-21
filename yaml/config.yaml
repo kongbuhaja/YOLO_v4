@@ -8,8 +8,8 @@ model:
 data: custom
 
 train:
-  epochs: 5000
-  mosaic_epochs: 4500
+  epochs: 1000
+  mosaic_epochs: 950
   # cosine_annealing_warm_restart, cosine_annealing, poly, step, custom
   lr_scheduler:
     name: cosine_annealing_warm_restart
@@ -50,6 +50,6 @@ eval:
 log:
   dir: logs
 
-batch_size: 4
+batch_size: 16
 seed: 42
 gpus: 0
