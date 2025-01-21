@@ -5,14 +5,14 @@ import logging, absl
 
 def os_set(gpus):
     warnings.filterwarnings('ignore')
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '4'
     # os.environ['TF_DETERMINISTIC_OPS'] = '1'
     os.environ['TF_CUDNN_DETERMINISTIC'] = '1'
     os.environ['CUDA_VISIBLE_DEVICES'] = gpus
     os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
     os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
-    os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=0'
+    # os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=0'
     os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 
