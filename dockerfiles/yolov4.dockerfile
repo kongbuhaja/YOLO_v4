@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
+FROM nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04
 
 ENV TZ=Asia/Seoul
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $>TZ > /etc/timezone
@@ -21,7 +21,7 @@ RUN echo "== Install Basic Tools ==" &&\
     rm -rf /var/lib/apt/list/*
 
 RUN echo "== Install Dev Tolls ==" &&\
-    pip3 install tensorflow==2.13 &&\
+    pip3 install tensorflow==2.10 &&\
     pip3 install opencv-python &&\
     pip3 install matplotlib &&\
     pip3 install pillow &&\
