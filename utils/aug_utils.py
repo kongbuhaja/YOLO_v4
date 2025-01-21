@@ -40,14 +40,13 @@ def crop(image, labels, xyxy=None, seed=42):
         x1, y1, x2, y2 = tf.unstack(tf.cast(xyxy, tf.int32))
     
     crop_image = image[y1:y2, x1:x2]
-    filter = tf.logical_and(tf.logical_and(tf.reduce_all(labels[..., 2:4] > [x1, y1], -1),
-                                           tf.reduce_all(labels[..., :2] < [x2, y2], -1)),
-                            tf.logical_and(tf.reduce_all((labels[..., 2:3] - labels[..., 0:1]) > 5, -1),
-                                           tf.reduce_all((labels[..., 3:4] - labels[..., 1:2]) > 5, -1)))
-    filtered_labels = labels[filter]
-    crop_labels = tf.concat([tf.maximum(filtered_labels[..., :2] - [x1, y1], 0),
-                             filtered_labels[..., 2:4] - [x1, y1] - tf.maximum(filtered_labels[..., 2:4] - [x2, y2], 0),
-                             filtered_labels[..., 4:]], -1)
+
+    global_xyxy = tf.concat([tf.maximum(labels[..., :2], [x1, y1]),
+                             tf.minimum(labels[..., 2:4], [x2, y2])], -1)
+    local_xyxy = global_xyxy - [x1, y1, x1, y1]
+    crop_labels = tf.concat([local_xyxy, labels[..., 4:]], -1)
+    crop_labels = tf.boolean_mask(crop_labels, tf.reduce_sum(crop_labels[..., 2:4] - crop_labels[..., :2], -1) > 0)
+
     return crop_image, crop_labels
 
 # @tf.function
